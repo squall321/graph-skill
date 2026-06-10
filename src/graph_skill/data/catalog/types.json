@@ -35,7 +35,7 @@
           "type": "number",
           "unit": "mm^2",
           "why": "engineering stress σ=F/A0 환산에 필요",
-          "ask": "시편 초기 단면적 A0를 mm²로 알려주세요 (예: 28.3). 입력 시리즈는 x=변위[mm], y=하중[N] 이어야 합니다."
+          "ask": "시편 초기 단면적 A0를 mm²로 알려주세요 (예: 28.3). 입력 시리즈는 x=변위[mm], y=하중[N] 이어야 합니다. ※ 이미 응력-변형률로 환산된 데이터라면 A0/L0 없이 base-xy를 사용하세요."
         },
         {
           "field": "params.L0",
@@ -52,7 +52,7 @@
         "curve": "monotone"
       },
       "height_px": 520,
-      "hint": "인장시험 raw: 각 시리즈 data=[[변위mm, 하중N], ...]. params.A0[mm²]·L0[mm] 필수 → σ=F/A0, ε=ΔL/L0 자동 환산(없으면 질문). params.true_stress=true 면 진응력. 축은 자동(Strain/Stress). UTS·Fracture 마커와 Et 접선 자동."
+      "hint": "인장시험 raw: 각 시리즈 data=[[변위mm, 하중N], ...]. params.A0[mm²]·L0[mm] 필수 → σ=F/A0, ε=ΔL/L0 자동 환산(없으면 질문). params.true_stress=true 면 진응력. 축은 자동(Strain/Stress). UTS·Fracture 마커와 Et 접선 자동. ※ 데이터가 이미 σ[MPa]–ε[%]로 환산돼 있으면 이 타입이 아니라 base-xy를 쓰세요(axes x={label:'Strain',unit:'%'}, y={label:'Stress',unit:'MPa'}; A0/L0 불필요)."
     },
     "force-displacement": {
       "title": "Force-displacement curve",
@@ -406,7 +406,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 460,
-      "hint": "공정능력 히스토그램. values:[측정값...] + params.USL/LSL(+target) + axes.x{label,unit}(특성). 규격선(USL/LSL/Target) + 정규피팅 오버레이 자동, Cp·Cpk를 제목에 표기. params.bins 선택. 규격한계가 없으면 질문(Cp/Cpk 불가)."
+      "hint": "공정능력 히스토그램. values:[측정값...] + params.USL/LSL(+target) + axes.x{label,unit}(특성). 규격선(USL/LSL/Target) + 정규피팅 오버레이 자동, Cp·Cpk를 제목에 표기. params.bins 선택. 규격한계가 없으면 질문(Cp/Cpk 불가). params.target 생략 시 Target선만 생략(기본값 대체 없음; Cp/Cpk는 USL/LSL만으로 계산)."
     },
     "paris-crack-growth": {
       "title": "Paris crack-growth (da/dN-ΔK)",
@@ -764,7 +764,7 @@
       ],
       "options_defaults": {},
       "height_px": 520,
-      "hint": "시간영역 신호: 각 시리즈 data=[[time, value], ...] (선택적으로 axes 로 time/value 라벨·단위). params.fs[Hz] 필수(없으면 질문). 단측 진폭 스펙트럼을 그리고 컨트롤바의 토글 버튼으로 시간↔주파수 전환, 피크 자동 마커. Hann 윈도(params.window='rect' 로 끔)."
+      "hint": "시간영역 신호: 각 시리즈 data=[[time, value], ...] (선택적으로 axes 로 time/value 라벨·단위). params.fs[Hz] 필수(없으면 질문). 단측 진폭 스펙트럼을 그리고 컨트롤바의 토글 버튼으로 시간↔주파수 전환, 피크 자동 마커. Hann 윈도(params.window='rect' 로 끔). N이 2^n이 아니면 next power-of-2로 zero-padding(절단/손실 없음); validate preview의 points_per_series는 변환 후 단측 주파수 bin 수임."
     },
     "filter-tuner": {
       "title": "Filter tuner (FFT + live cutoff)",
@@ -1109,7 +1109,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 520,
-      "hint": "시간 재생 버블차트. frames:[{t,entities:[{id,x,y,size?,color?,label?}]}] (각 프레임=한 시점). 하단 ▶/슬라이더로 재생, 버블 위치·크기 프레임간 보간. size→반경 자동(sqrt). axes.x/y label+unit 필수. 옵션 options.fps(기본1.2)/loop. 모든 프레임 임베드(결정적, 클라이언트 재생)."
+      "hint": "시간 재생 버블차트. frames:[{t,entities:[{id,x,y,size?,color?,label?}]}] (각 프레임=한 시점). 하단 ▶/슬라이더로 재생, 버블 위치·크기 프레임간 보간. size는 임의 양수 절대값 그대로 허용(인구수 등) — 전 프레임 기준 자동 정규화 후 sqrt 반경(사전 정규화 불필요). axes.x/y label+unit 필수. 옵션 options.fps(기본1.2)/loop. 모든 프레임 임베드(결정적, 클라이언트 재생)."
     },
     "animated-trajectory": {
       "title": "Animated trajectory / phase portrait",
@@ -1152,7 +1152,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 520,
-      "hint": "흐름도(Sankey). nodes:[{id,label?,color?}], links:[{source,target,value}]. 레이어 자동배치, 리본 폭∝value, 노드 자동합성(링크 끝점). 호버 강조·툴팁. 에너지/물질/예산/전환 흐름. (DOM/SVG, 팬/줌)"
+      "hint": "흐름도(Sankey). nodes:[{id,label?,color?}], links:[{source,target,value}]. 레이어 자동배치, 리본 폭∝value, 노드 자동합성(링크 끝점). 호버 강조·툴팁. 에너지/물질/예산/전환 흐름. (DOM/SVG, 팬/줌) 흐름량 단위 표기가 필요하면 title에 명기(예: 단위: 백만원)."
     },
     "network-graph": {
       "title": "Network graph (force-directed)",
@@ -1191,7 +1191,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 320,
-      "hint": "게이지(속도계). value(+min[0],max[100],target?,unit?,label?). bands:[{to,color}] 구간 색 또는 goal(low|high)로 자동 색. 270° 다이얼+바늘+중앙 값, 로드 시 값 애니메이션. 여러 지표는 items:[{…}] (자동 그리드)."
+      "hint": "게이지(속도계). value(+min[0],max[100],target?,unit?,label?). bands:[{to,color}] 구간 색 또는 goal(low|high)로 자동 색. 270° 다이얼+바늘+중앙 값, 로드 시 값 애니메이션. 여러 지표는 items:[{…}] (자동 그리드). items 항목 키: {label, value, min?, max?, unit?, target?, bands?, goal?}."
     },
     "radial-progress": {
       "title": "Radial progress / KPI ring",
@@ -1204,7 +1204,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 320,
-      "hint": "도넛 진행률. value/min/max → 채움 비율, 중앙 큰 값(unit='%'면 백분율). 달성률·가동률·진척. items[]로 KPI 링 패널."
+      "hint": "도넛 진행률. value/min/max → 채움 비율, 중앙 큰 값(unit='%'면 백분율). 달성률·가동률·진척. items:[{label, value, min?, max?, unit?, target?}]로 KPI 링 패널 — min/max 생략 시 0..100 스케일."
     },
     "bullet-chart": {
       "title": "Bullet chart",
@@ -1217,7 +1217,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 300,
-      "hint": "불릿 차트. 가로 정성밴드(bands:[{to,color}], 예 poor/ok/good) + 실적 막대 + 목표 틱(target). value/min/max/unit/label. items[]로 KPI 리스트. 목표 대비 실적을 조밀하게."
+      "hint": "불릿 차트. 가로 정성밴드(bands:[{to,color}], 예 poor/ok/good) + 실적 막대 + 목표 틱(target). value/min/max/unit/label. items[]로 KPI 리스트. 목표 대비 실적을 조밀하게. items 항목 키: {label, value, min?, max?, unit?, target?, bands?}."
     },
     "point-cloud-3d": {
       "title": "3D point cloud / scatter",
@@ -1230,7 +1230,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 520,
-      "hint": "3D 산점/포인트클라우드. points:[[x,y,z], …] 또는 [{x,y,z}]. scalar:[점별 값]+z={label,unit}이면 컬러맵+컬러바, colormap(viridis…), point_size(자동). orbit·단면(clip)·PNG. 측정점/스캔/군집."
+      "hint": "3D 산점/포인트클라우드. points:[[x,y,z], …] 또는 [{x,y,z}]. scalar:[점별 값]+scalar_meta(또는 z)={label,unit}이면 컬러맵+컬러바 — 이 z는 점 좌표가 아니라 컬러바 라벨/단위 메타, colormap(viridis…), point_size(자동). orbit·단면(clip)·PNG. 측정점/스캔/군집. 좌표 단위는 뷰어에서 무차원 취급 — 표기가 필요하면 title에 명기(예: 좌표 단위 mm)."
     },
     "surface-3d": {
       "title": "3D surface (z=f(x,y))",
@@ -1396,7 +1396,7 @@
       "requires": [],
       "options_defaults": {},
       "height_px": 1100,
-      "hint": "종합 업무계획서 — 한 아티팩트에 결합: 개요(period:{start,end}, owner?, team?, objective?) + kpis:[{label,value,unit?,delta?,goal?,spark?}](stat-card) + tasks:[…](Gantt + 업무분장 자동) + milestones:[{date,label,status?}](timeline) + risks:[{risk, impact(1~5), likelihood(1~5), mitigation?}](heat). kpis/milestones/risks는 선택. 셀 그래프 클릭=확대 모달."
+      "hint": "종합 업무계획서 — 한 아티팩트에 결합: 개요(period:{start,end}, owner?, team?, objective?) + kpis:[{label,value,unit?,delta?,goal?,spark?}](stat-card) + tasks:[{name, start:'YYYY-MM-DD', end, owner?, progress?(0~1), group?, deps?:[선행작업명], milestone?}](Gantt+업무분장 자동) + milestones:[{date,label,status?}](timeline) + risks:[{risk, impact(1~5), likelihood(1~5), mitigation?}](heat). kpis/milestones/risks는 선택. 셀 그래프 클릭=확대 모달."
     }
   }
 }

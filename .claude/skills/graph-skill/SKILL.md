@@ -47,6 +47,8 @@ xy-core 계열 렌더 시 아래가 **별도 설정 없이** 전부 켜진다. �
 | `resample` | 시계열을 균일 dt로 리샘플(선형보간). FFT/스펙트럼 전처리. |
 | `smooth` | 스무딩(savgol/moving). |
 
+> 비-MCP(python 직접 호출) 매핑: graph_types_list→`tools.types_list()`, graph_find→`tools.types_find(q)`, graph_schema_get→`tools.schema_get(t)`, graph_validate_inputs→`tools.validate_inputs(t, payload)`, graph_render→`tools.render_payload(t, payload, out_path)`, graph_lint_output→`tools.lint_output(path)`, graph_embed_block→`tools.embed_block(path)`.
+
 ---
 
 ## 타입 분류 — 빠른 선택 (의도 → 카테고리 → 타입)

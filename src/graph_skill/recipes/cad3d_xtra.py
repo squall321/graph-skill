@@ -43,7 +43,7 @@ class PointCloud3dRecipe(Recipe):
             model["colors"] = [int(c) for row in rgb for c in row]
             model["zrange"] = [rng[0], rng[1]]
             model["lut"] = field_to_color.lut(cmap, 32)
-            zmeta = payload.get("z") or {}
+            zmeta = payload.get("scalar_meta") or payload.get("z") or {}
             assets["z"] = {"label": str(zmeta.get("label", "")), "unit": str(zmeta.get("unit", ""))}
         options = {"theme": (payload.get("options") or {}).get("theme", "auto")}
         if payload.get("title"):
@@ -61,7 +61,7 @@ class PointCloud3dRecipe(Recipe):
             if len(scalar) != len(pts):
                 miss.append({"field": "scalar", "why": "scalar 길이가 점 개수와 다름",
                              "ask": f"scalar(점별 색상값)는 점 개수({len(pts)})와 같아야 합니다."})
-            zmeta = payload.get("z") or {}
+            zmeta = payload.get("scalar_meta") or payload.get("z") or {}
             if not zmeta.get("label") or "unit" not in zmeta:
                 miss.append({"field": "z", "why": "색상 스칼라(z) 의미/단위 미상",
                              "ask": "색으로 표현할 양과 단위는? (z={label:'온도', unit:'°C'})"})
@@ -104,7 +104,7 @@ class Isosurface3dRecipe(Recipe):
         model = {"vertices": [round(x, 6) for x in v.reshape(-1).tolist()],
                  "indices": list(range(len(verts))),
                  "colors": colors, "zrange": [rng[0], rng[1]], "lut": field_to_color.lut(cmap, 32)}
-        zmeta = payload.get("z") or {}
+        zmeta = payload.get("scalar_meta") or payload.get("z") or {}
         options = {"theme": (payload.get("options") or {}).get("theme", "auto")}
         if payload.get("title"):
             options["title"] = str(payload["title"])

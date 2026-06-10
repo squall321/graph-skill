@@ -726,8 +726,9 @@
     var ax = this.opts.axes, html = '<div class="gs-tt-x">' + esc(ax.x.label || "x") + ": " + fmtVal(c.dataX) + (ax.x.unit ? " " + esc(ax.x.unit) : "") + "</div>";
     for (var i = 0; i < c.hits.length; i++) {
       var h = c.hits[i];
+      var hu = (this.series[h.i] && this.series[h.i].axis === "right" && ax.y2) ? ax.y2.unit : ax.y.unit;
       html += '<div class="gs-tt-row"><span class="gs-sw" style="background:' + h.color + '"></span>' +
-        esc(h.name) + ": " + fmtVal(h.y) + (ax.y.unit ? " " + esc(ax.y.unit) : "") + "</div>";
+        esc(h.name) + ": " + fmtVal(h.y) + (hu ? " " + esc(hu) : "") + "</div>";
     }
     this.tooltip.innerHTML = html;
     this.tooltip.style.opacity = "1";

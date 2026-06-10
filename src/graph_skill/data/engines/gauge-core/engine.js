@@ -103,7 +103,8 @@
     var minW = this.kind === "bullet" ? 280 : (this.kind === "card" ? 200 : 200);
     var cols = Math.max(1, Math.min(n, Math.floor(this.W / minW) || 1));
     var rows = Math.ceil(n / cols);
-    return { cols: cols, rows: rows, cw: this.W / cols, ch: this.H / rows };
+    var top = this.opts.title ? 34 : 0;                 // title/toolbar never overlap the cards
+    return { cols: cols, rows: rows, cw: this.W / cols, ch: (this.H - top) / rows, top: top };
   };
 
   GaugeCore.prototype._draw = function () {
@@ -113,7 +114,7 @@
     ctx.clearRect(0, 0, this.W, this.H);
     var g = this._grid(this.items.length);
     for (var i = 0; i < this.items.length; i++) {
-      var cx = (i % g.cols) * g.cw, cy = Math.floor(i / g.cols) * g.ch;
+      var cx = (i % g.cols) * g.cw, cy = (g.top || 0) + Math.floor(i / g.cols) * g.ch;
       ctx.save(); ctx.translate(cx, cy);
       if (this.kind === "radial-progress") this._ring(ctx, tok, this.items[i], g.cw, g.ch);
       else if (this.kind === "bullet") this._bullet(ctx, tok, this.items[i], g.cw, g.ch);

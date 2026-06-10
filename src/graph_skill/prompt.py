@@ -113,7 +113,7 @@ _INPUT_HINTS = {
         "z may contain null for gaps. colormap raster + iso-contours + colorbar + hover probe(z) "
         "+ zoom/pan are automatic. options: colormap/reverse/levels/zdomain/contours."
     ),
-    "heatmap-grid": "Same input as contour-plot but color-only (no iso lines). options.contours=true to add them.",
+    "heatmap-grid": "Same input as contour-plot but color-only (no iso lines). options.contours=true to add them. ※ 이미 σ-ε로 환산된 데이터면 base-xy 사용(A0/L0 불필요). Skeleton: states:[{id,label}×2+], items:[{id,group,label,unit?,spec?{min,max,goal},cells:{<stateId>:{kind:'number',value}|{kind:'status',status}|{kind:'graph',graph_ref}}}], meta.baseline=<stateId>.",
     "scalar-field-2d": "Same as contour-plot. Generic CAE field (temperature/stress/potential/SAR...).",
     "mcae-stress-contour": (
         "Structural CAE stress map. Same input as contour-plot with z={label:'von Mises σ', unit:'MPa'} "

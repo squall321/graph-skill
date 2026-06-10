@@ -151,9 +151,14 @@ def _artifact_height(html_path: str) -> int | None:
 
 def embed_block(html_path: str, height_px: int | None = None, caption: str | None = None) -> dict:
     """Produce a report-write `html_embed` draft fragment. upload_chain swaps local_path -> file_id.
-    Default height comes from the artifact's own recommended_height_px (gauge 320 != matrix 600)."""
+    Default height comes from the artifact's own recommended_height_px (gauge 320 != matrix 600).
+    `id` is required by report-write's extra_blocks contract (found in live publish testing)."""
     h = max(60, min(4000, int(height_px) if height_px else (_artifact_height(html_path) or 520)))
-    block: dict = {"type": "html_embed", "input": {"local_path": str(Path(html_path).resolve()), "height_px": h}}
+    block: dict = {
+        "id": f"graph-{Path(html_path).stem}",
+        "type": "html_embed",
+        "input": {"local_path": str(Path(html_path).resolve()), "height_px": h},
+    }
     if caption:
         block["input"]["caption"] = str(caption)[:200]
     return block

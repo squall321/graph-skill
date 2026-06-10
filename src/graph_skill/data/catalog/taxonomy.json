@@ -159,7 +159,7 @@
       "category": "mechanics",
       "dims": "2D",
       "data": "series data=[[변위,하중]] + params.A0/L0",
-      "use_when": "인장시험 σ-ε + Et 접선 + UTS/파단",
+      "use_when": "인장시험 raw(변위-하중) 입력 σ-ε 자동환산 + Et/UTS — 이미 σ-ε로 환산된 데이터면 base-xy",
       "keywords": [
         "인장",
         "stress",
