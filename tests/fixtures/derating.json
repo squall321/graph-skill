@@ -1,0 +1,1 @@
+{"title": "전력 derating + 동작점", "curve": [[25, 100], [85, 100], [125, 40], [150, 0]], "points": [{"temp": 60, "value": 78, "label": "normal"}, {"temp": 95, "value": 92, "label": "고부하"}, {"temp": 110, "value": 55}], "axes": {"y": {"label": "허용 전력", "unit": "%"}}}

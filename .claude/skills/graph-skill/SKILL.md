@@ -4,7 +4,7 @@
 
 핵심 원칙 한 줄: **너(LLM)는 그래프 엔진을 직접 코딩하지 않는다.** 엔진/인터랙션은 버전관리된 번들 자산이고, 너의 일은 (a) 데이터 수집, (b) 축·배경값 확인(부족하면 질문), (c) 타입 선택, (d) 렌더 호출이다. 이렇게 해야 "같은 입력이면 항상 동일한 고품질 인터랙션"이 보장된다.
 
-엔진은 **9개 패밀리 / 96+ 타입**으로 일반화돼 있다(도구 사용법은 패밀리와 무관하게 동일):
+엔진은 **9개 패밀리 / 104+ 타입**으로 일반화돼 있다(도구 사용법은 패밀리와 무관하게 동일):
 
 | 패밀리 | 렌더 | 대표 타입 | 자동 인터랙션 |
 |---|---|---|---|
@@ -76,6 +76,8 @@ xy-core 계열 렌더 시 아래가 **별도 설정 없이** 전부 켜진다. �
 | **geometry-3d** 3D 형상·결과 | 3D 형상/FE 결과/점군/곡면 | cad-3d-viewer, mesh-result-3d, mesh-deformed-3d, mode-shape-3d, point-cloud-3d, surface-3d, isosurface-3d |
 | **table** 점검·비교표·다이어그램 | 항목/설계안 점검·비교·순서도 | review-matrix, design-state-compare, kpi-scorecard, decision-matrix, correlation-matrix, confusion-matrix, flowchart, multitrack-stack |
 | **planning** 일정·계획 | 일정/마일스톤/업무 진척/계획서 | gantt-chart, milestone-timeline, calendar-heatmap, task-table, work-plan(종합 계획서: KPI+간트+마일스톤+리스크 결합) |
+
+E-CAE 검증·시험 정형 플롯(기존 카테고리에 분산): srs-spectrum(낙하 SRS) · emi-spectrum(CISPR 한계) · zth-transient(JESD51-14) · pdn-impedance(target) · temp-cycle-profile(JESD22-A104) · spec-margin-chart(합부 마진) · derating-curve · battery-discharge.
 
 ---
 

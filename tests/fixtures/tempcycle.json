@@ -1,0 +1,1 @@
+{"title": "온도 사이클 -40↔125°C", "params": {"t_min": -40, "t_max": 125, "ramp_min": 15, "dwell_min": 10, "cycles": 3}}

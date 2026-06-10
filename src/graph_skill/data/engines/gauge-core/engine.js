@@ -58,8 +58,10 @@
   GaugeCore.prototype.setAssets = function (a) {
     this.a = a || {};
     this.kind = this.a.kind || "gauge";
+    var marginKind = this.kind === "margin";        // one-sided specs keep null limits
     this.items = (this.a.items || []).map(function (it) {
-      var min = it.min != null ? +it.min : 0, max = it.max != null ? +it.max : 100;
+      var min = it.min != null ? +it.min : (marginKind ? null : 0);
+      var max = it.max != null ? +it.max : (marginKind ? null : 100);
       return { label: it.label || "", value: +it.value, min: min, max: max,
         unit: it.unit || "", target: it.target != null ? +it.target : null,
         bands: it.bands || null, goal: it.goal || null, color: it.color || null,
@@ -100,6 +102,10 @@
   };
 
   GaugeCore.prototype._grid = function (n) {
+    if (this.kind === "margin") {                       // full-width rows
+      var mtop = this.opts.title ? 34 : 6;
+      return { cols: 1, rows: n, cw: this.W, ch: (this.H - mtop) / n, top: mtop };
+    }
     var minW = this.kind === "bullet" ? 280 : (this.kind === "card" ? 200 : 200);
     var cols = Math.max(1, Math.min(n, Math.floor(this.W / minW) || 1));
     var rows = Math.ceil(n / cols);
@@ -119,6 +125,7 @@
       if (this.kind === "radial-progress") this._ring(ctx, tok, this.items[i], g.cw, g.ch);
       else if (this.kind === "bullet") this._bullet(ctx, tok, this.items[i], g.cw, g.ch);
       else if (this.kind === "card") this._statcard(ctx, tok, this.items[i], g.cw, g.ch);
+      else if (this.kind === "margin") this._margin(ctx, tok, this.items[i], g.cw, g.ch);
       else this._gauge(ctx, tok, this.items[i], g.cw, g.ch);
       ctx.restore();
     }
@@ -249,6 +256,55 @@
       }
       ctx.stroke();
     }
+  };
+
+  GaugeCore.prototype._margin = function (ctx, tok, it, cw, ch) {
+    // spec-margin row: label | min ──[track + value marker]── max | margin% + PASS/FAIL
+    var labW = Math.min(190, cw * 0.26), badgeW = 130;
+    var x0 = labW + 56, x1 = cw - badgeW - 56, cy = ch / 2, h = Math.min(10, ch * 0.18);
+    var hasMin = it.min != null && isFinite(it.min), hasMax = it.max != null && isFinite(it.max);
+    var lo = hasMin ? it.min : Math.min(it.value, it.max) - Math.abs(it.max - it.value || 1);
+    var hi = hasMax ? it.max : Math.max(it.value, it.min) + Math.abs(it.value - it.min || 1);
+    var span = (hi - lo) || 1;
+    var pad = span * 0.12;
+    var vlo = lo - pad, vhi = hi + pad;
+    var px = function (v) { return x0 + (v - vlo) / (vhi - vlo) * (x1 - x0); };
+    var fail = (hasMin && it.value < it.min) || (hasMax && it.value > it.max);
+    // margin% to the NEAREST limit, relative to span (two-sided) or |limit| (one-sided)
+    var m;
+    if (hasMin && hasMax) m = Math.min(it.value - it.min, it.max - it.value) / span * 100;
+    else if (hasMin) m = (it.value - it.min) / (Math.abs(it.min) || 1) * 100;
+    else m = (it.max - it.value) / (Math.abs(it.max) || 1) * 100;
+    var t = this.t;
+    ctx.font = "600 12px Segoe UI, system-ui, sans-serif";
+    ctx.fillStyle = tok.fg; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(it.label, 12, cy);
+    // track + in-spec zone
+    ctx.fillStyle = tok.track; ctx.fillRect(px(vlo), cy - h / 2, px(vhi) - px(vlo), h);
+    ctx.fillStyle = fail ? "rgba(220,38,38,0.18)" : "rgba(22,163,74,0.20)";
+    ctx.fillRect(px(lo), cy - h / 2, px(hi) - px(lo), h);
+    // limit ticks + labels
+    ctx.strokeStyle = tok.sub; ctx.lineWidth = 1.4;
+    ctx.font = "10px Segoe UI, system-ui, sans-serif"; ctx.fillStyle = tok.sub; ctx.textAlign = "center";
+    if (hasMin) {
+      ctx.beginPath(); ctx.moveTo(px(lo), cy - h); ctx.lineTo(px(lo), cy + h); ctx.stroke();
+      ctx.fillText(fmt(it.min, ""), px(lo), cy + h + 9);
+    }
+    if (hasMax) {
+      ctx.beginPath(); ctx.moveTo(px(hi), cy - h); ctx.lineTo(px(hi), cy + h); ctx.stroke();
+      ctx.fillText(fmt(it.max, ""), px(hi), cy + h + 9);
+    }
+    // value marker (animated)
+    var vx = px(vlo + (it.value - vlo) * t);
+    var col = fail ? "#dc2626" : "#16a34a";
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(vx, cy - h - 3); ctx.lineTo(vx + 5, cy - h - 11); ctx.lineTo(vx - 5, cy - h - 11); ctx.closePath(); ctx.fill();
+    ctx.font = "600 11px Segoe UI, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = tok.fg;
+    ctx.fillText(fmt(it.value, it.unit), vx, cy - h - 18);
+    // badge: margin% + PASS/FAIL
+    ctx.textAlign = "right"; ctx.fillStyle = col;
+    ctx.font = "700 12px Segoe UI, system-ui, sans-serif";
+    ctx.fillText((fail ? "FAIL" : "PASS") + "  " + (m >= 0 ? "+" : "") + (Math.round(m * 10) / 10) + "%", cw - 12, cy);
   };
 
   GaugeCore.prototype._exportPNG = function () {

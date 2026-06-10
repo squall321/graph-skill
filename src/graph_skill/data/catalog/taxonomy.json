@@ -1366,6 +1366,120 @@
         "주간계획",
         "분기계획"
       ]
+    },
+    "srs-spectrum": {
+      "category": "signal-frequency",
+      "dims": "freq",
+      "data": "accel[g]+params.fs (+ref_half_sine)",
+      "use_when": "낙하/충격 SRS(JESD22-B111)",
+      "keywords": [
+        "srs",
+        "shock response",
+        "낙하",
+        "충격",
+        "drop",
+        "충격응답스펙트럼",
+        "jesd22"
+      ]
+    },
+    "emi-spectrum": {
+      "category": "signal-frequency",
+      "dims": "freq",
+      "data": "spectrum[[MHz,dBuV/m]]+limit/preset",
+      "use_when": "EMI/EMC 방사 vs 규격 한계",
+      "keywords": [
+        "emi",
+        "emc",
+        "방사",
+        "노이즈",
+        "cispr",
+        "한계선",
+        "전자파"
+      ]
+    },
+    "zth-transient": {
+      "category": "trend",
+      "dims": "log-log",
+      "data": "curves[{name,data[[t,Zth]]}]",
+      "use_when": "과도 열임피던스(JESD51-14)",
+      "keywords": [
+        "zth",
+        "열저항",
+        "열임피던스",
+        "thermal impedance",
+        "방열",
+        "jesd51",
+        "rthjc"
+      ]
+    },
+    "pdn-impedance": {
+      "category": "signal-frequency",
+      "dims": "log-log",
+      "data": "series[[Hz,Ohm]]+target",
+      "use_when": "전원무결성 PDN vs target impedance",
+      "keywords": [
+        "pdn",
+        "임피던스",
+        "전원무결성",
+        "power integrity",
+        "target impedance",
+        "디커플링"
+      ]
+    },
+    "temp-cycle-profile": {
+      "category": "reliability",
+      "dims": "time",
+      "data": "params{t_min,t_max,ramp,dwell} (+measured)",
+      "use_when": "온도 사이클 시험(JESD22-A104)",
+      "keywords": [
+        "온도사이클",
+        "tc",
+        "thermal cycling",
+        "신뢰성시험",
+        "jesd22-a104",
+        "사이클프로파일"
+      ]
+    },
+    "spec-margin-chart": {
+      "category": "kpi-status",
+      "dims": "scalar",
+      "data": "items[{label,value,min/max}]",
+      "use_when": "검증 항목별 규격 마진/합부 요약",
+      "keywords": [
+        "마진",
+        "규격",
+        "합부",
+        "spec margin",
+        "검증요약",
+        "pass fail"
+      ]
+    },
+    "derating-curve": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "curve[[T,허용]]+points",
+      "use_when": "부품 derating + 동작점 합부",
+      "keywords": [
+        "derating",
+        "디레이팅",
+        "정격",
+        "허용전력",
+        "온도정격"
+      ]
+    },
+    "battery-discharge": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series(C-rate별 [[용량,V]]) (+v_cutoff)",
+      "use_when": "배터리 방전곡선 비교",
+      "keywords": [
+        "배터리",
+        "방전",
+        "충방전",
+        "c-rate",
+        "용량",
+        "전압곡선"
+      ]
     }
   }
 }

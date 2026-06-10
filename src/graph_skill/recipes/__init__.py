@@ -18,6 +18,16 @@ from .bode import BodeRecipe, DualAxisRecipe
 from .controls import NyquistRecipe, RootLocusRecipe
 from .correlation_scatter import CorrelationScatterRecipe
 from .diagnostics import ResidualPanelRecipe
+from .ecae import (
+    BatteryDischargeRecipe,
+    DeratingRecipe,
+    EMIRecipe,
+    PDNRecipe,
+    SpecMarginRecipe,
+    SRSRecipe,
+    TempCycleRecipe,
+    ZthRecipe,
+)
 from .engineering2d import (
     CFDLineCompareRecipe,
     ConvergenceRecipe,
@@ -155,6 +165,14 @@ REGISTRY: dict[str, Recipe] = {
     "calendar-heatmap": CalendarHeatmapRecipe(),
     "task-table": TaskTableRecipe(),
     "work-plan": WorkPlanRecipe(),
+    "srs-spectrum": SRSRecipe(),
+    "emi-spectrum": EMIRecipe(),
+    "zth-transient": ZthRecipe(),
+    "pdn-impedance": PDNRecipe(),
+    "temp-cycle-profile": TempCycleRecipe(),
+    "spec-margin-chart": SpecMarginRecipe(),
+    "derating-curve": DeratingRecipe(),
+    "battery-discharge": BatteryDischargeRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

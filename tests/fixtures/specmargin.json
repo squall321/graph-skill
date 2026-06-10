@@ -1,0 +1,1 @@
+{"title": "낙하 1.5m 검증 마진 요약", "items": [{"label": "보드 최대 변형률", "value": 1850, "max": 2500, "unit": "ue"}, {"label": "솔더 응력 (코너볼)", "value": 118, "max": 135, "unit": "MPa"}, {"label": "커버 글라스 인장", "value": 612, "max": 600, "unit": "MPa"}, {"label": "커넥터 유지력", "value": 48, "min": 30, "unit": "N"}, {"label": "배터리 변형", "value": 0.8, "max": 2.0, "unit": "mm"}]}

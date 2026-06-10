@@ -1397,6 +1397,122 @@
       "options_defaults": {},
       "height_px": 1100,
       "hint": "종합 업무계획서 — 한 아티팩트에 결합: 개요(period:{start,end}, owner?, team?, objective?) + kpis:[{label,value,unit?,delta?,goal?,spark?}](stat-card) + tasks:[{name, start:'YYYY-MM-DD', end, owner?, progress?(0~1), group?, deps?:[선행작업명], milestone?}](Gantt+업무분장 자동) + milestones:[{date,label,status?}](timeline) + risks:[{risk, impact(1~5), likelihood(1~5), mitigation?}](heat). kpis/milestones/risks는 선택. 셀 그래프 클릭=확대 모달."
+    },
+    "srs-spectrum": {
+      "title": "Shock Response Spectrum (SRS)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [
+        {
+          "field": "params.fs",
+          "type": "number",
+          "unit": "Hz",
+          "why": "SRS 디지털 필터 계수에 샘플레이트 필요",
+          "ask": "가속도 데이터의 샘플링 주파수 fs[Hz]를 알려주세요 (예: 50000)."
+        }
+      ],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "낙하/충격 SRS(JESD22-B111류). accel:[g 샘플…] + params.fs[Hz] 필수, params.q(기본10)/per_octave(6)/ref_half_sine:{peak_g,duration_ms}(규격 half-sine SRS 비교선). Smallwood maximax SDOF, log-log 자동."
+    },
+    "emi-spectrum": {
+      "title": "EMI emission vs limit",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "EMI 방사/전도 스펙트럼 + 규격 한계선. spectrum:[[MHz, dBuV/m], …] + limit:[{f0,f1,level}] 또는 preset:'cispr32_b_3m'|'cispr32_a_3m'(CISPR 32 3m 공개 상수). 위반점 자동 마커 + 최소 마진을 제목에 표기. log-f."
+    },
+    "zth-transient": {
+      "title": "Transient thermal impedance Zth(t)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "과도 열임피던스(JESD51-14). curves:[{name, data:[[t_s, Zth_K/W], …]}] — TDI면 두 곡선(분기점=RthJC). log-log 자동."
+    },
+    "pdn-impedance": {
+      "title": "PDN impedance vs target",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "전원무결성 PDN 임피던스. series:[{name, data:[[Hz, Ohm], …]}] + target: 평탄값(Ohm) 또는 [{f0,f1,z}] 구간형 필수. log-log + target 한계선 + 초과율을 제목에 표기."
+    },
+    "temp-cycle-profile": {
+      "title": "Temperature cycling profile",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 420,
+      "hint": "온도 사이클 시험 프로파일(JESD22-A104류). params={t_min,t_max(°C), ramp_min, dwell_min(분), cycles?(3)} 필수 → 사다리꼴 프로파일 자동 생성 + t_min/t_max 점선. measured:[{name,data:[[분,°C]]}]로 측정 오버레이."
+    },
+    "spec-margin-chart": {
+      "title": "Spec margin chart",
+      "engine": "gauge-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 380,
+      "hint": "검증 항목별 규격 마진 요약. items:[{label, value, min?|max?(1+ 필수), unit?}]. 행마다 규격 범위 트랙+측정 마커+마진%+PASS/FAIL. 검증 보고서 결론 요약에."
+    },
+    "derating-curve": {
+      "title": "Derating curve",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "부품 derating 곡선 + 동작점 합부. curve:[[온도, 허용치], …](한계) + points:[{temp, value, label?}](동작점, 적합/위반 자동 색). axes.y label/unit 필수(허용 전력 W, 정격 % 등)."
+    },
+    "battery-discharge": {
+      "title": "Battery discharge curves",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "배터리 방전곡선. series:[{name:'0.5C', data:[[용량, 전압 V], …]}, …] + params.v_cutoff(점선)/cap_unit(기본 mAh). C-rate 멀티 곡선 비교."
     }
   }
 }
