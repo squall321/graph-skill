@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graph-skill"
+version = "0.42.0"
+description = "Generate self-contained interactive HTML graph/visualization artifacts (engine-family based) driven by an LLM skill."
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "jsonschema>=4.22",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+# Engineering post-processing (added when fft-spectrum / filter-tuner land). Not needed for base-xy MVP.
+postprocess = ["numpy>=1.26", "scipy>=1.11"]
+# cad3d-core (batch J+) geometry/mesh ingest → GLB. Lazy-imported; core graph types don't need it.
+cad3d = ["trimesh>=4", "fast-simplification"]
+# End-to-end render smoke tests.
+test = ["pytest>=8.0", "playwright>=1.44"]
+
+[project.scripts]
+graph-skill = "graph_skill.cli:app"
+graph-skill-mcp = "graph_skill.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+graph_skill = ["data/**/*"]

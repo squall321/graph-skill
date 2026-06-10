@@ -1,0 +1,8 @@
+{
+  "graph_type": "correlation-scatter",
+  "title": "Drop max-stress: CAE vs Test",
+  "axes": { "x": { "label": "Test max stress", "unit": "MPa" }, "y": { "label": "CAE max stress", "unit": "MPa" } },
+  "series": [
+    { "name": "models", "data": [[120,128],[180,176],[240,255],[300,288],[360,372],[150,142],[210,225],[270,260]] }
+  ]
+}

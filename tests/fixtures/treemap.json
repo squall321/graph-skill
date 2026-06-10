@@ -1,0 +1,1 @@
+{"graph_type": "treemap", "title": "부품별 BOM 비용 구성", "items": [{"label": "배터리", "value": 4200}, {"label": "디스플레이", "value": 3800}, {"label": "AP/메모리", "value": 2900}, {"label": "카메라", "value": 2100}, {"label": "하우징", "value": 1200}, {"label": "PCB", "value": 900}, {"label": "기타", "value": 1500}]}

@@ -1,0 +1,1 @@
+{"graph_type": "pole-zero-map", "title": "극점-영점 맵 (s-domain)", "domain": "s", "poles": [[-1, 2], [-1, -2], [-3, 0]], "zeros": [[-0.5, 0]]}

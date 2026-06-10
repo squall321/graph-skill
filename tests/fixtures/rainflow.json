@@ -1,0 +1,1 @@
+{"graph_type": "rainflow-cycle-histogram", "title": "변동하중 rainflow", "load": {"label": "Stress", "unit": "MPa"}, "params": {"mean_bins": 10, "range_bins": 10}, "signal": [-20, 80, -60, 120, -40, 100, -80, 60, -30, 90, -50, 110, -70, 50, -10, 130, -90, 70, -25, 95, -55, 45, -15, 85, 0]}

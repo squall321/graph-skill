@@ -1,0 +1,71 @@
+{
+  "title": "팀 목표 대비 실적",
+  "items": [
+    {
+      "label": "매출(억)",
+      "value": 84,
+      "min": 0,
+      "max": 100,
+      "target": 90,
+      "unit": "",
+      "bands": [
+        {
+          "to": 60,
+          "color": "#fee2e2"
+        },
+        {
+          "to": 80,
+          "color": "#fef9c3"
+        },
+        {
+          "to": 100,
+          "color": "#dcfce7"
+        }
+      ]
+    },
+    {
+      "label": "신규고객",
+      "value": 47,
+      "min": 0,
+      "max": 60,
+      "target": 50,
+      "unit": "",
+      "bands": [
+        {
+          "to": 30,
+          "color": "#fee2e2"
+        },
+        {
+          "to": 45,
+          "color": "#fef9c3"
+        },
+        {
+          "to": 60,
+          "color": "#dcfce7"
+        }
+      ]
+    },
+    {
+      "label": "CSAT",
+      "value": 4.3,
+      "min": 0,
+      "max": 5,
+      "target": 4.5,
+      "unit": "",
+      "bands": [
+        {
+          "to": 3,
+          "color": "#fee2e2"
+        },
+        {
+          "to": 4,
+          "color": "#fef9c3"
+        },
+        {
+          "to": 5,
+          "color": "#dcfce7"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "title": "분기 KPI 달성률",
+  "items": [
+    {
+      "label": "매출",
+      "value": 92,
+      "min": 0,
+      "max": 100,
+      "unit": "%"
+    },
+    {
+      "label": "수율",
+      "value": 96.5,
+      "min": 0,
+      "max": 100,
+      "unit": "%"
+    },
+    {
+      "label": "정시납기",
+      "value": 88,
+      "min": 0,
+      "max": 100,
+      "unit": "%"
+    },
+    {
+      "label": "안전",
+      "value": 100,
+      "min": 0,
+      "max": 100,
+      "unit": "%"
+    }
+  ]
+}

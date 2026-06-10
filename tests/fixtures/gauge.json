@@ -1,0 +1,44 @@
+{
+  "title": "설비 상태 게이지",
+  "items": [
+    {
+      "label": "회전수",
+      "value": 3120,
+      "min": 0,
+      "max": 4000,
+      "target": 3000,
+      "unit": "rpm",
+      "bands": [
+        {
+          "to": 1500,
+          "color": "#22c55e"
+        },
+        {
+          "to": 3200,
+          "color": "#eab308"
+        },
+        {
+          "to": 4000,
+          "color": "#ef4444"
+        }
+      ]
+    },
+    {
+      "label": "유온",
+      "value": 78,
+      "min": 0,
+      "max": 120,
+      "target": 90,
+      "unit": "°C",
+      "goal": "low"
+    },
+    {
+      "label": "부하율",
+      "value": 64,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "goal": "low"
+    }
+  ]
+}

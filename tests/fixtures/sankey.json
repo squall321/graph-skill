@@ -1,0 +1,79 @@
+{
+  "title": "에너지 흐름 (1차 → 변환 → 용도)",
+  "nodes": [
+    {
+      "id": "석탄"
+    },
+    {
+      "id": "가스"
+    },
+    {
+      "id": "신재생"
+    },
+    {
+      "id": "발전"
+    },
+    {
+      "id": "열"
+    },
+    {
+      "id": "산업"
+    },
+    {
+      "id": "건물"
+    },
+    {
+      "id": "수송"
+    },
+    {
+      "id": "손실"
+    }
+  ],
+  "links": [
+    {
+      "source": "석탄",
+      "target": "발전",
+      "value": 40
+    },
+    {
+      "source": "가스",
+      "target": "발전",
+      "value": 25
+    },
+    {
+      "source": "가스",
+      "target": "열",
+      "value": 15
+    },
+    {
+      "source": "신재생",
+      "target": "발전",
+      "value": 20
+    },
+    {
+      "source": "발전",
+      "target": "산업",
+      "value": 35
+    },
+    {
+      "source": "발전",
+      "target": "건물",
+      "value": 25
+    },
+    {
+      "source": "발전",
+      "target": "손실",
+      "value": 25
+    },
+    {
+      "source": "열",
+      "target": "건물",
+      "value": 10
+    },
+    {
+      "source": "열",
+      "target": "산업",
+      "value": 5
+    }
+  ]
+}

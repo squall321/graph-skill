@@ -1,0 +1,46 @@
+{
+  "graph_type": "design-state-compare",
+  "title": "미드프레임 설계안 비교 (MCAE)",
+  "meta": { "baseline": "v1", "domain": "MCAE", "model": "HFP-X1" },
+  "states": [
+    { "id": "v1", "label": "AS-IS (v1)", "tags": ["baseline"] },
+    { "id": "v2", "label": "TO-BE (v2)" },
+    { "id": "v3", "label": "TO-BE (v3)" }
+  ],
+  "items": [
+    { "id": "drop_face", "group": "낙하(Drop)", "label": "Face drop 1.5m 최대응력", "unit": "MPa", "type": "number",
+      "spec": { "max": 320, "warn_at": 300, "goal": "min" },
+      "cells": {
+        "v1": { "kind": "number", "value": 341, "ref": "DOC-HE-CAE-2026-0000000001 §4" },
+        "v2": { "kind": "number", "value": 298 },
+        "v3": { "kind": "number", "value": 285 } } },
+    { "id": "drop_curve", "group": "낙하(Drop)", "label": "충격 가속도 시간이력", "unit": "g", "type": "graph",
+      "cells": {
+        "v1": { "kind": "graph", "graph_ref": { "type": "base-xy", "payload": {
+          "axes": { "x": { "label": "Time", "unit": "ms" }, "y": { "label": "Accel", "unit": "g" } },
+          "series": [ { "name": "v1", "data": [[0,0],[2,820],[4,310],[6,120],[8,40]] } ] } } },
+        "v2": { "kind": "graph", "graph_ref": { "type": "base-xy", "payload": {
+          "axes": { "x": { "label": "Time", "unit": "ms" }, "y": { "label": "Accel", "unit": "g" } },
+          "series": [ { "name": "v2", "data": [[0,0],[2,610],[4,250],[6,90],[8,30]] } ] } } },
+        "v3": { "kind": "graph", "graph_ref": { "type": "base-xy", "payload": {
+          "axes": { "x": { "label": "Time", "unit": "ms" }, "y": { "label": "Accel", "unit": "g" } },
+          "series": [ { "name": "v3", "data": [[0,0],[2,560],[4,210],[6,70],[8,20]] } ] } } } } },
+    { "id": "rib_photo", "group": "구조(Structure)", "label": "리브 형상", "type": "image",
+      "cells": {
+        "v1": { "kind": "image", "image": { "mode": "inline", "mime": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" } },
+        "v2": { "kind": "image", "image": { "mode": "inline", "mime": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" } } } },
+    { "id": "emi", "group": "EMI/ECAE", "label": "방사 EMI 마진", "unit": "dB", "type": "number",
+      "spec": { "min": 3, "goal": "max" },
+      "cells": {
+        "v1": { "kind": "status", "status": "fail", "value": 1.8 },
+        "v2": { "kind": "status", "status": "warn", "value": 3.2 },
+        "v3": { "kind": "status", "status": "pass", "value": 5.1 } } },
+    { "id": "note", "group": "메타", "label": "설계 코멘트", "type": "text",
+      "cells": {
+        "v1": { "kind": "text", "value": "리브 보강 전" },
+        "v2": { "kind": "text", "value": "리브 2개 추가", "link": { "href": "mention://report/137", "text": "상세" } } } }
+  ],
+  "options": { "diff": true, "collapsed_groups": ["메타"] }
+}

@@ -1,0 +1,77 @@
+{
+  "title": "디스크 사용량 (드릴다운)",
+  "tree": {
+    "name": "전체",
+    "children": [
+      {
+        "name": "시스템",
+        "children": [
+          {
+            "name": "커널",
+            "value": 12
+          },
+          {
+            "name": "라이브러리",
+            "value": 22
+          },
+          {
+            "name": "로그",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "name": "사용자",
+        "children": [
+          {
+            "name": "문서",
+            "children": [
+              {
+                "name": "보고서",
+                "value": 18
+              },
+              {
+                "name": "스프레드시트",
+                "value": 9
+              }
+            ]
+          },
+          {
+            "name": "미디어",
+            "children": [
+              {
+                "name": "사진",
+                "value": 30
+              },
+              {
+                "name": "영상",
+                "value": 44
+              },
+              {
+                "name": "음악",
+                "value": 12
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "앱",
+        "children": [
+          {
+            "name": "브라우저",
+            "value": 16
+          },
+          {
+            "name": "IDE",
+            "value": 24
+          },
+          {
+            "name": "기타",
+            "value": 11
+          }
+        ]
+      }
+    ]
+  }
+}

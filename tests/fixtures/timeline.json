@@ -1,0 +1,37 @@
+{
+  "title": "출시 마일스톤",
+  "events": [
+    {
+      "date": "2026-06-01",
+      "label": "킥오프",
+      "status": "done"
+    },
+    {
+      "date": "2026-06-16",
+      "label": "설계 리뷰",
+      "status": "done",
+      "desc": "아키텍처 확정"
+    },
+    {
+      "date": "2026-07-01",
+      "label": "알파",
+      "status": "active"
+    },
+    {
+      "date": "2026-07-24",
+      "label": "통합시험 완료",
+      "status": "pending"
+    },
+    {
+      "date": "2026-07-31",
+      "label": "출시",
+      "status": "pending",
+      "desc": "GA"
+    },
+    {
+      "date": "2026-08-14",
+      "label": "안정화 종료",
+      "status": "pending"
+    }
+  ]
+}

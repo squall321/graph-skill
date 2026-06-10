@@ -1,0 +1,51 @@
+/* field-core engine styles. Like xy-core it is a Canvas chart on .gs-root (shares the same
+   tokens/controlbar/HUD classes). Colorbar is drawn on the canvas. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+.gs-root {
+  position: relative; width: 100%; height: 100%; aspect-ratio: 16 / 9; min-height: 240px;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; font-size: 13px;
+  -webkit-user-select: none; user-select: none;
+  --gs-bg: #ffffff; --gs-fg: #1a1a2e; --gs-sub: #6b7280;
+  --gs-grid: #e3e7ec; --gs-grid-minor: #f1f3f5; --gs-axis: #9aa3af;
+  --gs-panel: rgba(255,255,255,.94); --gs-panel-border: #e5e7eb; --gs-accent: #2563eb;
+  --gs-shadow: 0 2px 12px rgba(0,0,0,.10);
+  background: var(--gs-bg); color: var(--gs-fg);
+}
+.gs-root[data-theme="dark"] {
+  --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af;
+  --gs-grid: #2a2f3a; --gs-grid-minor: #1b2028; --gs-axis: #424a58;
+  --gs-panel: rgba(20,25,33,.94); --gs-panel-border: #2a2f3a; --gs-accent: #60a5fa;
+}
+@media (prefers-color-scheme: dark) {
+  .gs-root[data-theme="auto"] {
+    --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af;
+    --gs-grid: #2a2f3a; --gs-grid-minor: #1b2028; --gs-axis: #424a58;
+    --gs-panel: rgba(20,25,33,.94); --gs-panel-border: #2a2f3a; --gs-accent: #60a5fa;
+  }
+}
+/* pan-y: vertical touch scroll passes through to the host page (embeds) */
+.gs-root canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+.gs-zoom-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8;
+  padding: 8px 16px; border-radius: 8px; pointer-events: none;
+  background: rgba(15, 23, 42, 0.78); color: #fff;
+  font: 600 13px "Segoe UI", system-ui, sans-serif;
+  opacity: 0; transition: opacity 0.25s;
+}
+.gs-zoom-hint.gs-show { opacity: 1; }
+.gs-controlbar { position: absolute; top: 8px; right: 8px; z-index: 6; display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
+.gs-btn {
+  font: 600 11px/1 "Segoe UI", system-ui, sans-serif; color: var(--gs-sub); background: var(--gs-panel);
+  border: 1px solid var(--gs-panel-border); border-radius: 6px; padding: 5px 7px; cursor: pointer;
+}
+.gs-btn:hover { color: var(--gs-fg); }
+.gs-btn[aria-pressed="true"] { color: #fff; background: var(--gs-accent); border-color: var(--gs-accent); }
+.gs-hud {
+  position: absolute; top: 8px; left: 8px; z-index: 5; background: var(--gs-panel);
+  border: 1px solid var(--gs-panel-border); border-radius: 8px; padding: 7px 10px;
+  box-shadow: var(--gs-shadow); font-variant-numeric: tabular-nums; pointer-events: none; max-width: 60%;
+}
+.gs-hud b { color: var(--gs-fg); font-weight: 700; }
+.gs-error { padding: 16px; color: #dc2626; font-size: 14px; text-align: center; }
+@media print { .gs-controlbar { display: none !important; } .gs-root { aspect-ratio: auto; } }

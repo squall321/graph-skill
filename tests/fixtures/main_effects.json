@@ -1,0 +1,1 @@
+{"graph_type": "main-effects-plot", "title": "사출 수율 주효과", "axes": {"y": {"label": "수율", "unit": "%"}}, "factors": [{"name": "온도", "levels": ["180", "200", "220"], "means": [78.2, 84.5, 81.0]}, {"name": "압력", "levels": ["저", "중", "고"], "means": [80.1, 82.0, 81.6]}, {"name": "시간", "levels": ["30", "60"], "means": [79.5, 83.0]}]}

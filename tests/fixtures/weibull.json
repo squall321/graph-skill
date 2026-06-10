@@ -1,0 +1,1 @@
+{"graph_type": "weibull-prob-paper", "title": "베어링 수명 Weibull", "axes": {"x": {"label": "Life", "unit": "cycles"}}, "values": [118, 152, 191, 233, 268, 305, 347, 389, 421, 468, 510, 562, 618, 690, 775]}

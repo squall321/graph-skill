@@ -1,0 +1,1 @@
+{"graph_type": "mesh-deformed-3d", "title": "외팔보 변형형상", "mesh": {"primitive": "box", "extents": [6, 1, 0.6]}, "displacement": "auto", "z": {"label": "변위 |U|", "unit": "mm"}, "colormap": "turbo", "scale": 1.0}

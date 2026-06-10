@@ -1,0 +1,227 @@
+{
+  "title": "2026 3분기 신제품 개발 업무계획서",
+  "period": {
+    "start": "2026-06-01",
+    "end": "2026-08-31"
+  },
+  "owner": "김PM",
+  "team": "플랫폼개발팀",
+  "objective": "신제품 v2.0을 7/31 출시하고 8월 내 안정화(크래시율 0.1% 미만)를 달성한다.",
+  "kpis": [
+    {
+      "label": "일정 준수율",
+      "value": 92,
+      "unit": "%",
+      "delta": 2,
+      "goal": "high",
+      "spark": [
+        85,
+        88,
+        87,
+        90,
+        91,
+        92
+      ]
+    },
+    {
+      "label": "결함 잔존",
+      "value": 14,
+      "unit": "건",
+      "delta": -6,
+      "goal": "low",
+      "spark": [
+        42,
+        35,
+        28,
+        24,
+        20,
+        14
+      ]
+    },
+    {
+      "label": "테스트 커버리지",
+      "value": 78,
+      "unit": "%",
+      "delta": 4,
+      "goal": "high",
+      "spark": [
+        60,
+        65,
+        68,
+        71,
+        74,
+        78
+      ]
+    },
+    {
+      "label": "예산 집행",
+      "value": 58,
+      "unit": "%",
+      "delta": 9,
+      "spark": [
+        20,
+        30,
+        38,
+        45,
+        49,
+        58
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "요구사항 정의",
+      "group": "기획",
+      "owner": "김PM",
+      "start": "2026-06-01",
+      "end": "2026-06-08",
+      "progress": 1.0,
+      "status": "완료",
+      "priority": "높음"
+    },
+    {
+      "name": "아키텍처 설계",
+      "group": "기획",
+      "owner": "박아키",
+      "start": "2026-06-05",
+      "end": "2026-06-15",
+      "progress": 0.9,
+      "status": "진행",
+      "priority": "높음",
+      "deps": [
+        "요구사항 정의"
+      ]
+    },
+    {
+      "name": "설계 리뷰",
+      "group": "기획",
+      "owner": "김PM",
+      "start": "2026-06-16",
+      "end": "2026-06-16",
+      "milestone": true,
+      "status": "예정"
+    },
+    {
+      "name": "백엔드 구현",
+      "group": "개발",
+      "owner": "이백",
+      "start": "2026-06-17",
+      "end": "2026-07-10",
+      "progress": 0.35,
+      "status": "진행",
+      "priority": "높음",
+      "deps": [
+        "아키텍처 설계"
+      ]
+    },
+    {
+      "name": "프론트 구현",
+      "group": "개발",
+      "owner": "최프",
+      "start": "2026-06-20",
+      "end": "2026-07-14",
+      "progress": 0.2,
+      "status": "진행",
+      "priority": "보통",
+      "deps": [
+        "아키텍처 설계"
+      ]
+    },
+    {
+      "name": "통합 테스트",
+      "group": "검증",
+      "owner": "정QA",
+      "start": "2026-07-11",
+      "end": "2026-07-24",
+      "progress": 0.0,
+      "status": "예정",
+      "priority": "높음",
+      "deps": [
+        "백엔드 구현",
+        "프론트 구현"
+      ]
+    },
+    {
+      "name": "성능 시험",
+      "group": "검증",
+      "owner": "정QA",
+      "start": "2026-07-20",
+      "end": "2026-07-28",
+      "progress": 0.0,
+      "status": "예정",
+      "priority": "보통",
+      "deps": [
+        "통합 테스트"
+      ]
+    },
+    {
+      "name": "출시",
+      "group": "검증",
+      "owner": "김PM",
+      "start": "2026-07-31",
+      "end": "2026-07-31",
+      "milestone": true,
+      "status": "예정"
+    }
+  ],
+  "milestones": [
+    {
+      "date": "2026-06-01",
+      "label": "킥오프",
+      "status": "done"
+    },
+    {
+      "date": "2026-06-16",
+      "label": "설계 리뷰",
+      "status": "done",
+      "desc": "아키텍처 확정"
+    },
+    {
+      "date": "2026-07-01",
+      "label": "알파",
+      "status": "active"
+    },
+    {
+      "date": "2026-07-24",
+      "label": "통합시험 완료",
+      "status": "pending"
+    },
+    {
+      "date": "2026-07-31",
+      "label": "출시",
+      "status": "pending",
+      "desc": "GA"
+    },
+    {
+      "date": "2026-08-14",
+      "label": "안정화 종료",
+      "status": "pending"
+    }
+  ],
+  "risks": [
+    {
+      "risk": "외주 API 납기 지연",
+      "impact": 4,
+      "likelihood": 3,
+      "mitigation": "주간 동기화 + 대체 벤더 PoC"
+    },
+    {
+      "risk": "성능 목표 미달",
+      "impact": 5,
+      "likelihood": 2,
+      "mitigation": "6월 말 사전 부하시험"
+    },
+    {
+      "risk": "핵심 인력 이탈",
+      "impact": 4,
+      "likelihood": 1,
+      "mitigation": "백업 담당 지정"
+    },
+    {
+      "risk": "보안 심사 리젝",
+      "impact": 3,
+      "likelihood": 2,
+      "mitigation": "체크리스트 사전 점검"
+    }
+  ]
+}

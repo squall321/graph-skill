@@ -1,0 +1,1307 @@
+{
+ "totalFindings": 73,
+ "raw": [
+  {
+   "title": "playback/stream 계열 4종(bubble-timeline·bar-chart-race·animated-trajectory·stream-graph)이 캐리어 시리즈 무시로 빈 화면/축 어긋남",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 5,
+   "effort": "S",
+   "detail": "엔진 setData(engine.js 186행)는 s.x/s.y 배열만 읽는데, recipes/playback.py(65·111·166행)와 recipes/leftovers.py(55행)는 캐리어를 {\"data\":[[x,y],...]} 쌍 형식으로 내보낸다(base_xy.py만 data→x/y 변환을 수행). Playwright로 확인: 4종 모두 series 점 개수 0, view.x=[0,1], view.y=[0,1]. bubble-timeline.html 스크린샷에서 GDP 4천~3만 범위의 버블이 0..1 도메인 밖으로 클리핑되어 플롯이 완전히 비어 있고 재생해도 아무것도 안 보임. bar-chart-race(값~50)·animated-trajectory(경로 -1.6..1)·stream-graph도 동일하게 도메인이 어긋남(시각 결과는 도메인 증거 기반 추정).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\playback.py",
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\leftovers.py",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\bubble-timeline.html"
+   ],
+   "fix": "setData에서 s.data 쌍 배열을 x/y로 풀어주는 폴백을 추가하거나(s.x 없고 s.data 있으면 unzip), playback/leftovers 레시피가 캐리어를 x/y 배열로 내보내도록 통일한다. validate.py에 '보이는 픽셀이 있는가' 수준의 스모크 체크 추가 권장."
+  },
+  {
+   "title": "좁은 폭(360px)에서 컨트롤바가 제목·플롯 위를 덮고, 범례가 x축 눈금·축제목과 겹침",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 4,
+   "effort": "M",
+   "detail": "bode.html 360x300 스크린샷: 버튼 7개(log x/log y/↺/◐/PNG/CSV/{})가 2줄로 줄바꿈되며 제목 '2차계 주파수응답…'과 플롯 상단 곡선을 가림. 측정값: 컨트롤바 bottom=31px > plot.top=26px. 하단에서는 범례 rect [10,211~232]가 x눈금 라벨(~207-218)과 x축 제목 'Frequency [Hz]'(~226-238)를 정확히 덮음. engine.js _layout(318행)이 컨트롤바/범례 높이를 전혀 예약하지 않고 둘 다 position:absolute(engine.css 63·97행)이기 때문.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\bode.html"
+   ],
+   "fix": "_layout에서 controlbar.offsetHeight/legend.offsetHeight를 측정해 top/bottom 마진에 더하고, ~480px 이하에서는 내보내기 버튼을 '⋯' 메뉴 하나로 접는다."
+  },
+  {
+   "title": "내부 캐리어 시리즈(_carrier/_pc/_tm)가 범례·툴팁에 그대로 노출되고 클릭까지 가능",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 4,
+   "effort": "S",
+   "detail": "bubble-timeline/bar-chart-race/animated-trajectory/stream-graph 범례에 '_carrier', parallel-coordinates에 '_pc', treemap-drilldown에 '_tm'이 표시됨(DOM 확인 + 스크린샷, 하단 모서리에서 반쯤 잘린 채). treemap 호버 시 통합 툴팁에 '_tm: 0'이라는 무의미한 행이 뜨고(스크린샷 확인), 범례 항목을 클릭하면 _toggleSeries→autoFit이 실행돼 도메인이 깨질 수 있다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\parallel-coordinates.html",
+    "D:\\graph-skill\\graph-out\\treemap-drilldown.html"
+   ],
+   "fix": "이름이 '_'로 시작하거나 style:'none'인 시리즈는 _buildLegend·_hitTest·툴팁에서 제외한다. 또는 해당 레시피들이 legend.show=false를 옵션으로 내보낸다."
+  },
+  {
+   "title": "treemap 등 플러그인 주도 그래프에 무의미한 엔진 크롬(0..1 축, ': 0.1024' HUD, log x/y 버튼)이 노출되고 HUD가 브레드크럼을 가림",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "treemap-drilldown 호버 스크린샷: 좌측 상단 HUD가 ': 0.1024 / : 0.7715'(빈 축 라벨 + 정규화 좌표)를 표시하면서 브레드크럼 밴드(treemap-drill.js BC=22px, 플롯 최상단)와 첫 크럼 '전체'를 완전히 덮는다. 하단/좌측엔 0..1 숫자 축이 그대로 보이고, 의미 없는 'log x/log y' 버튼도 표시된다. HUD의 빈 라벨 폴백 부재(engine.js _updateHUD 641행: esc(lbl(ax.x))+':')로 ': 값' 형태의 깨진 문자열이 된다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\treemap-drill.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\treemap-drilldown.html"
+   ],
+   "fix": "레시피가 hideAxes/hideLogButtons 같은 옵션으로 비-데카르트 그래프에서 축·log 버튼·기본 HUD x/y 행을 끄게 하고, HUD에 빈 라벨일 때 'x'/'y' 폴백을 넣는다. 브레드크럼은 HUD와 겹치지 않게 우측 또는 HUD 아래로 이동."
+  },
+  {
+   "title": "우측 보조 y축 제목(Phase [deg])이 캔버스 밖으로 그려져 글자가 세로로 잘림",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "bode.html 900px 스크린샷에서 우측 회전 라벨이 'Phase [de…'처럼 글리프 오른쪽 절반이 잘려 보임. engine.js 450행: ctx.translate(this.W - 4, …) 후 rotate(-90°)·textBaseline 'top'이라 글리프가 x=W-4에서 캔버스 바깥(+x)으로 뻗는다. 360px에서도 동일.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\bode.html"
+   ],
+   "fix": "translate 기준점을 this.W - 14 정도로 옮기거나 textBaseline을 'bottom'으로 바꾸고, _layout의 right 마진에 y2 제목 폭(16px)을 실제로 반영한다."
+  },
+  {
+   "title": "parallel-coordinates 축 상·하단의 min/max 값 라벨이 플롯 클리핑에 잘려 전혀 안 보임 — 값 기준 없이 브러시해야 함",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "config에는 dims별 min/max(예: 강성 5.02~14.99)가 있으나 900px 스크린샷에 숫자가 하나도 안 보임. 원인: engine.js render()가 plot 영역으로 ctx.clip()한 뒤(369-370행) 플러그인 onDrawOver를 호출하는데, parcoord.js 52-53행이 라벨을 pl.top-1(위쪽 바깥)·pl.top+pl.height+2(아래 바깥)에 그려서 전부 클리핑된다. 사용자는 브러시 범위가 실제 어떤 값인지 알 수 없다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\parcoord.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\parallel-coordinates.html"
+   ],
+   "fix": "라벨을 플롯 안쪽(pl.top+10, pl.bottom-4)에 그리거나, 클립 해제 후 호출되는 onDrawOutside 훅을 엔진에 추가해 parcoord가 사용한다. 브러시 중에는 현재 범위의 실값을 HUD에 표시하면 더 좋다."
+  },
+  {
+   "title": "핵심 인터랙션(shift+드래그 박스줌, 휠 축별 줌, 더블클릭 리셋, 범례 더블클릭 isolate, 축 브러시)이 화면 어디에도 안내되지 않음",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "engine.js: 박스줌은 shift+드래그(708행), 휠 줌 축 한정은 alt/ctrl·shift 수정키(775행), 리셋은 더블클릭, isolate는 범례 더블클릭 — 모두 버튼 title 툴팁 외에 단서가 없고 터치/아이콘만으로는 전달 불가('↺','◐','{}'). parcoord 축 브러시와 xbrush 윈도우(핸들 6px)는 커서 변화·힌트가 전혀 없어(스크린샷에서 어떤 어포던스도 없음) 처음 보는 사용자는 기능 존재 자체를 모른다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\xbrush.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\parcoord.js"
+   ],
+   "fix": "컨트롤바에 '?' 버튼을 추가해 단축키/제스처 치트시트 오버레이를 띄우고, xbrush 핸들·parcoord 축 근처에서 canvas cursor를 ew-resize/crosshair로 바꿔 어포던스를 준다."
+  },
+  {
+   "title": "터치 환경: touch-action:none인데 핀치 줌 미구현이라 모바일에서 줌 수단이 없고, 탭해도 시리즈 툴팁이 안 뜸",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "engine.css 61행 touch-action:none이 브라우저 기본 핀치/스크롤을 막지만 engine.js의 줌은 wheel 이벤트뿐(769행)이고 멀티포인터 처리 코드가 없다 → 터치에서 줌 불가(코드 근거; 실기기 미확인 추정). 탭은 클릭-락으로 HUD에 x/y만 표시되는데, 시리즈별 툴팁은 _onMove에서만 _showTooltip이 호출되므로(693행 vs 756-763행) 탭 잠금 시 갱신되지 않아 호버 대체 수단이 반쪽짜리다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css"
+   ],
+   "fix": "pointerdown/move에서 활성 포인터 2개를 추적해 핀치 줌을 구현하고, 클릭-락 직후 _showTooltip()을 호출해 탭으로도 시리즈 값 툴팁이 뜨게 한다."
+  },
+  {
+   "title": "범례 토글/isolate가 무조건 autoFit을 호출해 사용자가 잡아둔 줌·잠금 상태를 날려버림",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "engine.js _toggleSeries(870행)·_isolateSeries(874행)가 항상 this.autoFit()을 호출 — autoFit은 view를 전체 도메인으로 리셋하고 locked=false, cursor=null로 만든다. 확대해서 보던 중 시리즈 하나를 끄면 줌이 통째로 풀린다(코드 확인; 동작 자체는 명세상 명백).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js"
+   ],
+   "fix": "토글 시 현재 view가 full과 동일할 때만 autoFit하고, 줌 상태면 view를 유지한 채 render()만 호출한다."
+  },
+  {
+   "title": "FFT filter 그래프에서 filter-panel이 범례를 완전히 덮어 original/filtered 토글이 불가능",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "filter.html 900px 측정: .gs-filter-panel rect [8,457,322,498]이 .gs-legend [10,477,151,498]을 완전히 포함(z-index 6 > 5)해 'original/filtered' 범례가 보이지도 클릭되지도 않는다. 패널이 플롯 하단(plot.bottom≈482)까지 침범해 좌측 x눈금 라벨도 가린다. 둘 다 engine.css에서 left:8~10/bottom:8 동일 위치에 absolute 배치된 것이 원인(97·113행).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\filter-panel.js",
+    "D:\\graph-skill\\graph-out\\filter.html"
+   ],
+   "fix": "filter-panel 사용 시 범례를 우측 하단으로 옮기거나 패널 안에 범례를 합치고, 패널을 플롯 아래 전용 밴드(레이아웃에서 높이 예약)로 내린다."
+  },
+  {
+   "title": "재생바(gs-playbar)가 x축 눈금과 축 제목을 가림",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "bubble-timeline.html 900px 측정: 재생바 rect [262,474,639,512]가 plot.bottom=482 아래의 x눈금(≈487-498)과 축 제목 '1인당 GDP [USD]'(≈506-518) 중앙부를 덮음 — 스크린샷에서도 제목이 재생바 뒤로 반쯤 가려짐. engine.css .gs-playbar가 bottom:8 고정 absolute(127행)이고 _layout이 그 높이를 예약하지 않기 때문.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\playback.js"
+   ],
+   "fix": "playback이 붙으면 _layout bottom 마진에 재생바 높이(~40px)를 추가하거나, 재생바를 plot 영역 안 하단(데이터 위 오버레이가 아닌 축 위쪽)으로 배치한다."
+  },
+  {
+   "title": "review-matrix 셸에 임베드된 xy-core 그래프(overview-detail·multitrack-stack)가 뷰포트 폭을 넘어 우측이 잘림",
+   "area": "xy-core 인터랙션 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "overview-detail.html 900px 뷰포트에서 캔버스 rect가 left=181, width=935 → 우측 끝 1116px로 뷰포트를 216px 초과, 스크린샷에서 플롯 우측(보조축 영역 포함)이 잘려 보이고 가로 스크롤 없이는 브러시 우측 핸들에 접근 불가. multitrack-stack 900px 스크린샷도 플롯 우측 테두리가 잘림. 라벨 열(sticky 170px) + 'gs-cell-graph-wide{width:100%}' 테이블 셀 조합이 원인(정확한 CSS 경로는 추정).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+    "D:\\graph-skill\\graph-out\\overview-detail.html",
+    "D:\\graph-skill\\graph-out\\multitrack-stack.html"
+   ],
+   "fix": ".gs-mx-table에 table-layout:fixed를 주거나 wide 그래프 셀을 max-width:calc(100% - 라벨열폭)으로 제한해 그래프가 항상 뷰포트 안에 들어오게 한다."
+  },
+  {
+   "title": "flow-core 페이지가 뷰포트를 채우지 못하고 360px 띠로 붕괴됨 (html/body height 미설정)",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 4,
+   "effort": "S",
+   "detail": "flow-core engine.css는 .gs-flow{height:100%; min-height:360px}만 선언하고 review-matrix/xy-core와 달리 html,body{height:100%}를 넣지 않았다. 그래서 xy-core CSS가 같이 번들되지 않는 sankey/network/chord/sunburst 출력물은 body 높이가 auto로 무너져 차트가 항상 360px 높이로만 렌더된다. 실측: 900x700 뷰포트에서 sankey-diagram.html의 .gs-fl-stage clientHeight=360, body=360. 스크린샷(sankey-diagram_900.png, network-graph_900.png, sunburst_900.png)에서 화면 아래 절반이 통째로 빈 흰 공간이고, network는 노드 클러스터가 화면의 1/6 크기로 쪼그라들어 라벨이 7px 수준이다. graph payload가 있어 xy-core CSS가 우연히 포함된 flowchart.html만 전체 높이를 채운다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\sankey-diagram.html",
+    "D:\\graph-skill\\graph-out\\network-graph.html",
+    "D:\\graph-skill\\graph-out\\sunburst.html"
+   ],
+   "fix": "flow-core engine.css 맨 위에 review-matrix와 동일하게 `html, body { margin:0; padding:0; height:100%; }`를 추가한다. xy-core CSS 동봉 여부에 의존하지 않도록 자체 선언이 필요하다."
+  },
+  {
+   "title": "flow-core 타이틀이 툴바 버튼 위에 겹쳐 렌더되어 둘 다 읽을 수 없음",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 4,
+   "effort": "S",
+   "detail": "engine.js _buildToolbar()가 .gs-fl-title을 .gs-fl-toolbar(우상단 absolute) 내부에 append하는데, CSS의 .gs-fl-title{position:absolute; top:8px; left:12px}는 가장 가까운 positioned 조상인 툴바 기준으로 풀려 타이틀 텍스트가 ⤢/＋/－/◐/{} 버튼들 바로 위에 겹쳐 찍힌다. flowchart_900.png·flowchart_360.png·sankey-diagram_900.png·sunburst_900.png·network-graph_900.png 전부에서 '수입검사 공정 흐름…', '에너지 흐름…' 등 타이틀이 버튼과 포개져 타이틀도 버튼도 식별 불가. flow-core 5종 출력물 전체에서 첫 화면부터 망가져 보인다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+   ],
+   "fix": "_buildToolbar에서 타이틀을 bar가 아닌 this.root에 직접 append하거나, .gs-fl-title의 position:absolute를 제거하고 툴바를 좌우 양끝 정렬(flex, 타이틀 margin-right:auto) 레이아웃으로 바꾼다."
+  },
+  {
+   "title": "review-matrix 셀 그래프가 xy-core .gs-root 크기 규칙에 침식되어 220x130이 아닌 528x240으로 폭발, 표가 뷰포트 2배로 넘침",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 4,
+   "effort": "S",
+   "detail": "mountGraph가 .gs-cell-graph div에 직접 엔진을 마운트하면 xy-core가 .gs-root 클래스를 추가하고, xy-core CSS의 .gs-root{width:100%; min-height:240px; aspect-ratio:16/9}가 review-matrix CSS의 .gs-cell-graph{width:220px; height:130px}를 덮는다. 실측(design_state.html, 900px): 셀 그래프 3개 모두 528x240, 테이블 폭 1814px(뷰포트 900px). 그 결과 3개 상태(v1/v2/v3) 중 v3 열은 첫 화면에서 아예 보이지 않고 TO-BE(v2) 그래프는 화면 우측에서 절반 잘린 채 표시된다(design_state_900.png). 컴팩트 비교표라는 의도가 깨지고 가로 스크롤 없이는 비교 자체가 불가능하다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\design_state.html"
+   ],
+   "fix": "review-matrix CSS에 `.gs-cell-graph.gs-root{width:220px; height:130px; min-height:0; aspect-ratio:auto;}` 오버라이드를 추가하거나, 마운트 대상 div를 .gs-cell-graph의 자식으로 한 겹 감싸 셀 크기를 부모가 강제하게 한다."
+  },
+  {
+   "title": "flow-core: 한 번 팬(드래그)한 뒤에는 노드 클릭이 죽어 모달이 열리지 않음 (_panned 플래그 미초기화)",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "stage mousedown 핸들러(engine.js:583-585)는 클릭 대상이 .gs-fl-clickable이면 _panned를 리셋하지 않고 early-return한다. 따라서 배경을 한 번이라도 드래그해 _panned=true가 되면, 이후 그래프/이미지/표 노드를 클릭해도 카드 click 핸들러(467행 `if (!self._panned) openable()`)가 막혀 모달이 안 열린다. Playwright 재현: flowchart.html에서 배경 팬 후 클릭 → modal open=False, 배경을 한 번 더 클릭한 뒤 동일 노드 클릭 → True. 팬은 가장 흔한 첫 조작이라 사용자는 '노드 클릭이 안 된다'고 느끼게 된다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\flowchart.html"
+   ],
+   "fix": "stage mousedown에서 early-return하기 전에 self._panned=false로 항상 리셋하거나, 팬 판정을 카드 자신의 mousedown→click 사이 이동거리로 게이트한다."
+  },
+  {
+   "title": "두 엔진 모두 모달을 Esc로 닫을 수 없음",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "review-matrix._buildModal과 FlowCore._buildModal 모두 × 버튼 클릭과 배경 클릭만 바인딩하고 keydown 리스너가 없다. Playwright 확인: design_state.html에서 셀 그래프 클릭으로 .gs-modal 열고 Escape 입력 → 여전히 open, flowchart.html의 .gs-fl-modal도 동일하게 Esc 무시. 풀스크린에 가까운 오버레이(86vw×82vh)인데 표준 닫기 키가 안 먹어 답답하다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+   ],
+   "fix": "모달 open 시 document에 keydown 리스너를 달아 e.key==='Escape'이면 _closeModal()을 호출하고 close 시 리스너를 해제한다 (두 엔진 동일 패턴)."
+  },
+  {
+   "title": "review-matrix 셀 미니그래프의 자체 컨트롤(log x/log y/↺/◐)을 누르면 의도와 달리 모달이 열림 + 셀 클릭=확대라는 힌트 부재",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "셀에 마운트된 xy-core가 130~240px짜리 미니그래프 안에 자기 컨트롤바(log x|log y|↺|◐, design_state_900.png에서 플롯 위를 가림)를 그대로 띄우는데, 셀 div 전체에 click=모달 리스너가 걸려 있어 그 버튼들을 클릭하면 버튼 동작과 동시에 모달이 열린다(Playwright 확인: in-cell 'log x' 클릭 → .gs-modal open=True). 미니그래프 컨트롤은 사실상 사용 불가. 또한 셀 div에는 title/aria-label/role이 전혀 없어(실측 빈값) cursor:pointer 외에는 '클릭하면 크게 보인다'는 힌트가 없다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\graph-out\\design_state.html"
+   ],
+   "fix": "셀 마운트 시 mountGraph override로 컨트롤바/HUD를 끄고(예: {controlbar:false} 류 옵션을 xy-core에 추가) 상호작용은 모달에서만 제공한다. 셀 div에 title=\"클릭하여 확대\"와 우상단 ⤢ 아이콘 오버레이를 추가한다."
+  },
+  {
+   "title": "review-matrix 고정 헤더 offset이 47px 하드코딩이라 툴바가 줄바꿈되는 좁은 화면에서 헤더가 툴바 뒤로 숨음",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "thead th{position:sticky; top:47px}인데 툴바(.gs-mx-toolbar, flex-wrap:wrap) 실측 높이는 900px에서 49px, 420px에서는 112px다. 즉 좁은 화면에서 스크롤하면 열 헤더가 툴바보다 65px 위 지점에 고정되어 sticky 툴바(z-index 9 > thead 6) 뒤로 들어가 헤더가 가려지고, 본문 행이 헤더 자리 위로 비집고 보인다. 900px에서도 2px 틈으로 행이 비쳐 보인다. (가려짐의 시각 확인은 스크롤 상태 추정이나, 실측 수치상 기하학적으로 확정적임)",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js"
+   ],
+   "fix": "JS에서 ResizeObserver로 툴바 높이를 재서 .gs-matrix에 `--gs-toolbar-h` CSS 변수로 주입하고 thead th의 top을 var(--gs-toolbar-h)로 바꾼다."
+  },
+  {
+   "title": "network 포스 시뮬레이션이 영원히 멈추지 않음 — alpha 하한 0.03 + 무한 rAF 루프",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "engine.js:277 `sim.alpha *= 0.985; if (sim.alpha < 0.03) sim.alpha = 0.03;` — alpha가 0.03 밑으로 못 내려가고 step()이 조건 없이 raf를 재호출해 시뮬이 절대 종료되지 않는다. 실측(network-graph.html): 로드 8초 후에도 노드 좌표가 계속 변하고(8s→9s 사이에도 이동), 시각적으로 안정된 뒤에도 2초간 121회 attribute 변경(≈60fps 풀가동). 노드가 미세하게 계속 떨리고, 탭을 열어두면 CPU/배터리를 영구 소모한다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\network-graph.html"
+   ],
+   "fix": "alpha 하한을 제거하고 alpha가 임계값(예: 0.005) 아래로 내려가면 루프를 정지시킨다. 노드 드래그/휠 등 상호작용 시 alpha를 0.6으로 재가열해 루프를 재시작한다."
+  },
+  {
+   "title": "flowchart을 기본 fit으로 보면 노드 라벨·내장 그래프·표가 판독 불가 수준으로 축소됨",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "TB 방향 기본 rank_gap=120으로 8랭크짜리 데모(flowchart.html)의 월드 높이가 매우 길어져, 900x560에서 fit 스케일이 약 0.5까지 내려간다. flowchart_900.png에서 카드 헤더(13px)가 ~7px로 렌더되어 '인장 측정', '공정 판정?' 등 라벨이 뭉개지고, 카드 안의 응력-변형 미니그래프 축/숫자와 kv·표 내용은 전혀 읽을 수 없다. 360px(flowchart_360.png)에서는 사실상 실루엣만 보인다. fit이 '전체 보기'가 아니라 '아무것도 못 읽는 보기'가 된다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\flowchart.html"
+   ],
+   "fix": "fit 시 최소 스케일(예: 0.7)을 보장하고 모자라면 폭 기준 fit + 세로 팬 유도로 바꾼다. 기본 rank_gap을 120→60 수준으로 줄이고, 일정 스케일 이하에서는 카드 본문을 숨기고 헤더만 보여주는 semantic zoom을 검토한다."
+  },
+  {
+   "title": "review-matrix 검색 결과 0건이면 표가 통째로 사라지고 아무 피드백이 없음",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "Playwright 확인: design_state.html에서 검색창에 'zzzzqqqq' 입력 시 보이는 tbody 행 0개, '결과 없음'류 메시지 없음(innerText 검사 False). 사용자에게는 헤더만 남고 데이터가 전부 삭제된 것처럼 보이며, 검색어 철자 문제인지 데이터가 없는 건지 구분할 수 없다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js"
+   ],
+   "fix": "_applyFilter에서 가시 행이 0이면 colSpan 전체의 '\"{query}\" 검색 결과 없음' 행을 표시하고, 검색 input은 type=search라 기본 ×가 있으니 메시지에 '지우기' 동작도 연결해 준다."
+  },
+  {
+   "title": "sunburst 드릴다운이 발견 불가능에 가까움 — 커서 변화 외 어떤 힌트도 없음",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "sunburst.html 실측: 자식이 있는 세그먼트만 cursor:pointer(나머지는 default)이고, 클릭=드릴다운이라는 안내 텍스트·아이콘·브레드크럼이 전혀 없다. 드릴다운 전 중앙 디스크는 '전체'라고만 표시되고(실측), 위로 가기 ↑ 표시는 드릴다운 후에만 나타난다. 첫 화면(sunburst_900.png)만 봐서는 정적 차트와 구분이 안 돼 핵심 기능이 묻힌다. title 툴팁도 값만 보여준다(engine.js:651).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\sunburst.html"
+   ],
+   "fix": "세그먼트 <title>에 '클릭하여 드릴다운' 문구를 덧붙이고, 중앙 텍스트 아래 작은 보조 라벨('세그먼트 클릭=확대')이나 차트 하단에 1줄 힌트를 상시 표시한다. 드릴다운 경로(루트 › 사용자 › 미디어) 브레드크럼을 중앙/상단에 보여주면 더 좋다."
+  },
+  {
+   "title": "network 노드 라벨이 서로·노드와 겹치고, sankey 중간열 라벨은 리본 위에 얹혀 가독성이 떨어짐",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 2,
+   "effort": "M",
+   "detail": "network-graph_900.png: 'payment/order/user/db' 라벨이 이웃 노드 원과 서로 충돌하며 11px 고정 라벨이 fit 축소로 ~8px로 렌더된다(360px 스테이지 붕괴와 복합). sankey-diagram_900.png: 중간 랭크 라벨 '발전 (85)', '열 (15)'이 색 리본 위에 직접 얹혀 배경과 섞이고, 값 0인 노드('수송 (0)')는 2px 슬리버로 그려져 라벨만 허공에 떠 있으며 getBBox 실측으로 라벨이 월드 경계를 벗어난다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\network-graph.html",
+    "D:\\graph-skill\\graph-out\\sankey-diagram.html"
+   ],
+   "fix": "라벨에 배경 halo(white stroke paint-order 또는 bg rect)를 깔고, network는 겹침 시 라벨을 숨기고 hover 툴팁으로 대체한다. sankey는 값 0 노드를 스킵하거나 최소 높이+회색 처리로 구분한다."
+  },
+  {
+   "title": "flow-core 팬·줌 발견가능성 부족: 휠이 페이지 스크롤을 가로채고 '드래그=이동' 안내가 없음",
+   "area": "DOM 엔진(review-matrix, flow-core) UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "stage 전체에 wheel preventDefault(engine.js:595-602)가 걸려 있어 문서 어디서든 휠이 줌으로 동작하며, 팬은 cursor:grab 커서 변화 외에 어떤 안내도 없다. 툴바에 ⤢/＋/－ 버튼은 있지만 title 속성 영문 한 단어('fit', 'zoom in')뿐이고 더블클릭-fit 같은 관용 동작도 없다. (사용자 혼란 정도는 추정이나, 휠 하이재킹과 안내 부재는 코드·실렌더에서 확인)",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+   ],
+   "fix": "최초 로드 시 2~3초 사라지는 '드래그: 이동 · 휠: 확대/축소' 토스트를 한 번 보여주고, 버튼 title을 한국어로 통일한다. 빈 배경 더블클릭=fit을 추가하면 복구 동선도 생긴다."
+  },
+  {
+   "title": "flow-core 제목이 우상단 툴바 버튼 위에 겹쳐 렌더되어 제목·버튼 모두 읽을 수 없음",
+   "area": "시각 디자인 일관성",
+   "severity": 4,
+   "effort": "S",
+   "detail": "flow-core engine.js의 _buildToolbar(681행)가 .gs-fl-title을 .gs-fl-toolbar(position:absolute; top:8px; right:8px) 내부에 appendChild하는데, engine.css 22행의 .gs-fl-title이 position:absolute; top:8px; left:12px라서 컨테이닝 블록이 툴바가 됨. 결과적으로 제목이 좌상단이 아니라 우상단 툴바 자리에서 ⤢/＋/－/◐ 버튼 위에 두 줄로 겹쳐 그려짐. graph-out/flowchart.html 900x520 라이트·다크 스크린샷 모두에서 '수입검사 공정 흐름 (그림·표·그래프 내장)' 제목이 버튼들과 완전히 겹쳐 판독 불가임을 확인. 제목이 있는 모든 flow-core 산출물(flowchart, sankey 등)에 동일하게 발생. 같은 위치 체계인 gauge-core(.gs-g-title은 root에 직접 부착)는 정상.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\flowchart.html"
+   ],
+   "fix": "engine.js에서 제목 div를 툴바가 아닌 루트(mount)에 직접 append하거나, .gs-fl-title의 absolute 포지셔닝을 제거하고 툴바를 좌우 분할 레이아웃(title margin-right:auto)으로 바꾼다. gauge-core의 title/toolbar 구조와 동일하게 맞추는 것이 가장 간단하다."
+  },
+  {
+   "title": "gauge-core만 html/body 리셋이 없어 다크모드에서 8px 검은 테두리와 화면 아래 절반이 검게 갈라짐",
+   "area": "시각 디자인 일관성",
+   "severity": 4,
+   "effort": "S",
+   "detail": "gauge-core/engine.css에는 다른 모든 패밀리(xy, field, polar, smith, cad3d, review-matrix)가 가진 'html, body { margin:0; padding:0; height:100% }' 리셋이 없음. DOM 측정으로 확인: gauge.html 900x520에서 body margin 8px, 루트 rect [8,8,884,320] (height:100%가 body 높이 미정의로 무시되고 min-height:320px로 붕괴). 다크 스크린샷에서 남색(#0f172a) 패널 주위로 8px 검은 액자가 생기고, 320px 아래 약 190px가 브라우저 기본 검은 캔버스로 남아 두 톤으로 갈라져 보임. 라이트모드에선 흰색-흰색이라 안 보이지만 게이지가 위쪽 절반에만 몰리는 레이아웃 문제는 동일.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\gauge.html"
+   ],
+   "fix": "gauge-core/engine.css 맨 위에 다른 엔진과 동일한 '*,*::before,*::after{box-sizing:border-box} html,body{margin:0;padding:0;height:100%}' 리셋을 추가한다."
+  },
+  {
+   "title": "다크 팔레트가 두 계열(#0f1419 vs #0f172a)로 분열되어 있고, flow-core는 그래프 임베드 여부에 따라 배경·폰트가 달라짐",
+   "area": "시각 디자인 일관성",
+   "severity": 3,
+   "effort": "M",
+   "detail": "xy/field/polar/smith/cad3d/review-matrix는 다크에서 bg #0f1419, fg #e8eaed, accent #60a5fa인데 flow-core와 gauge-core는 bg #0f172a, fg #e5e7eb이고 다크 블록에서 --gs-accent를 덮어쓰지 않아 라이트용 #2563eb가 그대로 남음(다크 카드 #1e293b 위 호버 보더로 쓰여 대비가 낮음). 더 큰 문제: 루트가 'gs-root gs-flow' 두 클래스를 가지므로, 노드에 그래프를 임베드해 xy-core CSS가 함께 번들된 flowchart.html은 computed 배경이 #0f1419·폰트 Segoe UI(xy 토큰이 소스 순서상 승리)인데, xy 번들이 없는 sankey-diagram.html은 #0f172a·-apple-system으로 측정됨 — 같은 flow-core 패밀리가 산출물마다 다른 배경색과 폰트로 렌더된다(둘 다 Playwright computed style로 확인).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\flowchart.html",
+    "D:\\graph-skill\\graph-out\\sankey-diagram.html"
+   ],
+   "fix": "전 엔진의 다크 토큰을 한 팔레트(#0f1419/#e8eaed/#60a5fa 계열)로 통일하고 flow/gauge 다크 블록에 --gs-accent:#60a5fa를 추가한다. 임베드 충돌은 xy-core 루트 셀렉터를 .gs-root:not(.gs-flow):not(.gs-matrix)처럼 좁히거나 flow 토큰 셀렉터 특이도를 올려 해결한다."
+  },
+  {
+   "title": "xy-core 좁은 폭에서 제목이 툴바 버튼에 완전히 가려지고 범례가 X축 제목과 겹침",
+   "area": "시각 디자인 일관성",
+   "severity": 3,
+   "effort": "M",
+   "detail": "bode.html 360x300 스크린샷에서 확인: 7개 버튼(log x, log y, ↺, ◐, PNG, CSV, {})이 x=103~352를 차지해(DOM 측정) 캔버스 중앙 상단에 그려지는 제목 '2차계 주파수응답 (fn=100Hz, ζ=0.1)'을 거의 전부 덮음. 동시에 우측 보조축 제목 'Phase [deg]'가 오른쪽 가장자리에서 잘리고, 좌하단 범례(Magnitude/Phase)가 X축 제목 'Frequency [Hz]'와 겹쳐 그려짐. 캔버스 제목 렌더(engine.js 383행, 중앙 정렬 fillText)가 HTML 오버레이 툴바와 충돌 회피를 전혀 하지 않음.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\bode.html"
+   ],
+   "fix": "루트 폭이 임계값(예: 560px) 미만이면 PNG/CSV/{} 등 내보내기 버튼을 '⋯' 메뉴로 접고, 제목을 툴바 아래 줄로 내리거나 좌측 정렬로 전환한다. 범례는 절대 오버레이 대신 플롯 하단에 행을 예약(plot.bottom 확장)해 축 제목과 분리한다."
+  },
+  {
+   "title": "smith-core만 색맹 안전 Okabe-Ito 팔레트를 쓰지 않고 빨강·초록이 같이 든 자체 팔레트 사용",
+   "area": "시각 디자인 일관성",
+   "severity": 3,
+   "effort": "S",
+   "detail": "xy-core(engine.js 19행), polar-core(9행), flow-core FPAL(139행), xy 플러그인 playback/streamgraph는 모두 Okabe-Ito(#0072B2, #D55E00, #009E73…)로 통일돼 있는데 smith-core/engine.js 6행만 PALETTE = [\"#2563eb\", \"#dc2626\", \"#059669\", \"#9333ea\", \"#d97706\", \"#0891b2\"]로 빨강(#dc2626)과 초록(#059669)이 인접한 비안전 팔레트임. 다중 트레이스 S-파라미터 비교에서 적록색약 사용자가 2·3번째 시리즈를 구분하기 어렵고, 같은 문서에 xy 그래프와 스미스 차트가 나란히 들어가면 시리즈 색 체계도 달라 보임.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\smith-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\polar-core\\engine.js"
+   ],
+   "fix": "smith-core PALETTE를 다른 엔진과 동일한 Okabe-Ito 순서(#0072B2, #D55E00, #009E73, #CC79A7, #E69F00, #56B4E9)로 교체한다."
+  },
+  {
+   "title": "review-matrix 고정 헤더 오프셋이 47px로 하드코딩되어 좁은 화면에서 헤더가 툴바 뒤로 숨음",
+   "area": "시각 디자인 일관성",
+   "severity": 3,
+   "effort": "S",
+   "detail": "review-matrix/engine.css 46행 'thead th { position:sticky; top:47px }'는 툴바가 한 줄(47px)일 때만 맞음. design_state.html을 420px 폭으로 열면 검색창+버튼이 줄바꿈되어 툴바 높이가 112px가 되는데(DOM 측정: toolbarH 112.4), 스크롤 시 헤더 top이 47px에 고정되어 툴바(bottom 112.4) 뒤로 약 65px 숨어 컬럼 헤더(AS-IS/TO-BE)가 보이지 않게 됨.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\graph-out\\design_state.html"
+   ],
+   "fix": "엔진 JS에서 toolbar.offsetHeight를 CSS 변수(예: --gs-toolbar-h)로 루트에 써 주고 thead th의 top에 var()를 사용한다. ResizeObserver로 툴바 높이 변화에 추종시키면 줄바꿈에도 안전하다."
+  },
+  {
+   "title": "툴바 버튼 스타일·호버 피드백이 패밀리마다 제각각이고 cad3d 버튼은 호버 효과가 아예 없음",
+   "area": "시각 디자인 일관성",
+   "severity": 2,
+   "effort": "M",
+   "detail": "같은 기능(◐ 테마 토글, PNG 저장)의 버튼이 패밀리별로 다르게 생김: xy .gs-btn은 600 11px·sub색·그림자·hover=글자색 변경, flow .gs-fl-btn은 13px·fg색·그림자 없음·hover=accent 보더, gauge .gs-g-btn은 12px·hover=accent 보더, review-matrix .gs-mx-btn은 12px·radius 7px(다른 곳은 6px)·hover=글자색, cad3d .gs-cad-btn은 :hover 규칙이 전혀 없어 마우스를 올려도 시각적 반응이 없음(aria-pressed 스타일만 존재). 또 flow/gauge만 aria-pressed 눌림 스타일이 없어 토글 상태 표시도 비일관. 폰트 스택도 xy/cad/smith/polar/matrix는 'Segoe UI' 우선, flow/gauge는 -apple-system 우선+'Noto Sans KR' 포함으로 갈라져 있음(CSS 대조로 확인, 렌더 차이는 OS 의존 — 추정).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css"
+   ],
+   "fix": "공용 버튼 규칙(크기 11~12px, panel 배경, 그림자, :hover, [aria-pressed]) 한 벌을 공통 CSS 조각으로 추출해 builder.py가 모든 패밀리에 주입하고, 각 엔진 버튼 클래스는 이를 상속하게 한다. 최소한 .gs-cad-btn:hover와 flow/gauge의 aria-pressed 스타일부터 추가한다."
+  },
+  {
+   "title": "제목 배치 규칙이 패밀리마다 달라(중앙 vs 좌측) 산출물을 나란히 놓으면 헤더가 들쭉날쭉함",
+   "area": "시각 디자인 일관성",
+   "severity": 2,
+   "effort": "M",
+   "detail": "xy-core는 캔버스 상단 중앙(fillText 중앙 정렬), cad3d는 DOM으로 상단 중앙(.gs-cad-title, width:100% text-align:center), gauge-core·review-matrix는 좌상단, flow-core는 좌상단 의도(현재는 별도 버그로 우상단에 겹침). bode(중앙)와 gauge(좌측) 스크린샷 대조로 확인. 보고서에 여러 타입을 나란히 임베드하는 스킬 특성상 제목 정렬이 타입마다 달라 일관성이 떨어져 보임.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+   ],
+   "fix": "제목 배치 규칙을 하나로 정한다(권장: 좌상단 고정 — 우상단 툴바와의 충돌 여지가 가장 적음). xy-core의 캔버스 제목을 좌측 정렬로, cad3d의 .gs-cad-title을 left:12px 정렬로 맞추면 전 패밀리가 동일한 헤더 그리드를 갖는다."
+  },
+  {
+   "title": "휠 스크롤 트랩 — 보고서 페이지 스크롤 중 그래프 위에 커서가 오면 페이지가 멈추고 그래프가 의도치 않게 줌되어 파괴됨",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 5,
+   "effort": "M",
+   "detail": "실측 확인. 고정 높이 iframe 3개(bode 520px, flowchart 420px, isosurface-3d 460px)를 넣은 부모 페이지에서 Playwright로 휠 테스트: 텍스트 위에서는 scrollY 0→300 정상 스크롤, bode 플롯 위에서는 휠 5회에 scrollY 150→150으로 페이지 스크롤 완전 차단 + 차트가 10–1000Hz에서 10^-8–10^12Hz로 줌아웃되어 곡선이 알아볼 수 없게 됨(trap_bode_before/after.png). flow-core는 stage 전체(빈 배경 포함, 모서리 30px 지점도)에서 무조건 ev.preventDefault()라 634→634 차단 + 다이어그램이 점 크기로 축소(trap_flow_after.png). 3D(cad3d-core, OrbitControls r128)도 캔버스 전체에서 1136→1136 차단. 원인 코드: xy-core engine.js:674 wheel {passive:false} + :773 e.preventDefault()(플롯 내부면 무조건), field-core engine.js:343,378 동일, flow-core engine.js:595-602 무조건 preventDefault, cad3d-core engine.js:30 OrbitControls 기본 동작. 추가로 xy/field-core 캔버스의 touch-action:none(xy-core engine.css:61)이라 모바일 터치 스크롤도 그래프 전체에서 막힘(코드 확인, 터치는 미실측·추정). 보고서를 읽으며 스크롤하는 독자가 그래프마다 걸려 멈추고, 자기도 모르게 차트를 망가뜨리는 최악의 임베드 경험.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\field-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css"
+   ],
+   "fix": "지도/임베드 표준 패턴 적용: Ctrl(⌘)+휠일 때만 줌하고 일반 휠은 preventDefault 없이 통과시켜 페이지 스크롤 유지, 휠 입력 시 '⌘+스크롤로 확대' 힌트 오버레이를 잠깐 표시. 또는 클릭으로 그래프를 '활성화'한 뒤에만 휠 줌 허용(포커스 아웃 시 해제). cad3d는 OrbitControls.enableZoom을 같은 게이트로 래핑하고, touch-action도 pan-y로 완화."
+  },
+  {
+   "title": "flow-core·gauge-core가 iframe 고정 높이를 채우지 못함 — 권장 높이로 임베드해도 죽은 여백/잘림 발생",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 4,
+   "effort": "S",
+   "detail": "실측 확인. flow-core·gauge-core engine.css에만 html,body{margin:0;height:100%} 리셋이 없어(다른 6개 패밀리는 있음) 루트의 height:100%가 무효 → min-height로 고정됨. 520px 뷰포트에서 측정: sankey-diagram graph-root 높이 360px(권장 height_px=520 → 160px 죽은 공백), gauge 320px(embed_block 기본 520 → 200px 공백), 폭도 864/880으로 body 기본 margin 8px 흰 테두리 발생. 반대로 300px iframe에서는 gauge 루트(min-height:320)가 잘려 세 번째 게이지 하단이 절단됨(small_composite.png에서 확인). bullet-chart는 카탈로그 권장 높이가 300인데 min-height가 320이라 자기 권장 높이에서조차 항상 잘림(types.json 확인). flowchart.html은 graph_payloads로 xy-core CSS가 우연히 동봉된 덕에만 520을 채움 — 순수 flow-core 산출물(sankey/network/chord/sunburst)은 전부 영향.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\types.json"
+   ],
+   "fix": "두 engine.css에 html,body{margin:0;padding:0;height:100%} 추가하고 min-height를 240px 수준으로 완화(또는 제거하고 엔진의 ResizeObserver에 맡김). bullet-chart의 height_px(300)와 min-height(320) 불일치도 함께 정리."
+  },
+  {
+   "title": "작은 임베드 높이(300px)에서 모달이 iframe에 갇혀 잘리고 이중 스크롤 발생",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "실측 확인. 300px iframe 안의 flowchart에서 노드 클릭 시 모달은 열리지만(.gs-fl-modal open) 모달 내 그래프 rect가 top=70, bottom=316으로 iframe 높이 300을 16px 초과해 x축이 잘리고, .gs-fl-modal-graph{height:60vh;min-height:340px}가 88% max-height 박스(264px)보다 커서 모달 본문 내부 스크롤이 강제됨(small_composite2.png — 인장 측정 차트 하단 절단, 내부 차트 툴바가 곡선 위에 겹침). '크게 보기' 목적의 모달이 iframe보다 커질 수 없어 원본 셀 그래프보다 별로 크지도 않음. review-matrix 모달(.gs-modal-box 86vw×82vh, engine.css:75)도 300px iframe에선 246px 박스에 min-height 240px짜리 xy 차트가 들어가 같은 문제(CSS 계산 기반, 클릭 실측은 안 함 — 추정).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+   ],
+   "fix": ".gs-fl-modal-graph의 min-height:340px를 max(180px, 60%) 같은 컨테이너 상대값으로 바꾸고 모달 박스를 inset 8px 기반으로 잡아 항상 iframe 안에 완전히 들어오게 한다. 컨테이너 높이가 임계값(예: 360px) 미만이면 모달 대신 새 탭으로 여는 폴백 링크를 제공."
+  },
+  {
+   "title": "내보내기 버튼이 엔진 패밀리마다 제각각 — smith-core는 툴바 자체가 없음",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "코드+렌더로 전수 확인한 일람: xy-core=PNG/CSV/{}config(engine.js:840-842), field-core=PNG만(:403), polar-core=PNG만(:188), gauge-core=PNG만(:50), cad3d-core=PNG만(:225), flow-core={}source만·PNG 없음(:690 — sankey/network/chord/sunburst/flowchart는 이미지로 저장 불가), review-matrix={}source만·PNG/CSV 없음(:99 — 표인데 CSV 내보내기 없음), smith-core=툴바·버튼·테마 토글 전부 없음(engine.js 전체 132줄에 버튼 코드 0건). 보고서에 여러 타입이 섞여 임베드되면 어떤 그래프는 PNG 저장이 되고 어떤 것은 안 되는 비일관 경험이 되고, smith-chart는 다크 강제 페이지에서 테마 전환 수단조차 없음.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\smith-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\field-core\\engine.js"
+   ],
+   "fix": "최소 공통 세트(PNG + source/{} + ◐테마)를 모든 패밀리에 보장: smith-core에 툴바 추가, flow-core는 SVG→canvas 직렬화로 PNG 추가, review-matrix는 표 CSV 내보내기 추가. 공통 툴바 빌더를 shell 레벨 유틸로 빼면 중복도 줄어든다."
+  },
+  {
+   "title": "다크모드가 OS prefers-color-scheme만 따름 — 부모 보고서 앱의 테마와 동기화할 채널이 전혀 없음",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 3,
+   "effort": "M",
+   "detail": "확인된 사실: 모든 엔진의 auto 테마는 @media (prefers-color-scheme: dark)(각 engine.css) 또는 matchMedia(cad3d-core engine.js:209)로만 결정되며, dark 에뮬레이션에서 gauge rootBg가 #0f172a로 바뀌는 것 실측 확인. 그러나 template.html/boot.js 어디에도 postMessage 리스너·URL 쿼리 파라미터·설정 주입 등 부모가 테마를 지정할 통로가 없음(grep 0건). report-write 쪽 위젯은 '다크모드 적응형 색 토큰'을 쓰는 앱 내 테마 체계인데, 그 다크모드가 OS 설정이 아니라 앱 내 토글이라면 페이지는 다크인데 iframe 그래프만 흰색으로 떠서 눈에 띄게 어긋남(부모 앱 토글 방식은 추정). 사용자가 그래프마다 ◐ 버튼을 눌러 맞출 수는 있으나 임베드 개수만큼 반복해야 하고 새로고침하면 풀리며, smith-core는 그 버튼조차 없음. cad3d-core는 matchMedia를 생성 시 1회만 읽어 이후 OS 테마 변경에도 반응 안 함(코드 확인).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\shell\\boot.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\shell\\template.html",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js"
+   ],
+   "fix": "boot.js에 window.addEventListener('message', …)로 {type:'gs-theme', theme:'light|dark|auto'}를 받아 루트 data-theme을 바꾸는 표준 채널과 ?theme= 쿼리 파라미터 지원을 추가하고, embed_block() 문서에 부모 측 postMessage 한 줄 예시를 명시. cad3d-core는 matchMedia change 이벤트를 구독하게 수정."
+  },
+  {
+   "title": "flow-core 제목이 툴바 컨테이너 안에 absolute로 들어가 우상단 버튼들과 항상 겹쳐 보임",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 3,
+   "effort": "S",
+   "detail": "실측 확인. flowchart.html 렌더(862px 폭, 어떤 크기든 동일)에서 제목 '수입검사 공정 흐름 (그림·표·그래프 내장)'이 우상단의 ⤢ ＋ － ◐ {} 버튼들 위에 겹쳐 출력되어 제목도 버튼도 읽기 어려움(trap_flow_before.png, small_composite.png에서 확인). 원인: engine.js:681에서 제목 div를 toolbar(bar) 안에 appendChild하는데 CSS .gs-fl-title이 position:absolute; top:8px; left:12px(engine.css:22)라 containing block이 우상단 absolute 툴바가 되어 버튼 위에 얹힘. sankey/network/chord/sunburst 등 flow-core 전 타입의 제목이 동일하게 깨짐.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+   ],
+   "fix": "engine.js:681을 bar.appendChild(...)에서 this.root.appendChild(...)로 바꿔 제목을 루트 직속(좌상단 absolute)으로 분리한다. 1줄 수정."
+  },
+  {
+   "title": "좁은 임베드 폭에서 xy-core 캔버스 제목과 DOM 툴바가 겹침",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "실측 확인. 500px 폭 × 300px 높이 iframe의 bode에서 캔버스 중앙에 그려지는 제목 '2차계 주파수응답 (fn=100Hz, ζ=0.1)' 위로 log x/log y/↺/◐/PNG/CSV/{} 7개 버튼이 덮여 제목 후반부가 가려짐(small_composite.png). xy-core는 제목을 캔버스에 중앙 정렬로 직접 그리고(engine.js) 툴바는 DOM absolute(top:8px; right:8px, engine.css:63-66)라 폭이 좁아지면 필연적으로 충돌. 보고서 본문 컬럼(500-700px)에 흔히 들어가는 폭이라 실사용에서 자주 보일 레이아웃.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css"
+   ],
+   "fix": "제목을 좌측 정렬로 옮기고 캔버스 제목 폭을 (전체폭 - 툴바폭)으로 제한해 말줄임하거나, 컨테이너 폭이 임계값(예: 640px) 미만이면 툴바를 ⋯ 단일 버튼 드롭다운으로 접는다."
+  },
+  {
+   "title": "embed_block()이 타입별 recommended_height_px를 무시하고 무조건 520을 기본값으로 사용",
+   "area": "임베드(report iframe) 맥락 UX",
+   "severity": 2,
+   "effort": "S",
+   "detail": "코드 확인. builder.py:139에서 height_px 미지정 시 일률 520. 그러나 카탈로그 권장 높이는 타입별로 300(bullet-chart)~600(review-matrix)까지 다르고(types.json), 아티팩트 자신의 graph-config meta에 recommended_height_px가 이미 박혀 있음(builder.py:62). 호출자가 render 결과의 recommended_height_px를 수동으로 다시 넘겨주지 않으면 gauge(권장 320)는 520 iframe에 200px 죽은 여백(finding 2와 결합해 실측 확인), review-matrix(권장 600)는 520에 눌려 내부 스크롤이 생긴다. 같은 모듈 안에 정답이 있는데 연결이 안 된 상태.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\builder.py",
+    "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\types.json"
+   ],
+   "fix": "embed_block()에서 height_px가 None이면 html 파일을 열어 #graph-config JSON의 meta.recommended_height_px를 읽어 기본값으로 쓰고, 그래도 없을 때만 520으로 폴백한다."
+  },
+  {
+   "title": "flow-core 전 모드가 터치 기기에서 팬·드래그 완전 불가 (mouse 이벤트만 사용)",
+   "area": "입력장치(터치)",
+   "severity": 4,
+   "effort": "M",
+   "detail": "flow-core(flowchart·sankey·network·chord·sunburst)는 stage 팬을 mousedown/mousemove/mouseup(engine.js:583-594), network 노드 드래그를 mousedown(228-237)으로만 바인딩. Playwright CDP 터치 드래그(touchStart→touchMove→touchEnd)로 실측: flowchart.html과 sankey-diagram.html에서 드래그 전후 __graph.tx/ty가 [298.77,0]→[298.77,0], [163.54,0]→[163.54,0]으로 전혀 변하지 않음. 줌도 wheel 전용이라 터치에서는 ＋/－ 툴바 버튼 2개가 유일한 수단이고, 잘린 영역으로 이동할 방법이 없음. 같은 셸의 xy-core/field-core는 pointer 이벤트로 터치 팬이 동작(bode.html에서 터치 드래그 후 view.x [8.3,1202]→[16.9,2437] 실측)하므로 패밀리 간 동작 불일치도 큼.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+   ],
+   "fix": "_bindPanZoom과 network 노드 드래그를 pointerdown/pointermove/pointerup + setPointerCapture로 교체하고 stage에 touch-action:none을 지정한다. 2포인터 거리 변화로 핀치줌도 같은 핸들러에서 처리하면 wheel 줌과 코드 공유가 가능하다."
+  },
+  {
+   "title": "핀치줌 전무 + 전면 canvas touch-action:none — 모바일에서 확대 수단 자체가 없음",
+   "area": "입력장치(터치)",
+   "severity": 4,
+   "effort": "M",
+   "detail": "엔진별 터치 줌 일람: xy-core(터치 팬 O / 줌 X — wheel 전용, box-zoom은 shiftKey 필수라 터치 불가, engine.js:708-712,769-780), field-core(팬 O / 줌 X — 동일 구조, engine.js:355-383), flow-core(팬 X / 줌 버튼만), polar-core·smith-core(줌 기능 없음, hover만), cad3d-core만 OrbitControls 내장 핀치로 가능. 추가로 xy/field/polar/smith/cad3d 모두 화면 전체를 덮는 canvas에 touch-action:none(각 engine.css)이라 브라우저 기본 핀치 페이지 줌까지 차단되어, 모바일 사용자는 어떤 방법으로도 데이터를 확대할 수 없음(WCAG 1.4.4 계열). xy-core의 더블탭→dblclick 리셋 동작 여부는 (추정) 미확인.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\field-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\field-core\\engine.css"
+   ],
+   "fix": "xy-core/field-core의 pointerdown에서 활성 포인터를 Map으로 추적해 2포인터 시 거리 비율로 _zoom을 호출하는 핀치줌을 추가한다(이미 커서 중심 줌 함수가 있어 재사용 가능). 최소한 ＋/－ 줌 버튼을 xy/field 툴바에도 추가해 폴백을 제공한다."
+  },
+  {
+   "title": "flow-core 타이틀이 우상단 툴바 버튼 위에 겹쳐 렌더됨 (모든 titled flow 산출물)",
+   "area": "레이아웃(렌더 확인 중 발견)",
+   "severity": 4,
+   "effort": "S",
+   "detail": "network-graph.html 900px 스크린샷에서 타이틀 '마이크로서비스 의존성'이 ⤢＋－◐{} 버튼 5개를 관통해 겹쳐 보이고 버튼 라벨이 가려짐. flowchart.html 360px에서도 동일하게 타이틀이 버튼과 겹침. 원인: engine.js:681에서 타이틀 div를 toolbar(position:absolute; right:8px) 안에 넣는데, engine.css:22의 .gs-fl-title이 position:absolute; left:12px라 containing block이 toolbar가 되어 타이틀이 버튼 영역 좌측 12px 위치에 그려짐. 타이틀이 있는 모든 flow-core 산출물(flowchart, network, sankey 등)에서 헤더가 깨져 보임.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+   ],
+   "fix": ".gs-fl-title을 toolbar 밖(root 직속)으로 appendChild하거나, CSS에서 .gs-flow > .gs-fl-title로 root 기준 절대배치가 되도록 마크업을 분리한다."
+  },
+  {
+   "title": "network force 시뮬레이션이 영원히 멈추지 않음 — 상시 미세 흔들림 + CPU 상주",
+   "area": "모션",
+   "severity": 3,
+   "effort": "S",
+   "detail": "flow-core engine.js:277에서 alpha를 0.03 밑으로 못 내려가게 floor 처리하고 raf(step)를 무조건 재호출하므로 시뮬레이션 루프가 종료되지 않음. 실측: 로드 6초 후에도 2초간 노드 5개 좌표 합산 2.6px 드리프트(network-graph.html). 노드가 영구히 잔떨림하고 rAF 루프가 탭이 열려있는 내내 O(n²) 반발력 계산을 계속 돌림(배터리/발열). cad3d-core도 _startLoop(engine.js:191)가 정지 조건 없이 매 프레임 render를 도는 동일 패턴.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js"
+   ],
+   "fix": "alpha가 임계값(예: 0.02) 아래로 떨어지면 루프를 멈추고, 드래그 시작 시에만 alpha를 올리며 재가동한다. cad3d는 controls 'change' 이벤트와 재생 중일 때만 rAF를 돌리는 invalidate 방식으로 바꾼다."
+  },
+  {
+   "title": "prefers-reduced-motion 처리 0건 — 게이지 로드 애니·force 레이아웃·재생 애니가 무조건 동작",
+   "area": "모션(접근성)",
+   "severity": 3,
+   "effort": "S",
+   "detail": "전체 데이터 디렉터리 grep 결과 prefers-reduced-motion 참조 0건(matchMedia는 다크모드 감지 1건뿐). 엔진별: gauge-core는 로드 시 650ms 바늘/링/카운트업 애니가 항상 실행(engine.js:85-97, setAssets가 _animate 호출), flow-core network는 자동 force 애니메이션이 사용자 개입 없이 시작·지속, playback 플러그인과 cad3d 모드 애니는 ▶ 버튼으로 사용자가 시작하므로 상대적으로 양호하나 reduced-motion 시 fps 저감 등의 배려 없음. 전정기관 장애 사용자 설정이 완전히 무시됨.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\playback.js"
+   ],
+   "fix": "공용 헬퍼 `var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches`를 각 엔진에 두고, true면 gauge는 t=1로 즉시 그리기, network는 시뮬레이션을 동기 수렴 후 1회 paint, playback/cad3d 재생은 프레임 점프 방식으로 대체한다."
+  },
+  {
+   "title": "모달이 Escape로 닫히지 않고 포커스 관리도 없음 (flow-core·review-matrix)",
+   "area": "접근성(키보드)",
+   "severity": 3,
+   "effort": "S",
+   "detail": "실측: flowchart.html에서 클릭 가능 카드 클릭→모달 open 확인 후 Escape 입력해도 modal.classList에 open이 그대로 남음(True). 전체 엔진 코드에 keydown 리스너가 단 1건도 없음(grep 결과 vendor OrbitControls 제외 0건). 닫기는 × 버튼 클릭 또는 배경 클릭뿐이고, 모달 열릴 때 포커스 이동/트랩/복원이 없어 키보드 사용자는 모달 뒤 콘텐츠로 탭이 빠져나감. × 버튼(gs-fl-x, gs-x)은 aria-label 없이 '×' 텍스트뿐. review-matrix의 _buildModal(engine.js:311-325)도 동일 패턴.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js"
+   ],
+   "fix": "모달 open 시 document keydown(Escape→_closeModal)을 등록하고 close 시 해제한다. 모달 박스에 role=dialog aria-modal=true를 주고 × 버튼에 aria-label='닫기'를 추가하며, open 시 × 버튼으로 포커스 이동·close 시 트리거 요소로 복원한다."
+  },
+  {
+   "title": "클릭 전용 비버튼 인터랙션 다수 — 키보드로 도달 불가",
+   "area": "접근성(키보드)",
+   "severity": 3,
+   "effort": "M",
+   "detail": "실측(bode.html Tab 순회): 포커스 가능한 것은 툴바 button 7개뿐이고 legend 항목 2개는 순회에서 제외됨. 엔진별 키보드 불가 요소: xy-core 범례 div(click 토글/dblclick 고립, engine.js:860-867), review-matrix 그룹 접기 tr(click, engine.js:133)·그래프 셀 div·이미지 셀 img(click→모달), flow-core 카드 div(gs-fl-clickable)·sunburst SVG path(click 드릴다운, engine.js:654)·center circle(670), network 노드 circle(드래그 전용). 모두 tabindex/role/keydown 없음. 마우스 없는 사용자는 시리즈 토글, 그룹 접기, 드릴다운, 상세 모달을 전혀 쓸 수 없음.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+   ],
+   "fix": "범례 항목·카드·그룹 행을 button 요소로 바꾸거나 tabindex=0 + role=button + Enter/Space keydown을 부여한다. sunburst 세그먼트는 SVG <a> 또는 tabindex=0 path로 만들고 aria-label에 '이름: 값'을 넣는다."
+  },
+  {
+   "title": "차트 본체 키보드 조작 수단 전무 (줌/팬/커서/3D 회전)",
+   "area": "접근성(키보드)",
+   "severity": 3,
+   "effort": "L",
+   "detail": "엔진 코드 전체에 keydown 핸들러 0건. xy-core/field-core의 줌·팬·박스줌·커서탐색, smith/polar의 데이터 판독(HUD가 pointermove 호버 전용, smith engine.js:18-19), flow-core 팬줌 모두 포인팅 장치 필수. cad3d-core는 vendored OrbitControls가 keydown 지원(listenToKeyEvents)을 갖고 있으나 engine.js에서 호출하지 않고 canvas에 tabindex도 없어 화살표키 팬이 비활성 상태. 키보드 전용 사용자는 데이터 값 확인(툴팁/HUD)조차 불가능.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\smith-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\vendor\\OrbitControls.js"
+   ],
+   "fix": "canvas에 tabindex=0을 주고 화살표=팬/커서 스텝 이동, +/-=줌, Home=autoFit 키맵을 xy-core에 추가하면 base-xy 계열 60여 종이 일괄 수혜를 받는다. cad3d는 controls.listenToKeyEvents(canvas) 한 줄 + tabindex로 화살표 팬을 즉시 활성화할 수 있다."
+  },
+  {
+   "title": "canvas에 role/aria-label/대체 콘텐츠 전무 — 스크린리더에 빈 화면",
+   "area": "접근성(SR)",
+   "severity": 3,
+   "effort": "S",
+   "detail": "실측(bode.html): canvas의 role=null, aria-label=null, fallback 텍스트 빈 문자열. xy-core·field-core·polar-core·smith-core·gauge-core·cad3d-core 모두 canvas를 빈 채로 생성하고 제목·축·시리즈 정보를 어디에도 텍스트로 노출하지 않음(제목은 canvas 위에 그림). gauge-core처럼 KPI 숫자 몇 개가 전부인 차트조차 SR 사용자는 값 0개를 듣게 됨. 템플릿(template.html)은 lang=ko·title은 양호하나 본문 접근 가능 텍스트가 0임.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\shell\\boot.js"
+   ],
+   "fix": "boot.js에서 mount 직후 canvas에 role='img'와 aria-label(options.title + 축 라벨)을 일괄 부여한다. gauge-core는 items의 label/value/unit을, xy-core는 시리즈명 목록을 시각적으로 숨긴 요약 div(sr-only)로 함께 출력하면 효과가 크다."
+  },
+  {
+   "title": "아이콘 전용 버튼이 title 속성에만 의존 (aria-label 없음, 일부는 영어 title)",
+   "area": "접근성(SR)",
+   "severity": 2,
+   "effort": "S",
+   "detail": "↺ ◐ {} ⤢ ＋ － ▶ ❚❚ × 등 글리프 버튼이 전 엔진 공통으로 textContent=글리프 + title만 가짐(xy-core _btn engine.js:825-831, flow-core:682, gauge-core:47, field-core:405, cad3d-core:234). SR은 '◐' 같은 기호를 무의미하게 읽거나 건너뜀. title은 터치에서도 노출되지 않아 터치 사용자는 버튼 의미를 알 수 없음. gauge-core는 title마저 'replay/theme/export' 영어로 한국어 UI와 불일치(engine.js:48-50). cad3d ▶ 버튼은 재생 상태가 글리프 변경뿐으로 aria-pressed도 없음.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+   ],
+   "fix": "각 _btn 헬퍼에서 b.setAttribute('aria-label', title)을 함께 설정한다(한 줄×6개 파일). gauge-core의 title 문자열을 '다시 재생', '테마', 'PNG 내보내기'로 통일하고 토글 버튼(▶, 테마)에 aria-pressed/상태 반영을 추가한다."
+  },
+  {
+   "title": "review-matrix heat 셀의 흰 글자 대비 1.9~2.1:1 (WCAG 실패)",
+   "area": "접근성(색 대비)",
+   "severity": 3,
+   "effort": "S",
+   "detail": "engine.js:231에서 ht>0.5이면 글자색을 무조건 #fff로 바꾸는데, heatColor의 중간 구간은 노랑~주황(rgb(234,179,8) 부근)이라 흰 글자 대비가 실측 1.92~2.12:1로 WCAG AA(4.5:1)에 크게 미달. decision-matrix.html 900px 스크린샷에서 주황 셀의 '3' 흰 글자가 실제로 흐릿하게 보임을 확인. 다크모드에서는 ht<=0.5 셀이 var(--gs-fg)(밝은 색)가 되어 초록 배경 위 대비도 (추정) 악화될 수 있음.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js"
+   ],
+   "fix": "배경색의 상대 휘도를 계산해(luminance>0.45면 #111, 아니면 #fff) 글자색을 정하는 함수로 교체한다. heatColor의 노랑 구간은 휘도가 높으므로 사실상 어두운 글자가 선택되어 문제도 함께 해결된다."
+  },
+  {
+   "title": "커스텀 focus-visible 스타일 부재 — pressed(파란) 버튼에서 포커스 위치 식별 곤란",
+   "area": "접근성(키보드)",
+   "severity": 2,
+   "effort": "S",
+   "detail": "전체 engine.css에 :focus/:focus-visible/outline 규칙 0건(grep 확인). 브라우저 기본 링에만 의존하는데, 실측 스크린샷(bode.html에서 Tab 1회)에서 aria-pressed=true로 파란 배경이 된 'log x' 버튼은 기본 링이 배경과 비슷한 청색 계열이라 포커스 여부가 거의 구분되지 않음. 박스섀도가 있는 흰 버튼들도 기본 링이 모서리 radius와 어긋나 흐릿함.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css"
+   ],
+   "fix": "공통으로 `.gs-btn:focus-visible{outline:2px solid var(--gs-accent);outline-offset:2px}` 및 pressed 상태용 대비 링(흰색 2px + accent 1px 이중)을 각 engine.css에 추가한다."
+  },
+  {
+   "title": "다크모드 토큰 대비는 양호 (이상 없음 확인)",
+   "area": "접근성(색 대비)",
+   "severity": 1,
+   "effort": "S",
+   "detail": "점검 항목이어서 실측만 기록: 다크 --gs-sub #9aa3af on #0f1419 = 7.26:1, 패널 위 6.91:1로 AA 통과. 라이트 --gs-sub #6b7280 on #fff = 4.83:1로 11px 버튼 텍스트 기준 AA(4.5) 턱걸이 통과. flow-core 다크 --gs-muted #94a3b8 on #0f172a도 유사 수준. 별도 수정 불요하나 라이트 모드 sub를 더 어둡게(#5b6472) 하면 여유가 생김.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+   ],
+   "fix": "필수 아님. 라이트 모드 --gs-sub만 #5b6472 수준으로 한 단계 어둡게 조정하면 11px 소형 텍스트에서도 안전 마진이 확보된다."
+  },
+  {
+   "title": "시리즈에 null 갭 1개 또는 log축이면 LTTB LOD가 통째로 꺼져 대용량 호버가 ~5fps로 저하",
+   "area": "견고성/성능/에러 상태",
+   "severity": 4,
+   "effort": "M",
+   "detail": "xy-core engine.js _lod()(470행대)는 `if (s._hasNull || this.xLog || this.yLog) return s;`로 갭이 있거나 log축이면 다운샘플을 전부 건너뜀. 실측(현행 1.5.0 엔진, Playwright/Chromium): 200k점 라인 — 정상 시리즈는 LOD 4000점·render 4.9ms·호버 프레임 p50 30ms로 부드럽지만, (a) y에 null 1개만 넣으면 lodPts=200000, render 53ms, 호버 프레임 p50 157ms(≈6fps), (b) log-x 토글 시 lodPts=200000, render 94ms, 호버 프레임 p50 229ms(≈4fps). bode/fft/psd처럼 log-주파수 + 대량 포인트가 표준인 타입이 정확히 이 미적용 경로에 떨어진다. 참고로 점검항목 (4)의 'scatter 미적용' 가설은 반증됨 — markers 스타일 100k점도 _lod를 타서 4000점·render 3ms·호버 60fps로 정상(LOD는 스타일이 아니라 갭/log 조건으로 꺼짐).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\_audit2_null200k.html",
+    "D:\\graph-skill\\graph-out\\_audit2_lin200k.html"
+   ],
+   "fix": "갭 시리즈는 null로 분할한 세그먼트별로 LTTB를 적용해 합치고, log축은 log10(x) 좌표계에서 LTTB를 수행하면 동일 코드로 처리 가능. _segments가 이미 갭 분할 로직을 갖고 있으므로 분할 지점을 _lod 앞단으로 옮기면 된다."
+  },
+  {
+   "title": "network-graph 힘 시뮬레이션이 영원히 멈추지 않음 — 정착 후에도 O(n²)+SVG 전체 갱신을 매 프레임 계속, 600노드에서 43fps 상시",
+   "area": "견고성/성능/에러 상태",
+   "severity": 3,
+   "effort": "M",
+   "detail": "flow-core engine.js _renderNetwork()의 step(): `sim.alpha *= 0.985; if (sim.alpha < 0.03) sim.alpha = 0.03;` 후 무조건 raf(step) 재등록 — 종료 조건이 없음(277~279행). 실측: 8노드 기본 샘플도 로드 후 11초 시점에 sim.alpha=0.03, dead=false로 rAF 60fps 루프가 계속 돌며, 매 프레임 n(n-1)/2 반발력 계산 + 모든 circle/text/line 속성 재설정을 수행. 300노드/450링크는 60fps 유지(여유 소진), 600노드/900링크는 fps 52.9→43.1로 떨어진 채 영구 지속. 탭을 열어두는 것만으로 CPU/배터리를 계속 소모하고, 수백 노드부터는 팬/줌·드래그가 항구적으로 버벅인다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\_audit2_net600.html",
+    "D:\\graph-skill\\graph-out\\network-graph.html"
+   ],
+   "fix": "alpha가 임계값(예: 0.031) 이하이고 총 운동에너지가 작으면 루프를 정지하고, 노드 드래그/리사이즈 시 alpha를 재가열해 재시작. 추가로 노드 수백 개 대비로 그리드 버킷(또는 Barnes-Hut) 근사로 반발력을 O(n·k)로 낮추면 좋다."
+  },
+  {
+   "title": "내장 그래프 셀 실패 시 원시 문자열 'engine?' / 'graph err'가 스타일·설명 없이 노출",
+   "area": "견고성/성능/에러 상태",
+   "severity": 3,
+   "effort": "S",
+   "detail": "flow-core engine.js 33행(`div.textContent = \"engine?\"`)·411행(`m.div.textContent = \"graph err\"`), review-matrix engine.js 44행·148행 동일. graph_payloads의 engine이 번들에 없도록 조작한 아티팩트(_audit_engineq.html)를 렌더해 스크린샷으로 확인 — 카드 본문에 맨 텍스트 'engine?'만 표시되고 무슨 그래프가 왜 실패했는지 아무 정보가 없다. 'graph err' catch는 예외 객체를 통째로 삼켜 콘솔에도 원인이 안 남는다. 부트 셸(boot.js)은 .gs-error 스타일+한국어 메시지를 쓰는 것과 대비되어 일관성도 깨진다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\graph-out\\_audit_engineq.html"
+   ],
+   "fix": "mountGraph 실패 시 `<div class=\"gs-error\">내장 그래프 렌더 실패: <엔진명/원인></div>`로 통일하고 catch에서 console.error(err)로 원인을 보존. 두 엔진의 mountGraph가 거의 동일하므로 공통 헬퍼로 빼면 한 곳만 고치면 된다."
+  },
+  {
+   "title": "flow-core 타이틀이 툴바 버튼 위에 겹쳐 렌더 — 모든 titled flowchart/sankey/network 산출물에서 발생",
+   "area": "견고성/성능/에러 상태",
+   "severity": 3,
+   "effort": "S",
+   "detail": "engine.js _buildToolbar()가 title div를 toolbar 내부에 append하는데, engine.css 22행 `.gs-fl-title { position:absolute; top:8px; left:12px; }`의 기준이 (positioned ancestor인) toolbar 자신이라 타이틀이 버튼들 위에 그려진다. Playwright 기하 실측(900x560): flowchart.html title rect [741,16~892] vs 첫 버튼 [729,8] overlap=True, sankey-diagram.html·network-graph.html도 모두 overlap=True. 스크린샷에서도 '수입검사 공정 흐름…' 타이틀이 2줄로 줄바꿈되며 fit/zoom 버튼을 덮어 버튼이 가려진다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\flowchart.html"
+   ],
+   "fix": "title을 toolbar 밖(root 직속)으로 append하거나 .gs-fl-title의 absolute를 제거하고 toolbar를 `left:8px; right:8px; justify-content:space-between` flex로 바꿔 title(좌)·버튼(우)을 분리."
+  },
+  {
+   "title": "대형 flowchart는 전체 보기가 불가능 — fit/줌아웃이 scale 0.05에서 클램프되고 노드 검색 수단이 없음",
+   "area": "견고성/성능/에러 상태",
+   "severity": 3,
+   "effort": "M",
+   "detail": "300노드 체인 실측: world 높이 56,660px, _fit() 결과 scale=0.05 (engine.js 575행 `sc = Math.max(0.05, ...)`), 뷰포트에 다이어그램의 12.7%만 표시 — 'fit' 버튼이 실제로 fit하지 못하고, 휠 줌아웃도 같은 0.05 하한(599행)이라 사용자가 전체 구조를 볼 방법이 없다. review-matrix에는 검색창이 있지만 flow-core에는 노드 검색/하이라이트가 전혀 없어 수백 노드에서 특정 노드를 찾으려면 수십 화면을 패닝해야 한다. (렌더 성능 자체는 양호: 300노드 boot 367ms, _render 97ms.)",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\_audit2_flow300.html"
+   ],
+   "fix": "_fit()의 최소 scale 클램프를 제거(또는 1/64 수준으로 완화)하고 노드 라벨은 일정 scale 이하에서 숨김 처리. 노드 수가 임계 이상이면 toolbar에 검색 input을 추가해 일치 노드로 pan+하이라이트."
+  },
+  {
+   "title": "깨진 graph 셀 참조가 조용히 '—'로 렌더 — builder가 경고 없이 통과시킴",
+   "area": "견고성/성능/에러 상태",
+   "severity": 3,
+   "effort": "M",
+   "detail": "review-matrix에 엔진 포맷의 graph �(`{kind:'graph', ref:'g1'}` + graph_payloads)을 입력하면 matrix_compare.py _cell()이 graph_ref 키만 인식해 payload를 버리고(graph_payloads={}로 출력) ref만 남긴 채 렌더 성공(실측: _audit2_gp_bogus.html, builder.render OK 25KB). 엔진 _cellTd()는 `this.gp[c.ref]`가 없으면 number 분기로 떨어져 셀에 '—'만 표시 — 사용자는 '그래프가 누락됐다'가 아니라 '값이 없다'로 오독한다. validate.py의 validate-v2 주석은 referential-integrity 검사를 표방하지만 cells.ref→graph_payloads 무결성 검사는 없다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\matrix_compare.py",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\validate.py"
+   ],
+   "fix": "normalize 후 kind=='graph' 셀의 ref가 graph_payloads에 존재하는지 structural_requires에서 검사해 MissingFieldsError 질문으로 되돌리고, 엔진 쪽도 gp 누락 시 '—' 대신 'graph 정의 누락(ref)' placeholder를 표시."
+  },
+  {
+   "title": "flow-core 단독·gauge-core 아티팩트에는 .gs-error 스타일이 없어 부트 실패 메시지가 무스타일 맨 텍스트",
+   "area": "견고성/성능/에러 상태",
+   "severity": 2,
+   "effort": "S",
+   "detail": "boot.js는 실패 시 `<div class=\"gs-error\">…</div>`를 삽입하지만 .gs-error CSS는 xy-core/cad3d-core/field-core/smith-core/polar-core engine.css에만 존재. grep 실측: network-graph.html·sankey-diagram.html·chord-diagram.html·sunburst.html·gauge.html에 '.gs-error' 0건 (flowchart.html은 내장 xy-core CSS 덕에 우연히 1건). flow-core 단독 아티팩트에서 부트 실패를 유발해 computed style 확인 — color rgb(0,0,0), padding 0px, 좌상단 기본 텍스트로 출력된다. 같은 실패가 아티팩트 종류에 따라 빨간 중앙 정렬(스타일됨) 또는 검정 맨 텍스트로 다르게 보인다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\shell\\boot.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\shell\\template.html",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\graph-out\\_audit2_bootfail_flowonly.html"
+   ],
+   "fix": ".gs-error 룰을 각 엔진 CSS에서 셸 template.html의 공통 <style>로 이동(중복 정의 제거)하면 어떤 엔진 조합에서도 에러가 일관되게 보인다."
+  },
+  {
+   "title": "빈 데이터·검색 0건 상태에 아무 안내가 없음 (xy 빈 축 / flow-core 백지 / review-matrix 헤더만)",
+   "area": "견고성/성능/에러 상태",
+   "severity": 2,
+   "effort": "S",
+   "detail": "스크린샷 실측 3건: (1) xy-core series=[] → 0~1 빈 축과 툴바만 표시(엔진 fallback full={x:[0,1],y:[0,1]}, engine.js 255행), (2) flow-core nodes=[] → 완전 백지에 떠 있는 버튼 5개, (3) review-matrix 400행에서 'zzz없음' 검색 → 410행 전부 숨김, 헤더 행만 남고 '검색 결과 없음' 문구 없음. builder의 validate 게이트가 완전 빈 payload는 막아주지만(실측: MissingFieldsError 정상 발생), 검색 0건과 legend 토글·내장 payload 경유의 빈 상태는 런타임에서 발생하며 사용자는 '로드가 깨졌나'로 오인하기 쉽다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+    "D:\\graph-skill\\audit-shots\\rm400_nosearchresult.png"
+   ],
+   "fix": "review-matrix _applyFilter()에서 가시 행 0이면 colspan 행으로 '검색 결과 없음 (질의: …)'을 표시하고, xy-core/flow-core는 데이터 0건일 때 중앙에 '표시할 데이터 없음' 워터마크를 그린다."
+  },
+  {
+   "title": "sankey: 링크 유효 합계가 0이면 모든 노드가 최대 높이 막대로 그려져 '값 0'이 가장 커 보임",
+   "area": "견고성/성능/에러 상태",
+   "severity": 2,
+   "effort": "S",
+   "detail": "flow-core engine.js 152행 `n._val = Math.max(inSum, outSum, 1e-9)` + 157행 `k = avail / maxLayerVal` — 모든 노드 throughput이 0이면 전원이 동일한 1e-9가 되어 상대 비율 1로 정규화, 레이어 높이 460px을 가득 채운 풀사이즈 막대 3개가 'A (0)' 라벨로 렌더됨(스크린샷 실측). builder 직접 입력으로는 links가 필수라 도달이 어렵지만, 링크의 source/target id가 전부 오타인 경우나 value 전부 0인 경우 같은 경로로 떨어진다 (오타 경로는 코드 분석 기반 추정).",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\_audit2_sankey_nolinks.html",
+    "D:\\graph-skill\\audit-shots\\_audit2_sankey_nolinks.png"
+   ],
+   "fix": "maxLayerVal이 유효값(>0) 없이 fallback만으로 구성되면 노드를 최소 높이(예: 8px)로 그리고 '유효한 흐름 데이터 없음' 안내를 표시. 존재하지 않는 노드 id를 참조하는 링크는 집계 전에 걸러 경고를 콘솔에 남긴다."
+  },
+  {
+   "title": "graph-out 산출물 91종이 서로 다른 구세대 엔진으로 빌드되어 있어 현행 엔진 수정사항이 반영 안 됨",
+   "area": "견고성/성능/에러 상태",
+   "severity": 2,
+   "effort": "S",
+   "detail": "메타 태그 실측: base_xy.html=xy-core@1.0.0(LOD 코드 자체가 없음, lttb grep 0건), bode.html=1.1.0, _big.html=1.4.0인데 소스 ENGINE_VERSION은 1.5.0; design_state.html=review-matrix@0.1.0 vs 소스 0.3.0. 실제로 이번 감사에서 base_xy.html 기반 합성 테스트가 구엔진 때문에 render 143ms(현행 엔진은 3ms)로 오측정될 뻔했다. 데모/검증 용도로 이 폴더를 열어보는 사용자는 이미 고쳐진 동작(LOD 등)이 없는 산출물을 보게 된다.",
+   "files": [
+    "D:\\graph-skill\\graph-out\\base_xy.html",
+    "D:\\graph-skill\\graph-out\\design_state.html",
+    "D:\\graph-skill\\build_gallery.py",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\ENGINE_VERSION"
+   ],
+   "fix": "엔진 버전 범프 시 build_gallery.py로 graph-out 전체를 재생성하는 절차(또는 CI 훅)를 추가하고, 갤러리 인덱스에 engine_version을 노출해 구세대 산출물을 식별 가능하게 한다."
+  },
+  {
+   "title": "[실측 이상 없음] 대형 3D 아티팩트 로드·review-matrix 검색·scatter LOD는 점검 결과 양호",
+   "area": "견고성/성능/에러 상태",
+   "severity": 1,
+   "effort": "S",
+   "detail": "측정만 기록(수정 불요): (1) 로드 시간 — isosurface-3d.html 1.35MB goto(load) 280ms/엔진 부트 완료 354ms, surface-3d 0.84MB 272/325ms, cad-3d-viewer 266/319ms (로컬 file://, Chromium; 기준 bode 115/138ms). (2) review-matrix 400행x4열 검색 키스트로크당 _applyFilter 0.4~1.4ms — 디바운스 불필요. (3) scatter(markers) 100k점 LOD 정상 적용: 4000점으로 다운샘플, render 3ms, 호버 60fps. 부트 게이트(validate)도 빈 payload를 MissingFieldsError로 정상 차단함을 확인.",
+   "files": [
+    "D:\\graph-skill\\graph-out\\isosurface-3d.html",
+    "D:\\graph-skill\\graph-out\\surface-3d.html",
+    "D:\\graph-skill\\graph-out\\_audit2_rm400.html",
+    "D:\\graph-skill\\graph-out\\_audit2_scatter100k.html"
+   ],
+   "fix": "조치 불요. 회귀 방지를 원하면 위 수치를 tests에 성능 스모크(예: 부트 1s 이내, 키스트로크 16ms 이내)로 고정하는 정도면 충분."
+  },
+  {
+   "title": "SKILL.md가 '엔진은 지금 xy-core 하나'라고 주장 — 실제는 8개 패밀리/91타입 체계로 심각한 스테일",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 4,
+   "effort": "S",
+   "detail": "D:\\graph-skill\\.claude\\skills\\graph-skill\\SKILL.md 7행: \"지금은 `xy-core`(Canvas 2D) 하나지만, ... 나중에 `cad-viewer`(3D CAD...) 같은 패밀리가 추가된다\". 실제 src/graph_skill/data/engines/에는 cad3d-core, field-core, flow-core, gauge-core, polar-core, review-matrix, smith-core, xy-core 8개 패밀리가 이미 존재하고 cad-3d-viewer 타입도 카탈로그(91타입)에 출하돼 있다. 이 문구를 믿은 LLM은 3D/표/게이지/플로우 요청에서 '아직 지원 안 됨'으로 오판하거나 base-xy로 우회할 수 있다. 또한 Tools 표(20~31행)에 실제 등록된 10개 도구 중 ingest_csv/resample/smooth 3종이 누락돼 raw CSV 전처리 경로를 LLM이 모른다.",
+   "files": [
+    "D:\\graph-skill\\.claude\\skills\\graph-skill\\SKILL.md",
+    "D:\\graph-skill\\src\\graph_skill\\tools.py",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines"
+   ],
+   "fix": "7행을 현재 체계(8개 엔진 패밀리, 91타입, 비-xy 패밀리는 graph_schema_get hint의 입력 키를 따른다는 안내)로 갱신하고, Tools 표에 ingest_csv/resample/smooth를 추가한다. 엔진 패밀리 수/타입 수는 빌드 시 카탈로그에서 생성·검증하는 테스트를 붙여 재발을 막는다."
+  },
+  {
+   "title": "MCP 입력 스키마(additionalProperties:false)가 신규 패밀리의 필수 입력 키를 금지 — validate가 시키는 입력을 스키마가 거부하는 자기모순",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 4,
+   "effort": "M",
+   "detail": "src/graph_skill/tools.py의 VALIDATE_SCHEMA/RENDER_SCHEMA는 additionalProperties:false이고 _PAYLOAD_PROPS에는 series/axes/params/options/states/items/spec/meta/field/z만 있다. 그런데 recipes가 실제로 읽고(검증으로 확인: relations.py의 nodes/links, flowchart.py의 nodes/steps, playback.py의 frames, leftovers.py의 tree, cad3d_xtra.py의 level, statistical2.py의 values/categories, wave1.py의 groups, cad3d.py의 freqs 등) validate.check의 ask 문구('links:[{source,target,value}…]를 주세요', 'tree:{name,children…}를 주세요')와 types.json hint가 지시하는 최상위 키들이 스키마에 전부 없다. 스키마를 준수하는 MCP 클라이언트/LLM은 이 키를 보낼 수 없거나 params/options에 잘못 싸서 보내 빈 렌더가 된다(클라이언트 강제 여부에 따른 실패 양상은 추정이나, 스키마-문서 모순 자체는 확인된 사실). 91타입 중 절반 가량(flow/gauge/playback/hierarchy/cad3d/통계 계열)이 영향권.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\tools.py",
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\relations.py",
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\flowchart.py",
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\playback.py",
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\leftovers.py"
+   ],
+   "fix": "_PAYLOAD_PROPS에 nodes/edges/links/value/items/frames/tree/level/steps/values/categories/groups/freqs/mag/phase/axes_labels 등 recipe가 읽는 최상위 키를 명시 추가하거나, additionalProperties:false를 제거하고 '타입별 키는 graph_schema_get hint를 따른다'는 description을 단다. 카탈로그 hint에 등장하는 키가 스키마에 존재하는지 검사하는 테스트를 추가한다."
+  },
+  {
+   "title": "graph_validate_inputs 실패 시 69/91 타입에서 hint가 빈 문자열 — 입력 형태 안내가 정작 필요한 순간에 사라짐",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 3,
+   "effort": "S",
+   "detail": "tools.py validate_inputs는 실패 시 res['hint'] = prompt.hint_for(graph_type)만 호출하는데 prompt._INPUT_HINTS는 22타입만 커버한다(실측: validate_inputs('sankey-diagram',{}) → hint:''). 반면 types.json에는 91타입 전부 입력 예시가 담긴 한글 hint가 있다. schema_get은 폴백(prompt or catalog)이 있지만 validate_inputs는 없어서, 신규 69타입에서 검증 실패 직후 LLM이 입력 형태를 다시 schema_get으로 조회해야 하는 불필요한 왕복이 생긴다. 부수적으로 schema_get에서는 영어 prompt hint가 더 풍부한 한글 types.json hint를 22타입에서 덮어써 언어/내용이 비일관하다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\tools.py",
+    "D:\\graph-skill\\src\\graph_skill\\prompt.py",
+    "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\types.json"
+   ],
+   "fix": "validate_inputs의 hint를 `prompt.hint_for(gt) or catalog.get_schema(gt)['hint']`로 폴백시킨다. 장기적으로 hint SSOT를 types.json으로 일원화하고 prompt._INPUT_HINTS는 제거 또는 types.json 생성 소스로 전환한다."
+  },
+  {
+   "title": "taxonomy 카테고리가 신규 패밀리를 수용 못 함 — sankey/gauge/network/stat-card가 'ranking(순위·구성)', flowchart가 'table(점검·비교표)'에 강제 편입",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 3,
+   "effort": "M",
+   "detail": "taxonomy 실측: sankey-diagram/gauge/network-graph/stat-card/bar-chart-race/treemap-drilldown/sunburst → category 'ranking', flowchart → 'table', bubble-timeline/overview-detail → 'trend'. SKILL.md와 graph_types_list의 카테고리 설명은 ranking='범주 크기·우선순위', table='항목/설계안 점검·비교'라서, '흐름도/네트워크/KPI 게이지'를 찾는 LLM이 의도→카테고리 동선으로는 절대 도달하지 못한다(SKILL.md 38~54행 대표 타입에도 신규 타입이 하나도 없음). graph_find가 우회로지만 SKILL.md는 'graph_types_list 항상 먼저'를 지시한다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\taxonomy.json",
+    "D:\\graph-skill\\.claude\\skills\\graph-skill\\SKILL.md",
+    "D:\\graph-skill\\src\\graph_skill\\taxonomy.py"
+   ],
+   "fix": "'relations(흐름·관계)', 'hierarchy(계층·구성)', 'kpi-status(지표·현황)', 'playback(시간 재생)' 같은 카테고리를 추가해 재분류하고 SKILL.md 분류표의 대표 타입에 신규 타입을 반영한다. 카테고리 desc와 소속 타입의 의미 정합성을 점검하는 테스트(coverage 확장)를 둔다."
+  },
+  {
+   "title": "graph_find 한글 동의어 공백 — '샌키/생키', '계기판', '네트워크', '상자그림', '폭포', '조직도' 검색 0건",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 2,
+   "effort": "S",
+   "detail": "taxonomy.find 실측: '막대 경주'→bar-chart-race, '등위면'→isosurface-3d, 'focus context'→overview-detail는 정확히 적중(양호). 반면 '샌키'/'생키'→0건(키워드가 'sankey','흐름도'뿐), '계기판'→0건(gauge는 '게이지','속도계'만), '네트워크'→0건(network-graph 키워드가 영문 'network'와 '연결망','토폴로지'), '상자그림'→0건, '폭포'→0건(waterfall), '조직도'→0건. find가 단순 부분문자열 매칭이라 한글 표기 변형을 못 잡는다. 사용자가 흔히 쓰는 한국어 차트명이 빠져 첫 검색이 빈손이 된다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\taxonomy.json",
+    "D:\\graph-skill\\src\\graph_skill\\taxonomy.py"
+   ],
+   "fix": "taxonomy.json 키워드에 한글 동의어(샌키/생키, 계기판, 네트워크, 상자그림/박스플롯, 폭포차트, 조직도/관계도 등)를 보강한다. 대표 한국어 질의 목록으로 find가 적중하는지 검사하는 회귀 테스트를 추가한다."
+  },
+  {
+   "title": "bubble-timeline/overview-detail에서 같은 축 필드에 누락 질문이 두 번(서로 다른 문구로) 생성",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 2,
+   "effort": "S",
+   "detail": "validate.check('bubble-timeline', {}) 실측: missing에 axes.x가 2회(일반 게이트의 'x축이 무슨 물리량이고 단위가 무엇인가요?...' + structural_requires의 'x축의 label과 unit을 알려주세요...'), axes.y도 2회 들어간다. overview-detail도 axes.x 중복. questions[] 배열에 같은 질문이 다른 문구로 반복돼 LLM이 사용자에게 같은 것을 두 번 묻거나 별개 항목으로 오해할 수 있다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\validate.py",
+    "D:\\graph-skill\\src\\graph_skill\\recipes\\playback.py"
+   ],
+   "fix": "validate.check 말미에 missing을 field 기준으로 dedupe(첫 항목 유지)하거나, require_axes=true인 타입의 structural_requires에서 axes 검사를 제거한다."
+  },
+  {
+   "title": "graph_embed_block 기본 높이가 타입 불문 520px 고정 — HTML meta의 recommended_height_px(240~640)를 활용하지 않음",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 2,
+   "effort": "S",
+   "detail": "builder.embed_block은 height_px 미지정 시 무조건 520을 쓴다. 카탈로그 권장 높이는 stat-card 240, gauge 320, review-matrix류 600, scatter-matrix 620, multitrack-stack 640으로 타입별 편차가 크고, 렌더된 HTML 안에는 meta.recommended_height_px가 이미 박혀 있다(builder.py 59~64행). LLM이 --height 전달을 잊으면 표 계열은 잘리고(600→520) 카드/게이지는 과도한 여백이 생긴다. 참고로 권장 높이 자체는 합리적임을 스크린샷으로 확인: gauge 3개 그리드가 320px에 정상 수납, isosurface-3d 520px 정상, design_state 600px은 내용 초과분 내부 스크롤.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\builder.py",
+    "D:\\graph-skill\\src\\graph_skill\\tools.py"
+   ],
+   "fix": "embed_block에서 height_px 미지정 시 대상 HTML의 meta.recommended_height_px를 파싱해 기본값으로 사용하고, 못 찾을 때만 520으로 폴백한다."
+  },
+  {
+   "title": "flowchart 제목이 우상단 툴바 버튼과 겹쳐 렌더됨 (높이 검증 중 관찰된 렌더 결함)",
+   "area": "LLM/사용자-facing API 인체공학",
+   "severity": 2,
+   "effort": "S",
+   "detail": "graph-out/flowchart.html을 900x560으로 렌더한 스크린샷(audit-shots/flowchart_900x560.png)에서 제목 '수입검사 공정 흐름 (그림·표·그래프 내장)'이 우상단 툴바 버튼들 위에 겹쳐 글자와 버튼이 서로를 가린다. 다른 패밀리(gauge/isosurface/xy)는 제목 좌측·툴바 우측으로 분리돼 정상. 본 감사 차원(API 인체공학) 밖의 flow-core 엔진 레이아웃 문제지만 사용자에게 즉시 보이는 결함이라 기록한다.",
+   "files": [
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+    "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+    "D:\\graph-skill\\graph-out\\flowchart.html"
+   ],
+   "fix": "flow-core의 제목 요소를 다른 엔진처럼 좌상단 고정 + 툴바와 겹치지 않는 z-index/여백 레이아웃으로 수정하고, 제목 길이가 길 때 말줄임 처리한다."
+  }
+ ],
+ "roadmap": {
+  "p0": [
+   {
+    "title": "flow-core 타이틀을 툴바 밖(root)으로 이동 — 버튼 겹침 해소",
+    "area": "flow-core 레이아웃",
+    "rationale": "감사에서 6회 중복 보고된 최다 발견 결함(severity 4). flowchart/sankey/network/chord/sunburst 등 제목 있는 모든 flow 산출물의 첫 화면이 깨져 보인다. 원인이 단일하고(engine.js:681이 타이틀 div를 absolute 툴바 안에 append → containing block이 툴바가 됨) 수정이 사실상 1줄이라 효과 대비 비용이 가장 낮다.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+    ],
+    "fix": "engine.js:681의 `bar.appendChild(el(\"div\",\"gs-fl-title\",this.opts.title))`를 `this.root.appendChild(...)`로 변경해 .gs-fl-title(absolute top:8 left:12)이 root 기준으로 좌상단에 배치되게 한다. 긴 제목 대비 max-width:calc(100% - 220px) + text-overflow:ellipsis를 CSS에 추가. 검증: flowchart/sankey/network 3종 900px·360px 스크린샷에서 타이틀-버튼 rect overlap=False 확인."
+   },
+   {
+    "title": "flow-core·gauge-core engine.css에 html/body 리셋 추가 — 높이 붕괴·8px 테두리·iframe 미채움 일괄 해소",
+    "area": "flow-core/gauge-core CSS",
+    "rationale": "3건 병합(360px 띠 붕괴, 다크 8px 검은 액자, iframe 죽은 여백/잘림). 순수 flow 산출물 4종 + gauge 전부가 임베드에서 항상 깨져 보이는 severity 4 문제인데, 다른 6개 패밀리에 이미 있는 리셋 2줄을 복사하는 수준이라 즉시 가능.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\types.json"
+    ],
+    "fix": "두 engine.css 맨 위에 `*,*::before,*::after{box-sizing:border-box} html,body{margin:0;padding:0;height:100%}` 추가(xy-core/review-matrix와 동일 문구). gauge min-height:320px→240px, flow min-height:360px→240px로 완화. types.json의 bullet-chart height_px(300) vs min-height 불일치를 함께 정리(권장 높이 320으로 올리거나 min-height 240 적용으로 해소). 검증: sankey/gauge를 520px·300px iframe에서 루트 clientHeight==iframe 높이 확인."
+   },
+   {
+    "title": "휠 스크롤 트랩 제거 — Ctrl(⌘)+휠일 때만 줌, 일반 휠은 페이지 스크롤 통과",
+    "area": "임베드 전 엔진 공통",
+    "rationale": "감사 유일의 severity 5 임베드 결함. 보고서를 스크롤하던 독자가 그래프마다 걸려 멈추고 자기도 모르게 차트를 파괴(bode가 10^-8~10^12Hz로 줌아웃)하는 실측 재현 문제. 임베드가 이 스킬의 주 사용처라 체감 1순위. 패턴(지도 임베드 표준)이 확립돼 있어 M이지만 위험이 낮다.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\field-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css"
+    ],
+    "fix": "wheel 핸들러 4곳(xy-core:773, field-core:343·378, flow-core:595-602, cad3d OrbitControls)에 공통 게이트: `if(!e.ctrlKey && !e.metaKey){ showZoomHint(); return; }`(preventDefault 안 함 → 페이지 스크롤 유지), Ctrl+휠일 때만 기존 줌 + preventDefault. showZoomHint는 'Ctrl+스크롤로 확대' 반투명 오버레이를 1.5초 표시 후 페이드. cad3d는 controls.enableZoom을 동일 게이트로 토글. xy/field canvas의 touch-action:none→pan-y로 완화해 모바일 세로 스크롤 통과. 검증: 부모 페이지에 3개 iframe 넣고 휠 5회에 scrollY 증가 + 차트 view 불변 확인."
+   },
+   {
+    "title": "playback/stream 4종 빈 화면 복구 + 내부 캐리어 시리즈 숨김 + 범례 토글 시 줌 유지",
+    "area": "xy-core 시리즈/범례",
+    "rationale": "3건 병합(같은 캐리어 메커니즘·같은 engine.js). bubble-timeline 등 4타입이 완전히 빈 화면으로 출하 중인 severity 5 기능 결함이고, _carrier/_pc/_tm 범례 노출(sev4)과 토글 시 autoFit 줌 리셋(sev2)도 같은 시리즈/범례 코드 경로라 한 번에 수정하는 게 효율적. 모두 S급 국소 수정.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\recipes\\playback.py",
+     "D:\\graph-skill\\src\\graph_skill\\recipes\\leftovers.py",
+     "D:\\graph-skill\\src\\graph_skill\\validate.py"
+    ],
+    "fix": "(1) engine.js setData(186행)에 폴백: s.x가 없고 s.data가 [[x,y],...]면 unzip해 s.x/s.y 생성(base_xy.py의 변환과 동일 규칙). (2) _buildLegend·_hitTest·툴팁에서 이름이 '_'로 시작하거나 style==='none'인 시리즈 제외. (3) _toggleSeries(870)·_isolateSeries(874)에서 현재 view가 full 도메인과 다르면 autoFit 대신 render()만 호출(잠금·커서 보존). (4) validate.py에 playback 계열 스모크: 렌더 후 view 도메인이 [0,1] 기본값이 아닌지 검사. 검증: bubble-timeline/bar-chart-race/animated-trajectory/stream-graph 재생성 후 점 개수>0, 범례에 '_' 항목 0개."
+   },
+   {
+    "title": "review-matrix 셀 그래프 크기 폭발 차단 (.gs-root 규칙 침식 오버라이드)",
+    "area": "review-matrix CSS",
+    "rationale": "셀 미니그래프가 220x130이 아닌 528x240으로 렌더되어 비교표가 뷰포트 2배(1814px)로 넘치고 v3 열이 아예 안 보이는 severity 4 결함 — review-matrix의 존재 이유(나란히 비교)를 부정한다. CSS 한 블록으로 해결되는 S 수정. 셀이 정상 크기가 되면 wide 그래프 셀 초과 문제(P1)도 상당 부분 완화된다.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css"
+    ],
+    "fix": "engine.css에 `.gs-cell-graph.gs-root{width:220px;height:130px;min-height:0;aspect-ratio:auto;}` 오버라이드 추가(xy-core의 .gs-root{width:100%;min-height:240px;aspect-ratio:16/9}보다 특이도 높음). 모달 내 마운트(.gs-modal 내부)는 영향 없도록 셀렉터를 셀 한정으로 유지. 검증: design_state.html 재생성 후 셀 그래프 3개 rect 220x130, 테이블 폭 ≤ 뷰포트 확인."
+   },
+   {
+    "title": "모달 Escape 닫기 + role=dialog/aria-label (flow-core·review-matrix 공통)",
+    "area": "DOM 엔진 모달",
+    "rationale": "2건 병합(인터랙션 감사 + 접근성 감사가 같은 결함 보고). 86vw×82vh 준전체화면 오버레이가 표준 닫기 키를 무시하는 건 모든 사용자가 즉시 부딪히는 마찰이고, 두 엔진에 동일 패턴 ~15줄이면 끝나는 S 수정.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js"
+    ],
+    "fix": "두 엔진의 _buildModal/open 경로에 동일 패턴: open 시 `this._esc=(e)=>{if(e.key==='Escape')this._closeModal()}; document.addEventListener('keydown',this._esc)` 등록, close 시 removeEventListener. 모달 박스에 role=\"dialog\" aria-modal=\"true\", × 버튼(gs-fl-x/gs-x)에 aria-label=\"닫기\" 추가, open 시 × 버튼 focus()·close 시 트리거 요소로 포커스 복원. 검증: Playwright로 모달 open→Escape→classList에 open 부재 확인(두 엔진)."
+   },
+   {
+    "title": "network force 시뮬레이션 종료 조건 추가 — 무한 rAF/CPU 상주 제거",
+    "area": "flow-core 성능/모션",
+    "rationale": "3건 병합(인터랙션·모션·성능 감사 동일 근본 원인: engine.js:277의 alpha 하한 0.03 + 무조건 raf 재호출). 탭을 열어두기만 해도 O(n²) 계산이 60fps로 영구 가동되고 노드가 상시 잔떨림 — 보고서에 임베드되면 페이지 전체 배터리를 소모한다. 정지 조건 추가는 수 줄짜리 S 수정.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+    ],
+    "fix": "engine.js:277의 `if(sim.alpha<0.03) sim.alpha=0.03` floor를 제거하고 step() 말미를 `if(sim.alpha>0.005) raf(step); else sim.running=false;`로 변경. 노드 pointerdown(드래그 시작)·리사이즈 시 `sim.alpha=0.6; if(!sim.running){sim.running=true; raf(step);}`로 재가열. 검증: network-graph.html 로드 5초 후 2초간 attribute 변경 0회, 노드 드래그 시 레이아웃 재가동 확인. (Barnes-Hut 근사 등 대규모 최적화는 P2로 분리)"
+   },
+   {
+    "title": "flow-core 팬 후 노드 클릭 죽음 수정 (_panned 플래그 리셋)",
+    "area": "flow-core 인터랙션",
+    "rationale": "팬은 flow 다이어그램의 가장 흔한 첫 조작인데 그 직후 노드 클릭이 전부 막혀 '클릭이 안 된다'는 인상을 준다(Playwright 재현 확정). early-return 앞에 리셋 한 줄이면 되는 전형적 P0.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+    ],
+    "fix": "engine.js:583-585 stage mousedown 핸들러에서 .gs-fl-clickable 대상 early-return 이전에 `self._panned=false;`를 항상 실행. 더 견고하게는 카드 자신의 pointerdown 좌표와 click 좌표 거리(>4px)로 팬 여부를 판정해 전역 플래그 의존을 제거. 검증: 배경 팬 → 노드 클릭 → 모달 open=True (기존 재현 시나리오 역검증)."
+   },
+   {
+    "title": "embed_block() 기본 높이를 아티팩트의 recommended_height_px에서 읽기",
+    "area": "builder/임베드 API",
+    "rationale": "2건 병합. 타입별 권장 높이(240~640)가 이미 HTML meta에 박혀 있는데 호출자가 안 넘기면 무조건 520 — gauge는 200px 죽은 여백, review-matrix는 내부 스크롤. 같은 모듈에 정답이 있어 연결만 하면 되는 S 수정이고, 위 CSS 수정들과 합쳐져야 임베드 기본 경험이 완성된다.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\builder.py"
+    ],
+    "fix": "builder.py embed_block(139행)에서 height_px가 None이면 대상 html을 열어 #graph-config JSON(builder.py:62에서 쓰는 meta)의 meta.recommended_height_px를 파싱해 기본값으로 사용, 파싱 실패 시에만 520 폴백. 검증: gauge.html embed_block() 기본 호출이 height=320, review-matrix류가 600을 내는 단위 테스트 추가."
+   },
+   {
+    "title": "SKILL.md 스테일 해소 — 8개 엔진 패밀리/91타입 현행화 + Tools 표 보강",
+    "area": "LLM-facing 문서",
+    "rationale": "'엔진은 xy-core 하나'라는 7행 문구를 믿은 LLM이 3D/표/게이지/플로우 요청을 '미지원'으로 오판하거나 base-xy로 우회하는 severity 4 라우팅 결함. 문서 수정이라 비용이 가장 낮으면서 스킬 전체 활용도를 좌우한다.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\.claude\\skills\\graph-skill\\SKILL.md",
+     "D:\\graph-skill\\src\\graph_skill\\tools.py"
+    ],
+    "fix": "SKILL.md 7행을 '8개 엔진 패밀리(xy/field/polar/smith/cad3d/flow/gauge/review-matrix), 91타입; 비-xy 패밀리 입력 키는 graph_schema_get hint를 따른다'로 갱신. Tools 표(20-31행)에 누락된 ingest_csv/resample/smooth 3종 추가. 분류표(38-54행) 대표 타입에 sankey/gauge/flowchart/cad-3d-viewer 등 신규 타입 반영. 재발 방지로 '엔진 디렉터리 수 == 문서 기재 수' 검증 테스트를 tests에 추가."
+   },
+   {
+    "title": "tools.py 묶음: MCP 스키마 additionalProperties 자기모순 해소 + validate_inputs hint 폴백",
+    "area": "MCP/LLM API",
+    "rationale": "2건 병합(동일 파일 tools.py). 스키마가 validate.check의 ask 문구가 요구하는 키(links/tree/frames 등)를 금지하는 자기모순은 91타입 중 절반의 입력을 막을 수 있는 severity 4. hint 폴백(69/91 타입에서 빈 문자열)은 1줄. 최소 수정(additionalProperties 완화 + or-폴백)은 모두 S급.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\tools.py",
+     "D:\\graph-skill\\src\\graph_skill\\prompt.py",
+     "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\types.json"
+    ],
+    "fix": "(1) VALIDATE_SCHEMA/RENDER_SCHEMA에서 additionalProperties:false 제거(또는 _PAYLOAD_PROPS에 nodes/edges/links/items/frames/tree/level/steps/values/categories/groups/freqs/mag/phase 명시 추가)하고 description에 '타입별 최상위 키는 graph_schema_get hint를 따름' 명기. (2) validate_inputs의 hint를 `prompt.hint_for(gt) or catalog.get_schema(gt)['hint']`로 폴백. (3) 회귀 테스트: types.json hint에 등장하는 모든 최상위 키가 스키마에서 허용되는지 검사. hint SSOT 일원화는 P2로 이연."
+   },
+   {
+    "title": "xy-core 오버레이 레이아웃 예약 — 컨트롤바·범례·재생바·filter-panel 겹침 일괄 해소 + y2 제목 잘림",
+    "area": "xy-core 레이아웃",
+    "rationale": "6건 병합(좁은 폭 컨트롤바/제목 가림 3회 보고, filter-panel이 범례 완전 덮음, 재생바가 x축 가림, y2 제목 캔버스 밖 잘림). 근본 원인이 하나 — _layout(318행)이 absolute 오버레이들의 높이를 전혀 예약하지 않음. 보고서 본문 컬럼 폭(500-700px)에서 매번 보이는 문제라 임베드 체감이 크고, offsetHeight 측정→마진 가산은 기계적인 수정. M이지만 P0에 포함할 가치가 충분.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\filter-panel.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\playback.js"
+    ],
+    "fix": "(1) _layout(318행)에서 controlbar.offsetHeight를 top 마진에, legend.offsetHeight + (playbar?playbar.offsetHeight:0) + (filterPanel?높이:0)를 bottom 마진에 가산하고, 오버레이 크기 변화 시 ResizeObserver로 재레이아웃. (2) filter-panel 사용 시 범례를 우측 하단으로 이동(좌하단 좌표 충돌 제거). (3) y2 제목(450행) translate 기준을 W-4→W-14로 옮기고 right 마진에 제목 폭 16px 반영. (4) 캔버스 제목 폭을 (전체폭-툴바폭)으로 제한해 말줄임. 검증: bode 360px·filter 900px·bubble-timeline 900px에서 오버레이 rect와 plot/축라벨 rect overlap=False. (좁은 폭 ⋯ 메뉴 접기는 P1로 분리)"
+   }
+  ],
+  "p1": [
+   {
+    "title": "LTTB LOD가 null 갭/log축에서 꺼지는 경로 수리 — bode/fft/psd 대용량 5fps 해소",
+    "area": "xy-core 성능",
+    "rationale": "severity 4 실측 성능 결함(200k점 + null 1개 또는 log축 → 호버 4~6fps)이고 log-주파수 + 대량 포인트가 표준인 타입들이 정확히 이 경로에 떨어진다. 다만 세그먼트별 LTTB·log 공간 샘플링은 시각 충실도 검증이 필요한 알고리즘 작업이라 다음 차수.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js"
+    ],
+    "fix": "_lod()의 `if (s._hasNull || this.xLog || this.yLog) return s;` 조기 탈출 제거. 갭 시리즈는 기존 _segments 분할 로직을 _lod 앞단으로 옮겨 세그먼트별 LTTB 후 null로 재결합. log축은 log10(x) 좌표계에서 LTTB 수행. 회귀: 200k점+null·log-x 케이스에서 lodPts≤8000, 호버 p50<33ms 성능 스모크 테스트 추가."
+   },
+   {
+    "title": "터치 입력 1급 지원 — flow-core pointer events 전환 + xy/field 핀치줌 + 탭 툴팁",
+    "area": "입력장치(터치)",
+    "rationale": "3건 병합. flow-core는 터치에서 팬·드래그가 완전 불가(sev4)하고 xy/field는 touch-action:none으로 브라우저 핀치까지 막으면서 자체 핀치줌이 없어 모바일 확대 수단이 0(WCAG 1.4.4 계열). 중요하지만 멀티포인터 추적·핀치 수학·실기기 검증이 필요한 설계 작업.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\field-core\\engine.js"
+    ],
+    "fix": "flow-core _bindPanZoom과 network 노드 드래그를 mousedown/mousemove/mouseup → pointerdown/pointermove/pointerup + setPointerCapture로 교체(stage touch-action:none). xy/field는 활성 포인터를 Map으로 추적해 2포인터 거리 비율로 기존 커서 중심 _zoom 재사용 핀치줌 구현. xy 클릭-락 직후 _showTooltip() 호출로 탭에서도 시리즈 값 표시. 폴백으로 ＋/－ 줌 버튼을 xy/field 툴바에 추가. P0의 Ctrl+휠 게이트와 핀치 줌 제스처가 충돌하지 않게 설계."
+   },
+   {
+    "title": "테마 통일 패키지 — 부모 보고서와 테마 동기화 채널 + 다크 팔레트 단일화 + smith Okabe-Ito",
+    "area": "테마/시각 일관성",
+    "rationale": "4건 병합(postMessage 채널 부재, 다크 팔레트 #0f1419 vs #0f172a 분열 + flow 임베드 여부 따라 배경/폰트 변동, smith 비색맹안전 팔레트, cad3d matchMedia 1회 읽기). 임베드 보고서가 다크인데 iframe만 흰색인 문제는 체감이 크지만 부모 측 프로토콜 정의·report-write와의 합의가 필요해 설계 차수.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\shell\\boot.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\shell\\template.html",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\smith-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js"
+    ],
+    "fix": "(1) boot.js에 message 리스너({type:'gs-theme',theme:'light|dark|auto'} → 루트 data-theme 갱신)와 ?theme= 쿼리 지원 추가, embed_block() 산출 스니펫/문서에 부모 postMessage 예시 명시. (2) 전 엔진 다크 토큰을 #0f1419/#e8eaed/#60a5fa로 통일하고 flow/gauge 다크 블록에 --gs-accent:#60a5fa 추가. (3) xy-core 루트 셀렉터를 .gs-root:not(.gs-flow):not(.gs-matrix)로 좁혀 임베드 침식 차단. (4) smith PALETTE를 Okabe-Ito(#0072B2,#D55E00,#009E73,#CC79A7,#E69F00,#56B4E9)로 교체. (5) cad3d는 matchMedia('(prefers-color-scheme)') change 이벤트 구독."
+   },
+   {
+    "title": "review-matrix 마감 묶음 — sticky 헤더 변수화·검색 0건 메시지·셀 컨트롤 격리·wide 셀 초과·heat 대비",
+    "area": "review-matrix",
+    "rationale": "5건 병합(동일 엔진 파일들). 각각 S~M이지만 sticky 47px 하드코딩(2회 보고), 미니그래프 버튼 클릭 시 모달 오발(기능 충돌), wide 그래프 뷰포트 216px 초과, WCAG 1.9:1 대비 실패 등 표 계열 전반의 품질 문제라 한 차수에 모아 처리하는 게 효율적. wide 셀과 셀 컨트롤 격리는 P0의 셀 크기 수정 결과를 보고 범위를 정해야 해서 다음 차수.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css"
+    ],
+    "fix": "(1) ResizeObserver로 toolbar.offsetHeight를 --gs-toolbar-h CSS 변수로 주입, thead th top:var(--gs-toolbar-h). (2) _applyFilter에서 가시 행 0이면 colspan 전체 '\"{query}\" 검색 결과 없음' 행 표시. (3) 셀 마운트 시 xy-core에 {controlbar:false} 옵션을 추가해 미니그래프 컨트롤/HUD 제거(상호작용은 모달 전용), 셀 div에 title=\"클릭하여 확대\"+⤢ 아이콘. (4) .gs-mx-table table-layout:fixed 또는 wide 셀 max-width:calc(100% - 라벨열폭). (5) heat 글자색을 배경 상대 휘도 기반(luminance>0.45→#111, else #fff)으로 교체."
+   },
+   {
+    "title": "비-데카르트 플러그인 크롬 정리 — treemap 축/HUD/log 버튼 숨김 옵션 + parcoord min/max 라벨 가시화",
+    "area": "xy-core 플러그인",
+    "rationale": "2건 병합. treemap에 0..1 축과 ': 0.1024' HUD가 노출되고 parcoord는 브러시 기준값이 전혀 안 보이는 문제 — 플러그인 주도 그래프에 대한 엔진 크롬 on/off 옵션 체계(hideAxes 등)를 새로 설계해야 해서 P1. parcoord 라벨만 떼면 S지만 같은 플러그인 표시 계층 작업이라 함께 처리.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\treemap-drill.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\parcoord.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js"
+    ],
+    "fix": "(1) xy-core options에 hideAxes/hideLogButtons/hideHUDxy 추가, treemap/parcoord 레시피가 이를 출력. (2) HUD 빈 라벨 시 'x'/'y' 폴백(engine.js:641). (3) 브레드크럼을 HUD와 안 겹치게 우측 이동. (4) 엔진에 클립 해제 후 호출되는 onDrawOutside 훅 추가, parcoord 라벨(52-53행)을 이 훅 또는 플롯 안쪽(pl.top+10/pl.bottom-4)으로 이동. 브러시 중 현재 범위 실값 HUD 표시."
+   },
+   {
+    "title": "인터랙션 발견가능성 패키지 — '?' 치트시트·커서 어포던스·sunburst 드릴다운 힌트·flow 팬줌 토스트",
+    "area": "전 엔진 발견가능성",
+    "rationale": "4건 병합. shift+박스줌/휠 수정키/더블클릭 리셋/범례 dblclick/축 브러시/드릴다운 등 핵심 기능이 화면 어디에도 안내되지 않아 기능 자체가 묻힌다. 중요하지만 어떤 안내 패턴(치트시트/토스트/상시 힌트)을 쓸지 UX 설계가 선행돼야 하고 좁은 폭 ⋯ 메뉴 접기(P0에서 분리)도 여기서 함께 설계.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\xbrush.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\plugins\\parcoord.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+    ],
+    "fix": "(1) xy 컨트롤바에 '?' 버튼 → 단축키/제스처 치트시트 오버레이. (2) xbrush 핸들·parcoord 축 근처에서 cursor를 ew-resize/crosshair로 전환. (3) sunburst 세그먼트 <title>에 '클릭하여 드릴다운' 추가 + 드릴 경로 브레드크럼 표시. (4) flow 최초 로드 시 2초 '드래그: 이동 · Ctrl+휠: 확대' 토스트(P0 휠 게이트 힌트와 통합) + 빈 배경 더블클릭=fit. (5) 480~640px 미만에서 PNG/CSV/{} 버튼을 ⋯ 단일 메뉴로 접기. 버튼 title 한국어 통일."
+   },
+   {
+    "title": "임베드 모달 크기 적응 — 작은 iframe에서 모달 잘림/이중 스크롤 해소",
+    "area": "임베드 모달",
+    "rationale": "300px iframe에서 '크게 보기' 모달이 iframe보다 커져 잘리고 내부 스크롤이 강제되는 실측 문제. vh 기반 고정값을 컨테이너 상대값으로 바꾸고 임계 미만 시 새 탭 폴백을 정하는 등 동작 정의가 필요해 P1.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+    ],
+    "fix": ".gs-fl-modal-graph의 min-height:340px를 max(180px, 60%)류 컨테이너 상대값으로, 모달 박스를 inset:8px 기반으로 변경해 항상 컨테이너 안에 수납. review-matrix .gs-modal-box(86vw×82vh)도 동일 원칙 적용. 컨테이너 높이 <360px이면 모달 대신 '새 탭에서 열기' 링크 폴백 제공."
+   },
+   {
+    "title": "flowchart fit/스케일 정책 재설계 — 판독 가능한 전체 보기 + 대형 그래프 탐색",
+    "area": "flow-core 레이아웃",
+    "rationale": "2건 병합(기본 fit에서 라벨 판독 불가 + 300노드에서 scale 0.05 클램프로 fit 자체가 불가, 노드 검색 부재). 최소 스케일 보장·semantic zoom·검색은 상호 트레이드오프가 있는 설계 문제라 P1.",
+    "effort": "L",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+    ],
+    "fix": "(1) 기본 rank_gap 120→60. (2) _fit()이 스케일 0.7 미만이 필요하면 폭 기준 fit + 세로 팬 유도로 전환. (3) 575·599행의 0.05 하한을 1/64 수준으로 완화하되 일정 스케일 이하에선 카드 본문 숨기고 헤더만 표시(semantic zoom), 라벨도 임계 이하 숨김. (4) 노드 수 임계 초과 시 툴바에 검색 input 추가 → 일치 노드로 pan+하이라이트."
+   },
+   {
+    "title": "에러·빈 상태 표준화 — .gs-error 공통화, 'engine?/graph err' 제거, 빈 데이터 워터마크, 깨진 graph ref 검증, sankey 0값",
+    "area": "견고성/에러 상태",
+    "rationale": "5건 병합(모두 '실패/빈 상태가 무언·오도'라는 같은 주제). 개별로는 S~M이지만 에러 표시 규약(.gs-error를 셸로 이동)과 validate referential-integrity 추가 등 계층 간 정리가 필요해 한 차수로 묶는다.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\shell\\template.html",
+     "D:\\graph-skill\\src\\graph_skill\\data\\shell\\boot.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\recipes\\matrix_compare.py",
+     "D:\\graph-skill\\src\\graph_skill\\validate.py"
+    ],
+    "fix": "(1) .gs-error CSS를 각 엔진에서 template.html 공통 <style>로 이동. (2) flow/review-matrix mountGraph 실패 시 'engine?'/'graph err' 대신 `<div class=\"gs-error\">내장 그래프 렌더 실패: {엔진명/원인}</div>` + console.error(err) — 두 엔진의 mountGraph를 공통 헬퍼로 추출. (3) xy/flow 데이터 0건 시 중앙 '표시할 데이터 없음' 워터마크. (4) matrix_compare.py structural_requires에 graph 셀 ref→graph_payloads 무결성 검사 추가(MissingFieldsError로 회송), 엔진은 gp 누락 시 'graph 정의 누락(ref)' placeholder. (5) sankey maxLayerVal이 유효값 없이 폴백뿐이면 최소 높이 8px + '유효한 흐름 데이터 없음' 안내, 미존재 노드 id 링크는 집계 전 필터+콘솔 경고."
+   },
+   {
+    "title": "접근성 1차 패스 — canvas role=img/aria-label, 아이콘 버튼 aria-label, focus-visible, reduced-motion",
+    "area": "접근성",
+    "rationale": "4건 병합(전부 S급 기계적 수정이지만 6~8개 엔진 파일에 걸친 횡단 작업). 스크린리더에 빈 화면(sev3), 글리프 버튼 무음, 포커스 링 식별 불가, prefers-reduced-motion 0건 — 법적/정책 요구가 걸릴 수 있는 기본기라 다음 차수에 일괄 처리.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\shell\\boot.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css"
+    ],
+    "fix": "(1) boot.js mount 직후 canvas에 role='img' + aria-label(title+축 라벨) 일괄 부여, gauge는 label/value/unit·xy는 시리즈명을 sr-only 요약 div로 출력. (2) 각 엔진 _btn 헬퍼에 b.setAttribute('aria-label', title) 추가(6개 파일 각 1줄), gauge 영어 title을 한국어로 통일, 토글 버튼에 aria-pressed. (3) 전 엔진 CSS에 .gs-btn:focus-visible{outline:2px solid var(--gs-accent);outline-offset:2px} + pressed용 이중 링. (4) 공용 REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches — gauge 로드 애니 t=1 즉시 그리기, network 동기 수렴 후 1회 paint, playback/cad3d 프레임 점프."
+   },
+   {
+    "title": "taxonomy 카테고리 재설계 — relations/hierarchy/kpi-status/playback 신설로 신규 패밀리 라우팅 복구",
+    "area": "LLM-facing API",
+    "rationale": "sankey/gauge/network/flowchart이 'ranking'·'table'에 강제 편입되어 의도→카테고리 동선으로 도달 불가(sev3). 카테고리 체계 변경은 SKILL.md 분류표·기존 LLM 프롬프트 호환성에 영향을 줘 설계·검증이 필요한 M 작업.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\taxonomy.json",
+     "D:\\graph-skill\\.claude\\skills\\graph-skill\\SKILL.md",
+     "D:\\graph-skill\\src\\graph_skill\\taxonomy.py"
+    ],
+    "fix": "taxonomy.json에 'relations(흐름·관계)', 'hierarchy(계층·구성)', 'kpi-status(지표·현황)', 'playback(시간 재생)' 카테고리를 추가하고 sankey/network/chord/flowchart→relations, treemap/sunburst→hierarchy, gauge/stat-card/bullet→kpi-status, bar-chart-race/bubble-timeline→playback으로 재분류. SKILL.md 분류표 대표 타입 동기화. 카테고리 desc와 소속 타입의 의미 정합성 + 91타입 전수 커버리지 테스트 추가."
+   }
+  ],
+  "p2": [
+   {
+    "title": "키보드 전용 조작 지원 — 인터랙티브 요소 tabindex/role + 차트 본체 키맵",
+    "area": "접근성(키보드)",
+    "rationale": "2건 병합. 범례/카드/그룹행/드릴다운의 키보드 도달과 줌·팬·커서 키맵은 영향 사용자층이 상대적으로 좁고 엔진 전반의 포커스 모델 설계가 필요한 L 작업. 단 cad3d는 controls.listenToKeyEvents(canvas)+tabindex 한 줄 퀵윈이 있어 P1 접근성 패스에 끼워 넣어도 된다.",
+    "effort": "L",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js"
+    ],
+    "fix": "범례 항목·flow 카드·그룹 행을 button화(또는 tabindex=0+role=button+Enter/Space). sunburst path에 tabindex+aria-label('이름: 값'). xy canvas에 tabindex=0 + 화살표=팬/커서 스텝, +/-=줌, Home=autoFit 키맵(base-xy 60여 타입 일괄 수혜). cad3d는 listenToKeyEvents(canvas)+tabindex로 화살표 팬 활성화."
+   },
+   {
+    "title": "내보내기 최소 공통 세트(PNG+source+테마) 전 패밀리 보장 — smith 툴바 신설 포함",
+    "area": "툴바/내보내기",
+    "rationale": "패밀리별 PNG/CSV/{} 편차는 비일관 경험이지만 기능 부재일 뿐 깨짐은 아니어서 빈도 대비 영향이 중간 이하. flow SVG→canvas 직렬화 등 신규 구현이 필요해 후순위. smith 테마 토글 부재만 P1 테마 패키지에서 선처리 권장.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\smith-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js"
+    ],
+    "fix": "공통 툴바 빌더를 shell 유틸로 추출 후: smith-core에 툴바(PNG/◐/{}) 추가, flow-core에 SVG 직렬화→canvas PNG 내보내기, review-matrix에 표 CSV 내보내기 추가. 모든 패밀리가 PNG+{}+◐ 최소 세트를 갖는지 테스트."
+   },
+   {
+    "title": "버튼 스타일·제목 배치 등 패밀리 간 시각 규약 통일",
+    "area": "시각 디자인 일관성",
+    "rationale": "2건 병합(버튼 호버/aria-pressed/radius/폰트 스택 편차, 제목 중앙 vs 좌측 혼재). 나란히 임베드될 때만 드러나는 미관 문제로 영향이 낮고, 공통 CSS 조각 주입 체계는 builder 변경이 필요. cad3d :hover 부재와 flow/gauge aria-pressed만 먼저 추가하는 퀵윈 가능.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\gauge-core\\engine.css",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "D:\\graph-skill\\src\\graph_skill\\builder.py"
+    ],
+    "fix": "공용 버튼 규칙(11~12px, panel 배경, 그림자, :hover, [aria-pressed]) CSS 조각을 builder.py가 전 패밀리에 주입. 제목 배치는 좌상단 고정으로 통일(xy 캔버스 제목 좌측 정렬, cad3d .gs-cad-title left:12px). 폰트 스택을 'Segoe UI' 계열로 단일화."
+   },
+   {
+    "title": "network/sankey 라벨 가독성 — halo·겹침 숨김·0값 노드 구분",
+    "area": "flow-core 렌더 품질",
+    "rationale": "라벨 겹침·리본 위 라벨은 가독성 저하(sev2)이지만 기능을 막지는 않고, 겹침 판정/halo 렌더는 신중한 시각 튜닝이 필요. P1의 fit/스케일 재설계 결과에 따라 증상이 달라지므로 그 후에 처리.",
+    "effort": "M",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js"
+    ],
+    "fix": "SVG 텍스트에 paint-order:stroke 흰색 halo(다크는 배경색) 적용. network는 라벨 bbox 겹침 시 숨기고 hover 툴팁 대체. sankey 값 0 노드는 스킵 또는 최소 높이+회색 처리(P1 에러·빈 상태 항목의 sankey 수정과 연계). 노드 수백 개 대비 반발력 그리드 버킷/Barnes-Hut 근사도 이때 함께."
+   },
+   {
+    "title": "graph_find 한글 동의어 보강 (샌키/계기판/네트워크/상자그림/폭포/조직도)",
+    "area": "LLM-facing API",
+    "rationale": "검색 0건 6패턴은 LLM이 graph_types_list 폴백으로 우회 가능해 영향이 제한적이고, taxonomy.json 키워드 추가만으로 끝나는 S 작업이라 P1 taxonomy 재설계에 편승해도 된다.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\data\\catalog\\taxonomy.json",
+     "D:\\graph-skill\\src\\graph_skill\\taxonomy.py"
+    ],
+    "fix": "taxonomy.json 키워드에 샌키/생키, 계기판, 네트워크, 상자그림/박스플롯, 폭포차트, 조직도/관계도 추가. 대표 한국어 질의 목록의 find 적중 회귀 테스트 추가."
+   },
+   {
+    "title": "validate 중복 누락 질문 dedupe (bubble-timeline/overview-detail axes.x 2회)",
+    "area": "LLM-facing API",
+    "rationale": "같은 필드에 다른 문구의 질문 2개는 경미한 혼란(sev2)이고 2타입에만 발생. 필드 기준 dedupe 한 줄이라 다른 validate.py 작업(P1 무결성 검사)에 편승 가능.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\src\\graph_skill\\validate.py",
+     "D:\\graph-skill\\src\\graph_skill\\recipes\\playback.py"
+    ],
+    "fix": "validate.check 말미에 missing을 field 키 기준 dedupe(첫 항목 유지). 또는 require_axes=true 타입의 structural_requires에서 axes 검사 제거. hint SSOT를 types.json으로 일원화(prompt._INPUT_HINTS 제거)도 이때 함께."
+   },
+   {
+    "title": "graph-out 갤러리 재생성 절차/CI — 구세대 엔진 산출물 해소",
+    "area": "빌드/운영",
+    "rationale": "데모 폴더가 1.0.0~1.4.0 혼재라 수정사항이 안 보이는 운영 문제(sev2). 사용자 대면 결함은 아니지만 P0/P1 수정 후 갤러리 일괄 재생성이 필수이므로 그 시점에 절차로 고정하면 됨.",
+    "effort": "S",
+    "files": [
+     "D:\\graph-skill\\build_gallery.py",
+     "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\ENGINE_VERSION"
+    ],
+    "fix": "ENGINE_VERSION 범프 시 build_gallery.py로 graph-out 전체 재생성하는 절차(또는 pre-commit/CI 훅) 추가. 갤러리 인덱스에 engine_version 노출. P0 머지 직후 1회 전체 재생성 실행. 성능 스모크(부트<1s, 검색 키스트로크<16ms)도 이때 tests에 고정."
+   }
+  ],
+  "summary": "73건 감사 결과를 근본 원인 기준으로 병합해 30건으로 압축했다(주요 중복: flow-core 타이틀/툴바 겹침 6회, html/body 리셋 부재 3회, network 무한 시뮬 3회, 휠 트랩·sticky 헤더·embed 높이·모달 Esc·xy 좁은폭 겹침 각 2~3회 보고). '이상 없음' 확인 2건(다크 토큰 대비, 3D 로드/검색 성능)은 제외. 핵심 병합 근거는 소스에서 직접 재확인했다(flow-core engine.js:681의 bar.appendChild + engine.css:22 absolute, gauge-core css의 리셋 부재). P0 12건은 '임베드에서 즉시 보이는 깨짐 + S~M 국소 수정' — flow 타이틀 1줄 수정, flow/gauge CSS 리셋 2줄, Ctrl+휠 게이팅(유일 sev5 임베드 트랩), playback 4종 빈 화면(sev5)+캐리어 범례 묶음, review-matrix 셀 크기 폭발 CSS 오버라이드, 모달 Esc, network 시뮬 정지, _panned 1줄, embed_block 권장높이 연결, SKILL.md 현행화, tools.py 스키마 모순+hint 폴백(동일 파일 묶음), xy-core 오버레이 레이아웃 예약(6건 병합의 단일 근본 원인이라 M임에도 포함). P1 11건은 설계가 필요한 것들 — LOD 갭/log 경로(알고리즘), 터치/핀치(입력 모델), 테마 동기화(부모 프로토콜 합의), review-matrix 마감 묶음, 플러그인 크롬 옵션 체계, 발견가능성 UX, 임베드 모달 적응, flowchart fit 정책, 에러·빈 상태 표준화, 접근성 1차 패스, taxonomy 재설계. P2 7건은 낮은 빈도/영향 — 키보드 풀 지원(L), 내보내기 공통 세트, 시각 규약 통일, 라벨 halo, 한글 동의어, 질문 dedupe, 갤러리 재생성 절차. 동일 파일 원칙에 따라 flow-core engine.js는 P0에서 4개 항목(타이틀·휠·시뮬·_panned)이 함께 닿으므로 한 PR로 처리 권장하고, P0 완료 후 build_gallery 전체 재생성(P2 마지막 항목)을 1회 실행해야 graph-out 데모에 반영된다."
+ }
+}

@@ -1,0 +1,1 @@
+{"graph_type": "bar-plot", "title": "부품별 흡수에너지", "axes": {"x": {"label": "Part"}, "y": {"label": "Energy", "unit": "mJ"}}, "categories": ["Frame", "Glass", "PCB", "Battery", "Bracket"], "values": [42, 18, 9, 25, 11]}

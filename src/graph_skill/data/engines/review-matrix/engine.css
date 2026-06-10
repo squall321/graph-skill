@@ -1,0 +1,108 @@
+/* review-matrix — design-state checklist/comparison table. Own theme tokens on .gs-matrix
+   (NOT .gs-root, so the bundled xy-core .gs-root rules don't fight it). Cell graphs are
+   separate .gs-root descendants with their own tokens. */
+html, body { margin: 0; padding: 0; height: 100%; }
+.gs-matrix {
+  position: relative; width: 100%; min-height: 100%; overflow: auto; box-sizing: border-box;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 13px;
+  --gs-bg: #ffffff; --gs-fg: #1a1a2e; --gs-sub: #6b7280;
+  --gs-panel: #f8fafc; --gs-panel-border: #e5e7eb; --gs-accent: #2563eb;
+  --gs-shadow: 0 2px 12px rgba(0,0,0,.1);
+  background: var(--gs-bg); color: var(--gs-fg);
+}
+.gs-matrix[data-theme="dark"] {
+  --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af;
+  --gs-panel: #161b22; --gs-panel-border: #2a2f3a; --gs-accent: #60a5fa;
+}
+@media (prefers-color-scheme: dark) {
+  .gs-matrix[data-theme="auto"] {
+    --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af;
+    --gs-panel: #161b22; --gs-panel-border: #2a2f3a; --gs-accent: #60a5fa;
+  }
+}
+.gs-matrix * { box-sizing: border-box; }
+
+.gs-mx-toolbar {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 8px 10px; position: sticky; top: 0; z-index: 9;
+  background: var(--gs-bg); border-bottom: 1px solid var(--gs-panel-border);
+}
+.gs-mx-title { font-weight: 700; margin-right: auto; }
+.gs-mx-search {
+  flex: 0 1 220px; min-width: 120px; padding: 6px 10px; font: inherit;
+  border: 1px solid var(--gs-panel-border); border-radius: 8px; background: var(--gs-panel); color: var(--gs-fg);
+}
+.gs-mx-btn {
+  font: 600 12px/1 inherit; color: var(--gs-sub); background: var(--gs-panel);
+  border: 1px solid var(--gs-panel-border); border-radius: 7px; padding: 6px 9px; cursor: pointer;
+}
+.gs-mx-btn:hover { color: var(--gs-fg); }
+
+.gs-mx-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+.gs-mx-table th, .gs-mx-table td {
+  border-bottom: 1px solid var(--gs-panel-border); padding: 8px 10px; text-align: left; vertical-align: top;
+}
+.gs-mx-table thead th {
+  position: sticky; top: var(--gs-mx-th-top, 47px); z-index: 6; background: var(--gs-panel); font-weight: 700; white-space: nowrap;
+}
+.gs-col-label { position: sticky; left: 0; z-index: 5; background: var(--gs-bg); min-width: 170px; font-weight: 600; }
+.gs-mx-table thead th.gs-col-label { z-index: 8; background: var(--gs-panel); }
+.gs-unit { color: var(--gs-sub); font-weight: 400; font-size: 11px; }
+
+.gs-grp-row td { background: var(--gs-panel); font-weight: 700; cursor: pointer; user-select: none; }
+.gs-caret { display: inline-block; width: 14px; }
+.gs-row-hidden { display: none; }
+
+.gs-cell-num { font-variant-numeric: tabular-nums; }
+.gs-badge { display: inline-block; padding: 1px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+.gs-pass { background: #d1fae5; color: #059669; }
+.gs-warn { background: #fef3c7; color: #b45309; }
+.gs-fail { background: #fee2e2; color: #dc2626; }
+td.gs-spec-pass { box-shadow: inset 3px 0 0 #059669; }
+td.gs-spec-warn { box-shadow: inset 3px 0 0 #f59e0b; }
+td.gs-spec-fail { box-shadow: inset 3px 0 0 #dc2626; }
+.gs-diff { font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+.gs-good { color: #059669; } .gs-bad { color: #dc2626; } .gs-neutral { color: var(--gs-sub); }
+
+.gs-cell-graph { width: 220px; max-width: 100%; height: 130px; cursor: pointer; border: 1px solid var(--gs-panel-border); border-radius: 6px; }
+.gs-cell-graph-wide { width: 100%; }
+/* the mounted engine adds .gs-root to this div — pin its size rules (min-height/aspect-ratio) */
+.gs-cell-graph.gs-root { width: 220px; height: 130px; min-height: 0; aspect-ratio: auto; }
+.gs-cell-graph-wide.gs-root { width: 100%; height: 130px; min-height: 0; aspect-ratio: auto; }
+.gs-modal-graph.gs-root { min-height: 0; aspect-ratio: auto; }
+.gs-cell-img { max-height: 96px; max-width: 160px; border-radius: 6px; cursor: pointer; display: block; }
+.gs-cell-link { color: var(--gs-accent); text-decoration: none; }
+.gs-cell-empty { color: var(--gs-sub); }
+
+.gs-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 50; }
+.gs-modal.open { display: flex; }
+.gs-modal-box { background: var(--gs-bg); color: var(--gs-fg); border-radius: 12px; width: min(86vw, calc(100% - 24px)); height: min(82vh, calc(100% - 24px)); display: flex; flex-direction: column; box-shadow: 0 8px 40px rgba(0,0,0,.45); overflow: hidden; }
+.gs-modal-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--gs-panel-border); font-weight: 600; }
+.gs-modal-body { flex: 1; padding: 10px; overflow: auto; display: flex; align-items: center; justify-content: center; }
+.gs-modal-graph { width: 100%; height: 100%; }
+.gs-modal-img { max-width: 100%; max-height: 100%; }
+.gs-x { cursor: pointer; border: none; background: none; font-size: 1.4rem; color: var(--gs-sub); line-height: 1; }
+.gs-x:hover { color: #dc2626; }
+
+@media print {
+  .gs-mx-toolbar, .gs-modal { display: none !important; }
+  .gs-matrix { overflow: visible; }
+}
+
+/* rich cell kinds (heat / bar / delta / badges / rating) */
+.gs-cell-bar { display: inline-block; width: 64px; height: 8px; background: var(--gs-panel); border: 1px solid var(--gs-panel-border); border-radius: 4px; overflow: hidden; vertical-align: middle; }
+.gs-cell-bar-fill { height: 100%; background: var(--gs-accent); }
+.gs-cell-barlab { margin-left: 6px; font-variant-numeric: tabular-nums; font-size: 12px; }
+.gs-tag { background: var(--gs-panel); border: 1px solid var(--gs-panel-border); color: var(--gs-fg); margin: 1px 2px; }
+.gs-rating { display: inline-flex; gap: 2px; }
+.gs-rating .gs-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gs-panel-border); display: inline-block; }
+.gs-rating .gs-dot.gs-on { background: var(--gs-accent); }
+
+.gs-mx-btn:focus-visible, .gs-mx-search:focus-visible, .gs-x:focus-visible {
+  outline: 2px solid var(--gs-accent); outline-offset: 2px;
+}
+.gs-mx-nores { padding: 24px; text-align: center; color: var(--gs-sub); font-size: 13px; }
+.gs-error {
+  display: inline-block; padding: 8px 12px; border-radius: 8px; font-size: 12px;
+  color: #b91c1c; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.35);
+}

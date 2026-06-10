@@ -1,0 +1,1 @@
+{"graph_type": "area-plot", "title": "누적 생산량", "axes": {"x": {"label": "월", "unit": ""}, "y": {"label": "생산량", "unit": "k"}}, "series": [{"name": "누적", "data": [[1, 10], [2, 25], [3, 45], [4, 60], [5, 82], [6, 100]]}]}

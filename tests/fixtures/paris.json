@@ -1,0 +1,1 @@
+{"graph_type": "paris-crack-growth", "title": "AL7075 균열성장", "axes": {"x": {"label": "ΔK", "unit": "MPa√m"}, "y": {"label": "da/dN", "unit": "mm/cycle"}}, "series": [{"name": "R=0.1", "data": [[10, 2e-6], [15, 8e-6], [20, 2.5e-5], [25, 6e-5], [30, 1.4e-4], [35, 3e-4], [40, 6e-4]]}], "dKth": 6, "KIC": 45}

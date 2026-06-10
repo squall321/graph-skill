@@ -1,0 +1,239 @@
+{
+  "title": "수입검사 공정 흐름 (그림·표·그래프 내장)",
+  "options": {
+    "direction": "TB",
+    "node_w": 230
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "terminal",
+      "label": "수입검사 시작"
+    },
+    {
+      "id": "meas",
+      "type": "process",
+      "label": "인장 측정",
+      "content": {
+        "kind": "graph",
+        "graph_ref": {
+          "type": "base-xy",
+          "payload": {
+            "axes": {
+              "x": {
+                "label": "변형",
+                "unit": "%"
+              },
+              "y": {
+                "label": "하중",
+                "unit": "kN"
+              }
+            },
+            "series": [
+              {
+                "name": "lot-A",
+                "data": [
+                  [
+                    0.0,
+                    2.0
+                  ],
+                  [
+                    0.5,
+                    3.75
+                  ],
+                  [
+                    1.0,
+                    5.4
+                  ],
+                  [
+                    1.5,
+                    6.95
+                  ],
+                  [
+                    2.0,
+                    8.4
+                  ],
+                  [
+                    2.5,
+                    9.75
+                  ],
+                  [
+                    3.0,
+                    11.0
+                  ],
+                  [
+                    3.5,
+                    12.15
+                  ],
+                  [
+                    4.0,
+                    13.2
+                  ],
+                  [
+                    4.5,
+                    14.15
+                  ],
+                  [
+                    5.0,
+                    15.0
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "spec",
+      "type": "process",
+      "label": "규격/지표",
+      "content": {
+        "kind": "kv",
+        "items": {
+          "UTS": "420 MPa",
+          "항복": "260 MPa",
+          "연신율": "31 %"
+        }
+      }
+    },
+    {
+      "id": "chk",
+      "type": "decision",
+      "label": "규격 만족?"
+    },
+    {
+      "id": "photo",
+      "type": "io",
+      "label": "결함 사진",
+      "content": {
+        "kind": "image",
+        "image": {
+          "mode": "inline",
+          "mime": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAADwAAAAoCAIAAAAt2Q6oAAABLklEQVR42tXY4QaDUBjG8XM5XUmSJEmSJEmSzMzsGndZe4m8njNp09nOw77++ZmXPTsmDLMoyuO4eAaB/pRlV1V9XQ9NM7bt1HVz3y/DcBnH6zTd5vm+LI+tTZIyTassq/O8KYrWdWsg1m4atMTaTYOWGE6FA73G2k2Dlli7adASw6lwoCUGNwd6jbWbBi2xdtOgJYZT4UCvsXbToCXWbhq0xHAqHGhpwc2BtmctDVpa+Mo50LDFnc5ac/oPhHbToKV1vcWNo59iOBUOtD1radAwa2nQ0sKpcKBPn7Xml5tYu2nQ0sKpcKBhi383a82//jJpNw0aZi0NWlo4FQ60PWtp0J8+MfuChifm/VnrEfr4rPUOfeSJ2Uc0PDHbs9ZT9P4Ts79oe9bSoN8+Mb8A6KonFU/xpxcAAAAASUVORK5CYII="
+        }
+      }
+    },
+    {
+      "id": "tally",
+      "type": "data",
+      "label": "불량 집계",
+      "content": {
+        "kind": "table",
+        "table": {
+          "columns": [
+            {
+              "key": "mode",
+              "label": "유형"
+            },
+            {
+              "key": "n",
+              "label": "건수"
+            },
+            {
+              "key": "pct",
+              "label": "%"
+            }
+          ],
+          "rows": [
+            {
+              "mode": "균열",
+              "n": 7,
+              "pct": 58
+            },
+            {
+              "mode": "기공",
+              "n": 3,
+              "pct": 25
+            },
+            {
+              "mode": "치수",
+              "n": 2,
+              "pct": 17
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "yield",
+      "type": "process",
+      "label": "수율",
+      "content": {
+        "kind": "value",
+        "value": 94.2,
+        "unit": "%",
+        "sub": "목표 95% 대비 -0.8"
+      }
+    },
+    {
+      "id": "rework",
+      "type": "subprocess",
+      "label": "재작업/특채",
+      "content": {
+        "kind": "list",
+        "items": [
+          "재검사 요청",
+          "특채 검토(QA)",
+          "공급사 통보"
+        ]
+      }
+    },
+    {
+      "id": "ship",
+      "type": "terminal",
+      "label": "합격 · 입고"
+    },
+    {
+      "id": "note",
+      "type": "process",
+      "label": "판정 메모",
+      "content": {
+        "kind": "text",
+        "text": "lot-A 곡선 우상향 정상. 균열 모드가 지배적이므로 공급사 주조공정 점검 권고."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "meas"
+    },
+    {
+      "from": "meas",
+      "to": "spec"
+    },
+    {
+      "from": "spec",
+      "to": "chk"
+    },
+    {
+      "from": "chk",
+      "to": "yield",
+      "label": "Yes"
+    },
+    {
+      "from": "chk",
+      "to": "photo",
+      "label": "No"
+    },
+    {
+      "from": "photo",
+      "to": "tally"
+    },
+    {
+      "from": "tally",
+      "to": "rework"
+    },
+    {
+      "from": "rework",
+      "to": "note",
+      "kind": "dashed"
+    },
+    {
+      "from": "yield",
+      "to": "ship"
+    }
+  ]
+}

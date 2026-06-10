@@ -1,0 +1,1402 @@
+{
+  "_note": "Single source of truth for artifact types. Each type declares its engine family, plugin bundle, required background params, and option defaults. Per-engine version lives in data/engines/<engine>/ENGINE_VERSION. New types = a block here (+ a recipe + optional plugins).",
+  "types": {
+    "base-xy": {
+      "title": "Generic X-Y curve",
+      "engine": "xy-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {
+        "curve": "monotone",
+        "grid": {
+          "divisions": 10
+        }
+      },
+      "height_px": 520,
+      "hint": "여러 (x,y) 시리즈 + 축 의미/단위. 호버 트래킹/크로스헤어/줌·팬/박스줌/로그 토글/범례 isolate/다크모드/PNG·CSV export 는 설정 없이 자동으로 켜진다. x/y 의 label 과 unit(무차원은 빈 문자열)을 반드시 제공."
+    },
+    "stress-strain": {
+      "title": "Engineering stress-strain curve",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "region-shading",
+        "named-markers",
+        "live-tangent"
+      ],
+      "require_axes": false,
+      "requires": [
+        {
+          "field": "params.A0",
+          "type": "number",
+          "unit": "mm^2",
+          "why": "engineering stress σ=F/A0 환산에 필요",
+          "ask": "시편 초기 단면적 A0를 mm²로 알려주세요 (예: 28.3). 입력 시리즈는 x=변위[mm], y=하중[N] 이어야 합니다."
+        },
+        {
+          "field": "params.L0",
+          "type": "number",
+          "unit": "mm",
+          "why": "engineering strain ε=ΔL/L0 환산에 필요",
+          "ask": "표점거리(gauge length) L0를 mm로 알려주세요 (예: 50)."
+        }
+      ],
+      "post": [
+        "units.eng_stress_strain"
+      ],
+      "options_defaults": {
+        "curve": "monotone"
+      },
+      "height_px": 520,
+      "hint": "인장시험 raw: 각 시리즈 data=[[변위mm, 하중N], ...]. params.A0[mm²]·L0[mm] 필수 → σ=F/A0, ε=ΔL/L0 자동 환산(없으면 질문). params.true_stress=true 면 진응력. 축은 자동(Strain/Stress). UTS·Fracture 마커와 Et 접선 자동."
+    },
+    "force-displacement": {
+      "title": "Force-displacement curve",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "live-tangent"
+      ],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {
+        "curve": "monotone"
+      },
+      "height_px": 520,
+      "hint": "x=변위, y=하중 시리즈 + 축 label/unit. 마우스 호버 시 국소 강성 dF/dd[N/mm] 가 표시된다(live-tangent)."
+    },
+    "correlation-scatter": {
+      "title": "Correlation scatter (CAE vs Test)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "regression-fit"
+      ],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "x=Test/측정, y=CAE/해석 (또는 임의 두 변수) 산점. 회귀선+R²+y=x 동치선 자동(regression-fit), 점 스타일 자동 markers. options.identity=false 로 동치선 끌 수 있음."
+    },
+    "dual-axis": {
+      "title": "Dual-axis plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "이종 물리량 동시 표시(좌/우 y축). 시리즈에 axis:'left'|'right' 지정 + axes.x/y(좌)/y2(우){label,unit}. 우축은 자기 데이터 범위로 자동 스케일. 예: 전력↔온도, |Z|↔phase."
+    },
+    "bode": {
+      "title": "Bode plot (mag + phase)",
+      "engine": "xy-core",
+      "extends": "dual-axis",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "주파수응답 보드선도. freqs:[Hz], mag:[dB], phase:[deg] (동일 길이). x=로그 주파수, 좌 y=Magnitude[dB], 우 y=Phase[deg] 자동. 제어/필터/임피던스 안정도."
+    },
+    "wind-rose": {
+      "title": "Wind / orientation rose",
+      "engine": "polar-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "윈드로즈(방향별 스택 막대). directions:[deg...] 또는 dir_labels:['N','NE',...] + bins:[{label:'0-5 m/s', counts:[방향별 빈도...], color?}, ...]. 방향마다 구간을 누적한 섹터 wedge + 범례. 풍향·하중방향·결정립 배향 분포."
+    },
+    "polar-plot": {
+      "title": "Polar plot",
+      "engine": "polar-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "극좌표(각-반경). series:[{name, theta:[deg], r:[값]}] (또는 data=[[theta,r]]) + radius{label,unit}. closed:true 로 폐곡선. options.thetaStep(기본 30°), rmin/rmax."
+    },
+    "radar-chart": {
+      "title": "Radar / spider chart",
+      "engine": "polar-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "다지표 프로파일/스펙 비교. axes_labels:[항목...] + series:[{name, values:[항목별 값]}]. 항목이 방사축, 닫힌 다각형. rmax 로 척도 고정. radius{label,unit} 선택."
+    },
+    "rf-radiation-pattern": {
+      "title": "Antenna radiation pattern",
+      "engine": "polar-core",
+      "extends": "polar-plot",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "안테나 방사패턴(극좌표). series:[{name, theta:[deg], r:[gain dBi]}]. radius 기본 Gain[dBi], 폐곡선 자동. E/H-plane 다중 시리즈 오버레이."
+    },
+    "histogram": {
+      "title": "Histogram",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "분포 히스토그램. values:[숫자...] (또는 series data 값) + axes.x{label,unit}(분포 변수). params.bins(기본 √n), params.density=true(밀도). y축은 자동(Frequency/Density). 막대 렌더."
+    },
+    "treemap": {
+      "title": "Treemap",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "treemap"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "트리맵(면적=값). items:[{label, value(>0), color?}, ...]. squarified 레이아웃으로 면적 비례 사각형 + 라벨/값 + 호버. 부품/비용/결함 구성 비중 한눈에. (1단계 평면; 색은 자동 팔레트.)"
+    },
+    "bar-plot": {
+      "title": "Bar chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "범주별 막대. categories:[라벨...] + values:[숫자...] (정렬 일치) + axes.y{label,unit}(측정량). 범주축 자동."
+    },
+    "box-plot": {
+      "title": "Box plot (group spread)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "box-plot"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "그룹별 산포. groups:[{label, values:[...]}, ...] + axes.y{label,unit}. 사분위/수염(1.5·IQR)/이상치 자동 계산. DOE/조건 비교."
+    },
+    "error-bar": {
+      "title": "Error-bar plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "error-bars"
+      ],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "측정 불확도/반복편차. 각 시리즈 data=[[x, y, err], ...] (또는 data=[[x,y]] + series.err=[...]) + axes.x/y{label,unit}. 점+상하 오차 막대."
+    },
+    "pareto": {
+      "title": "Pareto chart (vital few)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "파레토(vital few). categories:[라벨...] + values:[숫자...] (동일 길이) + axes.y{label,unit}(값: 결함수/비용 등). 값 내림차순 정렬 막대(좌축) + 누적 % 라인(우축) + 80% 기준선 자동. 품질/결함/원인 우선순위."
+    },
+    "qq-plot": {
+      "title": "Normal Q-Q plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "regression-fit"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "정규성 점검 Q-Q. values:[표본...] (또는 series 값, 3개 이상). 표본분위수 vs 이론 정규분위수 산점 + 최소제곱 직선/R² 자동. 점이 직선에 붙을수록 정규. axes.y{label,unit} 로 표본 축 라벨 지정(선택)."
+    },
+    "ecdf-plot": {
+      "title": "Empirical CDF (step)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "경험적 누적분포 F(x). values:[표본...] + axes.x{label,unit}(분포 변수). 정렬값 vs i/n 계단선. 분위/임계 도달 비율 파악. y축 0–1 자동."
+    },
+    "spc-control-chart": {
+      "title": "SPC control chart (Shewhart)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "관리도(Shewhart). series:[{name, data:[[sample#, 측정값], ...]}] + axes.y{label,unit}(측정량). CL=평균, UCL/LCL=평균±3σ 자동 계산·표시, 관리한계 이탈점(OOC)에 마커. 공정 안정성/이상 감지."
+    },
+    "main-effects-plot": {
+      "title": "DOE main-effects plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "DOE 주효과. factors:[{name, levels:[...], means:[...]}, ...] + axes.y{label,unit}(반응변수). 인자별 수준평균을 한 범주축에 나열, 전체평균 기준선 자동. grand_mean 선택 지정. 기울기 큰 인자 = 영향 큰 인자."
+    },
+    "interaction-plot": {
+      "title": "DOE interaction plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "DOE 교호작용. factor_x:{name,levels}, factor_series:{name,levels}, means:[[series수준 × x수준]] + axes.y{label,unit}. x=factor_x 수준, 선=factor_series 수준. 선이 교차/비평행 = 교호작용 존재."
+    },
+    "transient-time-history": {
+      "title": "Transient time-history",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "named-markers",
+        "threshold-lines"
+      ],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "과도 동적 응답(충격/지진/crash). series:[{name, data:[[time, value], ...]}] 멀티채널 + axes.x(time)/y. 채널별 최대크기 피크 자동 마커. limits:[{value,label}] 주면 경고 기준선(예: 모래시계 5%)."
+    },
+    "convergence-residual-plot": {
+      "title": "Solver convergence (residual)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "CFD/FEA 솔버 수렴 모니터. series:[{name:'continuity', data:[[iter, residual], ...]}, ...]. y축 자동 로그. tolerance 주면 수렴기준선. 잔차가 평탄/발산하면 수렴 문제 즉시 확인. 축 라벨 미지정 시 Iteration/Residual 기본."
+    },
+    "cfd-line-extract-compare": {
+      "title": "Line extract: CAE vs Test",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "error-bars"
+      ],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "라인 추출 비교(해석 케이스들 vs 실험, 격자독립성). series:[{name, data:[[x,y],...]}] 멀티 + axes.x/y. 실험 시리즈는 data=[[x,y,err]] 또는 series.err=[...] 주면 오차막대. Cp/Cf/속도프로파일/HTC 라인."
+    },
+    "nonlinear-load-displacement": {
+      "title": "Nonlinear load-displacement",
+      "engine": "xy-core",
+      "extends": "force-displacement",
+      "backend": "canvas",
+      "plugins": [
+        "live-tangent",
+        "named-markers"
+      ],
+      "require_axes": true,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "비선형 하중-변위/pushover. series:[{name, data:[[변위, 하중], ...]}] + axes.x(변위)/y(하중). 호버 시 접선강성 dF/dd(live-tangent). markers:[{x,y,label}](항복/좌굴/극한) 주면 표시, 없으면 극한하중점 자동 마커."
+    },
+    "s-n-fatigue-curve": {
+      "title": "S-N (Wöhler) fatigue curve",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "피로 S-N(Wöhler). series:[{name, data:[[N, S], ...]}] 재료별 + axes.y{label,unit}(응력진폭). x=반복수 N 자동 로그. fatigue_limit 주면 피로한도 수평선, design_point:{N,S,label} 주면 설계점 마커. 실제 응력진폭의 안전수명 위치 확인."
+    },
+    "process-capability-hist": {
+      "title": "Process capability (Cp/Cpk)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "공정능력 히스토그램. values:[측정값...] + params.USL/LSL(+target) + axes.x{label,unit}(특성). 규격선(USL/LSL/Target) + 정규피팅 오버레이 자동, Cp·Cpk를 제목에 표기. params.bins 선택. 규격한계가 없으면 질문(Cp/Cpk 불가)."
+    },
+    "paris-crack-growth": {
+      "title": "Paris crack-growth (da/dN-ΔK)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "피로 균열성장. series:[{name, data:[[ΔK, da/dN], ...]}] + axes.y{label,unit}. x/y 자동 로그-로그, 멱법칙(Paris) 적합선(지수 m 표기) 자동. dKth/KIC 주면 ΔKth·KIC 수직선. 항공/압력용기 손상허용 설계."
+    },
+    "campbell-diagram": {
+      "title": "Campbell diagram (rotordynamics)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "회전체 공진맵. modes:[{name, data:[[rpm, freq_Hz], ...]}] (RPM별 고유진동수 곡선) + orders:[1,2,3,...](엔진오더 직선 자동 생성) + rpm_range 선택. 축 기본 RPM×Hz. 모드선과 오더선 교차 = 잠재 공진."
+    },
+    "kaplan-meier-survival": {
+      "title": "Kaplan-Meier survival",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "신뢰성 생존곡선. durations:[수명...] + events:[1=고장,0=중도절단] (또는 groups:[{label,durations,events}] 그룹비교) + axes.x{label,unit}(시간). 계단형 생존율 S(t) + 중도절단 마커 자동. y=0~1."
+    },
+    "mac-matrix-heatmap": {
+      "title": "MAC matrix (mode correlation)",
+      "engine": "field-core",
+      "extends": "heatmap-grid",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "모드 상관(MAC) 행렬. matrix:[[...], ...] (0~1, 시험모드×해석모드 N×M). 0~1 고정 컬러범위 히트맵 + 호버 probe. axis_x_label/axis_y_label, colormap 선택. 대각 1·비대각 작을수록 모드 일치 양호."
+    },
+    "weibull-prob-paper": {
+      "title": "Weibull probability plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "신뢰성 Weibull 확률지. values:[고장 수명...] (양수 ≥2) + axes.x{label,unit}(수명). 메디안랭크 선형화(Y=ln(−ln(1−F)) vs log 수명) + 적합 직선, 형상 β·척도 η·R²를 제목에 표기. 점이 직선에 붙을수록 Weibull 적합. (확률% 축눈금은 후속 prob-axis plugin에서 보강.)"
+    },
+    "nyquist-plot": {
+      "title": "Nyquist plot (stability)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "unit-circle",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "제어 안정도 나이퀴스트. series:[{name, data:[[Re,Im],...]}] 또는 {real:[],imag:[]} (개루프 G(jω) 궤적). 등비율(equalAspect) + 단위원 + 원점축 + −1 임계점 자동. (−1,0) 둘러싸는지로 안정성·이득/위상여유 판단."
+    },
+    "root-locus": {
+      "title": "Root locus",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "unit-circle",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "제어 근궤적. series/branches:[{name, data:[[Re,Im],...]}] (K 스윕 폐루프 극점 궤적) + poles:[[Re,Im],...]/zeros:[[Re,Im],...] (개루프). 등비율 + 허수축(안정경계) + 극(×)/영점(○) 마커. 좌반평면 잔류 = 안정."
+    },
+    "pole-zero-map": {
+      "title": "Pole-zero map",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "unit-circle",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "극점-영점 맵(복소평면). poles:[[Re,Im],...], zeros:[[Re,Im],...] + domain:'s'(연속, 허수축=안정경계)|'z'(이산, 단위원=안정경계). 등비율 + 극(×)/영점(○) 마커. 시스템 안정성/응답 특성."
+    },
+    "cusum-chart": {
+      "title": "CUSUM control chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "누적합(CUSUM) 관리도. values:[측정...] 순서대로 + params.target(기준)·sd(표준편차)·k(slack=0.5)·h(결정구간=4). C+/C− 누적합 + ±H 결정선. 작은 평균 이동을 Shewhart보다 민감하게 탐지."
+    },
+    "goodman-haigh": {
+      "title": "Goodman–Haigh fatigue diagram",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "굿맨-하이 피로선도. Su(극한강도)·Se(피로한도)[MPa] + points:[{mean,alt}] 동작점. 평균응력 σm vs 교번응력 σa + Goodman 파괴선. 선 아래=안전. 평균응력 영향 평가."
+    },
+    "psd-welch": {
+      "title": "PSD (Welch)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [
+        {
+          "field": "params.fs",
+          "type": "number",
+          "unit": "Hz",
+          "why": "주파수축 환산에 샘플레이트 필요",
+          "ask": "샘플링 레이트 fs를 Hz로 알려주세요 (예: 1000)."
+        }
+      ],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "전력스펙트럼밀도(Welch). signal:[...] 순서대로 (또는 series data) + params.fs[Hz] 필수. params.nperseg(2의 거듭제곱)·overlap(0.5). 세그먼트 평균 주기도(단일 FFT보다 매끈) log-log. 랜덤진동/소음 분석."
+    },
+    "smith-chart": {
+      "title": "Smith chart (RF impedance)",
+      "engine": "smith-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "스미스 차트(RF 임피던스). series:[{name, data:[[Γre, Γim], ...]}] 또는 {mag:[],phase:[deg]} 또는 {re:[],im:[]} (반사계수 S11). 등저항·등리액턴스 격자 + Γ 궤적, 호버 시 z=R+jX·|Γ|·반사손실(RL). 임피던스 정합/주파수 스윕."
+    },
+    "nichols-chart": {
+      "title": "Nichols chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "니콜스 선도(제어). series:[{name, data:[[phase_deg, gain_dB], ...]}] 또는 {phase:[],gain:[]}. x=개루프 위상[deg], y=개루프 이득[dB]. 0 dB·−180° 기준선 + (−180°,0) 임계점 자동. 이득/위상 여유 판독."
+    },
+    "parallel-coordinates": {
+      "title": "Parallel coordinates",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "parcoord"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "평행좌표(다변량). variables:{이름:[값...], ...} (>=2, 같은 길이). 변수마다 수직축(실제 min/max 라벨) + 관측마다 폴리라인(정규화). DOE/다변량 패턴·군집·트레이드오프 일람."
+    },
+    "area-plot": {
+      "title": "Area plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "area-fill"
+      ],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "면적 곡선. series:[{name, data:[[x,y],...]}] + axes.x/y{label,unit}. 곡선 아래를 baseline(0)까지 채움. 추세/누적량 강조."
+    },
+    "stacked-area": {
+      "title": "Stacked area",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "area-fill"
+      ],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "누적 면적(구성 추세). 공유 x 위 여러 series(같은 x 그리드) + axes.x/y. 시리즈를 누적해 각 밴드를 채움. 전체 대비 구성 비중의 시간 변화."
+    },
+    "waterfall-chart": {
+      "title": "Waterfall chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "waterfall"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "워터폴(증감 분해). categories:[단계...] + values:[+/- 값...] + axes.y{label,unit}. 누적 떠있는 막대(증가/감소 색 구분 + 연결선). kinds:['inc'|'dec'|'total'] 로 합계 막대 지정. 비용/에너지/공차 기여 분해."
+    },
+    "violin-plot": {
+      "title": "Violin plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "violin"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "바이올린(그룹별 밀도). groups:[{label, values:[...]}, ...] + axes.y{label,unit}. 그룹마다 좌우 대칭 KDE + 중앙값. 박스플롯보다 분포 형태(다봉성)를 잘 보임."
+    },
+    "pdf-kde": {
+      "title": "Density (KDE) plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "커널밀도(매끈한 PDF). values:[...] (또는 groups:[{label,values}] 다중 오버레이) + axes.x{label,unit}. Silverman 대역폭 가우시안 KDE. y=Density. 히스토그램보다 매끈한 분포 비교."
+    },
+    "ridgeline": {
+      "title": "Ridgeline (joyplot)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "능선도(joyplot). groups:[{label, values:[...]}, ...] (>=2) + axes.x{label,unit}. 그룹별 KDE를 세로로 오프셋해 분포 변화를 비교(시간/조건별 분포 추세). 범례=그룹명."
+    },
+    "spectrogram": {
+      "title": "Spectrogram (STFT)",
+      "engine": "field-core",
+      "extends": "heatmap-grid",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [
+        {
+          "field": "params.fs",
+          "type": "number",
+          "unit": "Hz",
+          "why": "STFT bin→Hz 환산에 샘플레이트 필요",
+          "ask": "샘플링 레이트 fs를 Hz로 알려주세요 (예: 1000). dt[s]만 알면 fs=1/dt."
+        }
+      ],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "시간-주파수 스펙트로그램(STFT). signal:[...] 순서대로 (또는 series:[{data:[[t,v]]}]) + params.fs[Hz] 필수. params.nperseg(2의 거듭제곱), overlap(기본 0.5). 시간×주파수 진폭 히트맵 + probe. 비정상 신호/처프/모드 추적."
+    },
+    "scatter-matrix": {
+      "title": "Scatter matrix (SPLOM)",
+      "engine": "review-matrix",
+      "extends": "review-matrix",
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {
+        "diff": false
+      },
+      "height_px": 620,
+      "hint": "산점도 행렬(SPLOM). variables:{이름:[값...], ...} (>=2, 같은 길이). 모든 변수쌍 산점(off-diagonal=correlation-scatter 회귀+R², diagonal=변수명)을 review-matrix 그래프셀로 임베드. DOE 다변량 상관 일람."
+    },
+    "fft-spectrum": {
+      "title": "FFT spectrum (time ↔ freq toggle)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "domain-toggle",
+        "named-markers"
+      ],
+      "require_axes": false,
+      "requires": [
+        {
+          "field": "params.fs",
+          "type": "number",
+          "unit": "Hz",
+          "why": "bin→Hz 환산에 샘플레이트 필요. 없으면 주파수축이 무의미한 bin index.",
+          "ask": "샘플링 레이트 fs를 Hz로 알려주세요 (예: 1000). 시간 간격 dt[s]만 안다면 fs=1/dt 로 환산해 주세요."
+        }
+      ],
+      "post": [
+        "spectral.fft_onesided"
+      ],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "시간영역 신호: 각 시리즈 data=[[time, value], ...] (선택적으로 axes 로 time/value 라벨·단위). params.fs[Hz] 필수(없으면 질문). 단측 진폭 스펙트럼을 그리고 컨트롤바의 토글 버튼으로 시간↔주파수 전환, 피크 자동 마커. Hann 윈도(params.window='rect' 로 끔)."
+    },
+    "filter-tuner": {
+      "title": "Filter tuner (FFT + live cutoff)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "filter-panel"
+      ],
+      "require_axes": false,
+      "requires": [
+        {
+          "field": "params.fs",
+          "type": "number",
+          "unit": "Hz",
+          "why": "필터 차단주파수와 스펙트럼 환산에 샘플레이트 필요",
+          "ask": "샘플링 레이트 fs를 Hz로 알려주세요 (예: 1000)."
+        }
+      ],
+      "post": [
+        "spectral.fft_filter"
+      ],
+      "options_defaults": {},
+      "height_px": 540,
+      "hint": "시간신호(첫 시리즈 data=[[time, value], ...]) + params.fs[Hz] 필수. 하단 패널의 차단주파수 슬라이더를 드래그하면 필터링된 파형/스펙트럼이 실시간 갱신(클라이언트 FFT). params.filter=low|high|band, fc(기본 fs/4), fc2(band), edge(천이폭 비율). 시간↔주파수 토글, 주파수뷰에 차단선 표시. (인터랙티브 자체완결 HTML — 서버 불필요.)"
+    },
+    "review-matrix": {
+      "title": "Design review matrix",
+      "engine": "review-matrix",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 600,
+      "hint": "범용 점검표/리뷰표. states[](열=설계 state/버전), items[](행=점검항목, group으로 분류). 셀 kind: number/status(pass|fail|warn)/text/image(image:{mode:inline,mime,data=base64})/graph(graph_ref:{type,payload}). 검색·필터·group 접기·셀 모달 자동. 이미지는 base64 인라인만(report-write 게시는 단일 self-contained 파일)."
+    },
+    "design-state-compare": {
+      "title": "Design-state comparison",
+      "engine": "review-matrix",
+      "extends": "review-matrix",
+      "backend": "dom",
+      "plugins": [],
+      "requires": [],
+      "options_defaults": {
+        "diff": true
+      },
+      "height_px": 600,
+      "hint": "여러 설계 state(열) 비교표. states≥2 + meta.baseline(이 states 중 하나)이 필요(없으면 질문). 항목 spec(min/max/target/warn_at/goal=min|max) 주면 pass/fail/warn 배지 + baseline 대비 diff(▲▼). 셀이 그래프/이미지/값/상태 모두 가능. item.overlay_states=true 면 한 항목의 모든 state 그래프를 한 셀에 겹쳐 비교."
+    },
+    "single-state-checklist": {
+      "title": "Single-state checklist",
+      "engine": "review-matrix",
+      "extends": "design-state-compare",
+      "backend": "dom",
+      "plugins": [],
+      "requires": [],
+      "options_defaults": {
+        "diff": false
+      },
+      "height_px": 600,
+      "hint": "단일 설계안(state 1개) 항목별 합격/불합 점검표(비교표의 N=1 특수형). spec 주면 pass/fail/warn 배지."
+    },
+    "correlation-matrix": {
+      "title": "Correlation matrix",
+      "engine": "field-core",
+      "extends": "heatmap-grid",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "상관행렬(Pearson). variables:{이름:[값...], ...} (>=2, 같은 길이). 모든 변수쌍 상관계수 r을 −1~1 발산 컬러맵 히트맵 + probe. 다변량 상관 일람."
+    },
+    "confusion-matrix": {
+      "title": "Confusion matrix",
+      "engine": "field-core",
+      "extends": "heatmap-grid",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "혼동행렬(분류). matrix:[[실제×예측 카운트]] 또는 y_true:[...], y_pred:[...] (+labels). 카운트 히트맵 + 정확도(제목). 대각=정분류. 분류기/검사 성능."
+    },
+    "kpi-scorecard": {
+      "title": "KPI scorecard",
+      "engine": "review-matrix",
+      "extends": "review-matrix",
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {
+        "diff": false
+      },
+      "height_px": 520,
+      "hint": "KPI 스코어카드(리치 표). metrics:[{name, value, target, unit, goal:'max'|'min', status?, max?}, ...]. 지표별 값(추세 ▲▼)·목표·상태 배지·달성도 미니바. 검색·필터·정렬. 대시보드형 요약."
+    },
+    "decision-matrix": {
+      "title": "Decision matrix (Pugh)",
+      "engine": "review-matrix",
+      "extends": "review-matrix",
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {
+        "diff": false
+      },
+      "height_px": 520,
+      "hint": "가중 의사결정표(Pugh). criteria:[{name, weight}], options:[이름...], scores:[[기준×옵션 점수]]. 점수 셀=조건부 색(높을수록 진함), 가중합계 행 + 최고안 배지. 설계안 트레이드오프 정량 비교."
+    },
+    "multitrack-stack": {
+      "title": "Multitrack (stacked panels)",
+      "engine": "review-matrix",
+      "extends": "review-matrix",
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {
+        "diff": false
+      },
+      "height_px": 640,
+      "hint": "다채널 멀티트랙(공유 시간축 세로 스택). channels:[{name, unit, data:[[t,v],...]}, ...] (>=2) + x{label,unit}. 채널마다 base-xy 패널을 세로로 쌓아 한 화면에서 정렬 비교(낙하/진동 가속도 X/Y/Z + 하중 등). 셀=실제 인터랙티브 그래프."
+    },
+    "response-surface-2d": {
+      "title": "Response surface (RSM)",
+      "engine": "field-core",
+      "extends": "contour-plot",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "반응표면(RSM, DOE). x1:[...], x2:[...], y:[...] (>=6점) + factors:{x1:{label,unit}, x2:{label,unit}} + z{label,unit}(응답). 2차 최소제곱 적합 후 반응면을 컨투어로. 최적영역·안장점 탐색. params.grid(기본 30)."
+    },
+    "residual-diagnostic-panel": {
+      "title": "Regression diagnostics panel",
+      "engine": "review-matrix",
+      "extends": "review-matrix",
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {
+        "diff": false
+      },
+      "height_px": 620,
+      "hint": "회귀 진단 4종 패널. x:[...], y:[...] (또는 series:[{data:[[x,y],...]}], ≥3점). 최소제곱 적합 후 Normal Q-Q · Residual vs Fitted · Scale-Location · Residual vs Leverage 를 review-matrix에 그래프셀로 임베드(각 셀=실제 인터랙티브 base-xy). 회귀 가정(정규성·등분산·영향점) 점검."
+    },
+    "cad-3d-viewer": {
+      "title": "3D CAD / mesh viewer",
+      "engine": "cad3d-core",
+      "extends": null,
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "3D 형상 뷰어(three.js, self-contained). mesh={path:'model.stl|obj|glb'} 또는 {glb_b64} 또는 {vertices,faces} 또는 {primitive:'box|sphere|cylinder|torus'}. orbit·pan·zoom·단면(clip plane 슬라이더)·와이어프레임·테마·PNG 자동. 큰 모델은 QEM 데시메이션(options.lod=desktop|mobile). STEP/IGES는 서버측 테셀레이션 후 glb로."
+    },
+    "mesh-result-3d": {
+      "title": "3D FE result (contour on mesh)",
+      "engine": "cad3d-core",
+      "extends": "cad-3d-viewer",
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "3D 메시 위 결과 컨투어(von Mises/온도/안전계수). mesh + field:[노드별 값...] (정점 수와 동일, 데모는 'auto') + z={label,unit}. 정점 컬러매핑 + 컬러바, zdomain으로 색범위 고정(항복강도 등), colormap(viridis|turbo|coolwarm). orbit·단면으로 내부 핫스팟 확인."
+    },
+    "mesh-deformed-3d": {
+      "title": "3D deformed shape",
+      "engine": "cad3d-core",
+      "extends": "cad-3d-viewer",
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "3D 변형형상. mesh(primitive/vertices·faces/STL·GLB) + displacement:[[dx,dy,dz],...] (정점 수와 동일; 데모는 자동 외팔보 굽힘) + scale. 변형 배율 슬라이더·원형상 오버레이·orbit·단면. 색=변위크기(|U|) 컬러바. field:[...] 로 다른 결과 컬러."
+    },
+    "mode-shape-3d": {
+      "title": "3D mode shape (animated)",
+      "engine": "cad3d-core",
+      "extends": "cad-3d-viewer",
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "3D 모드형상 애니메이션. mesh + modes:[{name, freq, disp:[[dx,dy,dz],...]}, ...] (데모는 자동 굽힘 모드 3개). 모드 드롭다운 + 재생/정지(진동 애니) + 배율 슬라이더 + orbit. 모달 해석 고유모드 시각화."
+    },
+    "contour-plot": {
+      "title": "2D scalar field (contour)",
+      "engine": "field-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "2D 스칼라장. field={x:[열좌표 nx], y:[행좌표 ny], z:[[ny행×nx열 값]]} (균일 격자 가정) + axes.x/y{label,unit} + z{label,unit}(없으면 질문). colormap 래스터 + marching-squares 등치선 + colorbar + 호버 probe(z값) + 줌/팬/박스줌 자동. options: colormap(viridis|turbo|coolwarm|gray), reverse, levels(개수 또는 값 배열), zdomain([min,max] 색범위 고정), contours(bool)."
+    },
+    "vector-quiver-2d": {
+      "title": "2D vector field (quiver)",
+      "engine": "field-core",
+      "extends": "contour-plot",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "2D 벡터장(속도/열유속/E·H field). field={x:[nx], y:[ny], u:[[ny×nx]], v:[[ny×nx]]} + axes.x/y{label,unit}. 화살표 길이·색 = 크기(|V|), 컬러바·호버 probe 자동. arrowDensity(기본 24), show_magnitude=true 면 크기 래스터 배경도 표시. zdomain/colormap 선택. (유선 streamline은 후속.)"
+    },
+    "eye-diagram": {
+      "title": "Eye diagram",
+      "engine": "field-core",
+      "extends": "heatmap-grid",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "아이 다이어그램(SI). signal:[...] 직렬 파형 (또는 series data) + params.sps(UI당 샘플수) 필수, params.ui(기본 2). UI 주기로 폴딩해 위상×진폭 persistence 히트맵. 아이 개구(eye opening)/지터로 신호 무결성 평가."
+    },
+    "gauge-r-r": {
+      "title": "Gauge R&R",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "측정시스템분석(Gauge R&R, AIAG 범위법). measurements[part][operator]=[반복 측정값...] (부품>=2, 작업자>=1, 반복>=2). EV(반복)·AV(재현)·GRR·PV(부품) %기여를 막대로, 30%/10% 기준선 + %GRR·ndc 제목. 측정 신뢰성 평가."
+    },
+    "rainflow-cycle-histogram": {
+      "title": "Rainflow cycle histogram",
+      "engine": "field-core",
+      "extends": "heatmap-grid",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "피로 사이클 카운트(ASTM E1049 rainflow). signal:[하중값...] 순서대로 (또는 series data) + load{label,unit}(하중 종류). 평균×범위 2D 빈도 히트맵 + probe. params.mean_bins/range_bins(기본 12). 변동하중 이력의 피로 손상 입력 검증."
+    },
+    "heatmap-grid": {
+      "title": "Heatmap (grid)",
+      "engine": "field-core",
+      "extends": "contour-plot",
+      "backend": "canvas",
+      "plugins": [],
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "히트맵(색만, 등치선 없음). contour-plot 와 동일 입력. 등치선을 켜려면 options.contours=true."
+    },
+    "scalar-field-2d": {
+      "title": "2D scalar field",
+      "engine": "field-core",
+      "extends": "contour-plot",
+      "backend": "canvas",
+      "plugins": [],
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "CAE 필드(온도/응력/전위/SAR 등) 일반 2D 스칼라장. contour-plot 별칭."
+    },
+    "mcae-stress-contour": {
+      "title": "Stress contour (von Mises)",
+      "engine": "field-core",
+      "extends": "contour-plot",
+      "backend": "canvas",
+      "plugins": [],
+      "requires": [],
+      "options_defaults": {
+        "colormap": "turbo"
+      },
+      "height_px": 520,
+      "hint": "구조 CAE 응력 분포 맵. field + axes(위치 mm) + z{label:'von Mises σ', unit:'MPa'}. zdomain 으로 항복강도 기준 색범위 고정 가능. 핫스팟은 색/등치선으로 식별."
+    },
+    "flowchart": {
+      "title": "Flowchart / diagram",
+      "engine": "flow-core",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "비정형 순서도/다이어그램. nodes:[{id,label,type(terminal|process|decision|io|subprocess),x?,y?,w?,color?,content?}], edges:[{from,to,label?,kind?(dashed),color?,from_side?,to_side?}]. 노드 content.kind = text|value(value,unit,sub)|kv(items{})|list(items[])|image(image:{mode:inline,mime,data})|table(table:{columns:[{key,label}],rows:[{}]} 또는 {headers:[],rows:[[]]})|graph(graph_ref:{type,payload}=실제 인터랙티브 그래프 임베드). 좌표 생략 시 자동 레이어 배치(options.direction TB|LR). 간단형: steps:[\"단계1\",\"단계2\",…]. 팬/줌·노드 모달(그래프 전체보기/이미지 라이트박스/표 확대) 자동. 이미지는 base64 인라인만(단일 self-contained)."
+    },
+    "bubble-timeline": {
+      "title": "Bubble timeline (Gapminder)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "playback"
+      ],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "시간 재생 버블차트. frames:[{t,entities:[{id,x,y,size?,color?,label?}]}] (각 프레임=한 시점). 하단 ▶/슬라이더로 재생, 버블 위치·크기 프레임간 보간. size→반경 자동(sqrt). axes.x/y label+unit 필수. 옵션 options.fps(기본1.2)/loop. 모든 프레임 임베드(결정적, 클라이언트 재생)."
+    },
+    "animated-trajectory": {
+      "title": "Animated trajectory / phase portrait",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "playback"
+      ],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "궤적 재생 — path:[[x,y],…](시간순)을 따라 마커가 이동하며 자취를 남김. 위상평면(phase portrait: [x, dx/dt]), 주파수 sweep, 하중-제하 hysteresis 등. options.trail_len(코멧 길이, 0=전체), fps(기본18), loop. axes.x/y label+unit 필수."
+    },
+    "bar-chart-race": {
+      "title": "Bar chart race",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "playback"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "막대 경주 — frames:[{t, entities:[{id,label,value,color?}]}]. 프레임마다 value로 정렬된 가로 막대 + 순위/값 보간. value_label/value_unit(축), options.top(기본12)/fps(기본1.6)/loop. x=값, y=순위."
+    },
+    "sankey-diagram": {
+      "title": "Sankey diagram",
+      "engine": "flow-core",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "흐름도(Sankey). nodes:[{id,label?,color?}], links:[{source,target,value}]. 레이어 자동배치, 리본 폭∝value, 노드 자동합성(링크 끝점). 호버 강조·툴팁. 에너지/물질/예산/전환 흐름. (DOM/SVG, 팬/줌)"
+    },
+    "network-graph": {
+      "title": "Network graph (force-directed)",
+      "engine": "flow-core",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "네트워크(force-directed). nodes:[{id,label?,group?,value?}], links:[{source,target,value?}]. 물리 시뮬로 자동 펼침, 노드 드래그(고정), 그룹=색, value=크기. 시스템 토폴로지/의존성/연결망. (실시간 시뮬 — 자체완결)"
+    },
+    "chord-diagram": {
+      "title": "Chord diagram",
+      "engine": "flow-core",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "코드 다이어그램. 정사각 matrix:[[…]](+labels) 또는 links:[{source,target,value}]. 원형 그룹호 + 관계 리본(폭∝값). 전이/상호참조/혼동·이주 행렬. 호버 강조·툴팁."
+    },
+    "gauge": {
+      "title": "Gauge / dial",
+      "engine": "gauge-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 320,
+      "hint": "게이지(속도계). value(+min[0],max[100],target?,unit?,label?). bands:[{to,color}] 구간 색 또는 goal(low|high)로 자동 색. 270° 다이얼+바늘+중앙 값, 로드 시 값 애니메이션. 여러 지표는 items:[{…}] (자동 그리드)."
+    },
+    "radial-progress": {
+      "title": "Radial progress / KPI ring",
+      "engine": "gauge-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 320,
+      "hint": "도넛 진행률. value/min/max → 채움 비율, 중앙 큰 값(unit='%'면 백분율). 달성률·가동률·진척. items[]로 KPI 링 패널."
+    },
+    "bullet-chart": {
+      "title": "Bullet chart",
+      "engine": "gauge-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 300,
+      "hint": "불릿 차트. 가로 정성밴드(bands:[{to,color}], 예 poor/ok/good) + 실적 막대 + 목표 틱(target). value/min/max/unit/label. items[]로 KPI 리스트. 목표 대비 실적을 조밀하게."
+    },
+    "point-cloud-3d": {
+      "title": "3D point cloud / scatter",
+      "engine": "cad3d-core",
+      "extends": null,
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "3D 산점/포인트클라우드. points:[[x,y,z], …] 또는 [{x,y,z}]. scalar:[점별 값]+z={label,unit}이면 컬러맵+컬러바, colormap(viridis…), point_size(자동). orbit·단면(clip)·PNG. 측정점/스캔/군집."
+    },
+    "surface-3d": {
+      "title": "3D surface (z=f(x,y))",
+      "engine": "cad3d-core",
+      "extends": null,
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "3D 곡면. z_grid:[[…행=y…]] (z_grid[i][j]=점 (x[j],y[i]) 높이) + z_meta={label,unit}. x/y 좌표 선택(생략 시 인덱스). 높이·색=z, colormap. orbit로 돌려보고 단면. 반응표면/지형/진동형상."
+    },
+    "stat-card": {
+      "title": "Stat cards (KPI)",
+      "engine": "gauge-core",
+      "extends": null,
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 240,
+      "hint": "빅넘버 KPI 카드 그리드. items:[{label,value,unit?,delta?,goal(low|high)?,spark:[추세값]}]. 값 카운트업 + 추세 ▲▼(목표방향 색) + 스파크라인. 대시보드 상단 요약."
+    },
+    "stream-graph": {
+      "title": "Stream graph (themeriver)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "streamgraph"
+      ],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 420,
+      "hint": "스트림그래프(themeriver) — 중앙 정렬 누적 흐름 밴드. series:[{name,data:[[x,y],…]}] (공유 x, 값≥0). 구성의 시간 변화를 유려하게. axes.x label+unit 필수. 호버=밴드 값."
+    },
+    "sunburst": {
+      "title": "Sunburst (drill-down)",
+      "engine": "flow-core",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "선버스트(방사 계층). tree:{name,children:[{name,value} 또는 {name,children:[…]}]}. 잎 value∝각도, 깊이=링. 세그먼트 클릭=드릴다운(해당 가지를 전체로), 중앙 클릭=상위로. 계층 구성/디스크 용량/조직."
+    },
+    "treemap-drilldown": {
+      "title": "Treemap (drill-down)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "treemap-drill"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "계층 트리맵(드릴다운). tree:{name,children:[{name,value} 또는 {name,children:[…]}]}. 면적∝value, 타일 클릭=하위로 드릴다운(▸ 표시), 상단 breadcrumb 클릭=상위로. 각 노드 자식은 squarify 사전배치. 계층 구성/용량/예산."
+    },
+    "isosurface-3d": {
+      "title": "3D isosurface",
+      "engine": "cad3d-core",
+      "extends": null,
+      "backend": "webgl",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 520,
+      "hint": "3D 등위면(isosurface). field:[[[…]]] (nx×ny×nz 스칼라장) + level(등위값). marching tetrahedra로 표면 추출, 높이 색. 데모 field:'metaballs'. orbit·단면·PNG. 체적장(밀도/포텐셜/농도)의 등치면."
+    },
+    "overview-detail": {
+      "title": "Overview + detail (focus+context)",
+      "engine": "review-matrix",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": true,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "focus+context. series:[{name,data:[[x,y],…]}] + axes. 상단 상세 패널 + 하단 개요 패널(전체). 개요의 창을 드래그/리사이즈하면 상세 패널이 그 x-범위로 줌(긴 시계열 탐색). axes.x label+unit 필수."
+    },
+    "gantt-chart": {
+      "title": "Gantt chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "gantt"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "간트차트. tasks:[{name, start:'YYYY-MM-DD', end, progress?(0~1), group?, owner?, deps?:[선행작업명|idx], milestone?:true(다이아)}]. 그룹 밴드·진척 채움·의존 화살표·주말 음영·날짜 눈금 자동, '오늘' 선은 열람 시점 기준(클라이언트). 호버=기간/진척/담당. options.today/weekends. 행 수에 맞춰 height 권장 64+30n."
+    },
+    "milestone-timeline": {
+      "title": "Milestone timeline",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "timeline"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 340,
+      "hint": "마일스톤 타임라인. events:[{date:'YYYY-MM-DD', label, status?(done|active|pending), desc?}]. 수평 날짜축 + 교차 콜아웃, 상태색(완료✓/진행/예정), '오늘' 마커. 프로젝트 주요 이벤트 한눈에."
+    },
+    "calendar-heatmap": {
+      "title": "Calendar heatmap",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "calheat"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 300,
+      "hint": "캘린더 히트맵(GitHub 스타일). entries:[{date:'YYYY-MM-DD', value}] 또는 날짜 문자열 배열(건수 1). 주=열·요일=행, 색=값, 월 라벨. 활동/부하/발생 빈도의 날짜 밀도. value_label로 호버 단위 지정."
+    },
+    "task-table": {
+      "title": "Task table (업무 목록)",
+      "engine": "review-matrix",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "업무 목록표. tasks:[{name, owner?, start?, end?, progress?(0~1), status?(완료|진행|지연|예정), priority?, group?}]. 열=담당/기간/진척(bar)/상태/우선순위. as_of:'YYYY-MM-DD' 주면 D-day(▲▼) 열 추가 — 기준일은 명시 입력(빌드 시계 아님). 검색·group 접기 자동."
+    },
+    "work-plan": {
+      "title": "Work plan (종합 업무계획서)",
+      "engine": "review-matrix",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 1100,
+      "hint": "종합 업무계획서 — 한 아티팩트에 결합: 개요(period:{start,end}, owner?, team?, objective?) + kpis:[{label,value,unit?,delta?,goal?,spark?}](stat-card) + tasks:[…](Gantt + 업무분장 자동) + milestones:[{date,label,status?}](timeline) + risks:[{risk, impact(1~5), likelihood(1~5), mitigation?}](heat). kpis/milestones/risks는 선택. 셀 그래프 클릭=확대 모달."
+    }
+  }
+}

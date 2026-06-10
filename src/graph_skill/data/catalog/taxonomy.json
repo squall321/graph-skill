@@ -1,0 +1,1371 @@
+{
+  "_note": "Discovery taxonomy for fast AI type selection. Each type maps to ONE primary purpose category (intent-based, not engine-based). Engine/plugin/requires wiring stays in types.json; this file is the SSOT for classification. A test gates that every known type appears here and every category id is valid.",
+  "categories": [
+    {
+      "id": "trend",
+      "title": "추세·시계열·응답",
+      "desc": "독립변수(시간/반복/하중)에 따른 곡선·응답",
+      "when": "무언가가 X에 따라 어떻게 변하는지"
+    },
+    {
+      "id": "distribution",
+      "title": "분포·통계요약",
+      "desc": "한 변수의 분포·정규성·누적",
+      "when": "표본의 퍼짐/정규성/누적비율"
+    },
+    {
+      "id": "comparison",
+      "title": "비교·상관·검증",
+      "desc": "두 변수 관계 또는 케이스(해석 vs 실험) 비교",
+      "when": "관계를 보거나 케이스를 겹쳐 검증"
+    },
+    {
+      "id": "ranking",
+      "title": "순위·구성",
+      "desc": "범주별 크기·기여·우선순위",
+      "when": "어느 범주가 크고 무엇이 vital few인지"
+    },
+    {
+      "id": "mechanics",
+      "title": "재료·구조 곡선",
+      "desc": "응력-변형/하중-변위 시험·해석 거동",
+      "when": "재료/구조 시험·비선형 거동"
+    },
+    {
+      "id": "reliability",
+      "title": "신뢰성·수명·피로",
+      "desc": "고장/수명/피로 데이터 분석",
+      "when": "수명·신뢰성·피로(사이클/균열)"
+    },
+    {
+      "id": "process-quality",
+      "title": "공정·품질관리",
+      "desc": "공정 안정성·능력(Cp/Cpk)",
+      "when": "공정 관리/규격 충족"
+    },
+    {
+      "id": "doe",
+      "title": "실험계획·회귀진단",
+      "desc": "인자 효과·교호작용·회귀 가정",
+      "when": "DOE 분석·회귀 모델 진단"
+    },
+    {
+      "id": "signal-frequency",
+      "title": "신호·주파수",
+      "desc": "시간/주파수 영역 신호·필터·주파수응답",
+      "when": "스펙트럼·필터·주파수응답"
+    },
+    {
+      "id": "control-dynamics",
+      "title": "제어·동역학",
+      "desc": "제어 안정도·회전체 공진·모달",
+      "when": "안정도·공진·모드 상관"
+    },
+    {
+      "id": "field-2d",
+      "title": "2D 필드·맵",
+      "desc": "격자 위 스칼라/벡터장 컨투어·히트맵·화살표",
+      "when": "2D 공간 분포(응력/온도/속도)"
+    },
+    {
+      "id": "polar",
+      "title": "극좌표·방사",
+      "desc": "각-반경, 안테나 방사, 다지표 레이더",
+      "when": "각도 의존/방사패턴/스펙 레이더"
+    },
+    {
+      "id": "geometry-3d",
+      "title": "3D 형상·결과",
+      "desc": "3D 메시/CAD 형상과 결과 컨투어를 돌려봄",
+      "when": "3D 형상 검토/FE 결과를 단면까지"
+    },
+    {
+      "id": "table",
+      "title": "점검·비교표",
+      "desc": "설계 state 항목별 점검/비교(셀=값/상태/그래프/이미지)",
+      "when": "여러 항목·설계안을 표로 점검/비교"
+    },
+    {
+      "id": "planning",
+      "title": "일정·계획",
+      "desc": "프로젝트 일정/계획/진척(간트·타임라인·캘린더·업무표·계획서)",
+      "when": "일정·마일스톤·업무 진척·계획서를 표현"
+    },
+    {
+      "id": "relations",
+      "title": "흐름·관계",
+      "desc": "노드/링크/흐름 구조(샌키·네트워크·코드·순서도)",
+      "when": "흐름량 분해, 연결망, 그룹간 관계, 프로세스 다이어그램"
+    },
+    {
+      "id": "hierarchy",
+      "title": "계층·구성",
+      "desc": "계층 트리의 구성 비중(트리맵·선버스트)",
+      "when": "부분-전체 계층 구성을 면적/각도로"
+    },
+    {
+      "id": "kpi-status",
+      "title": "지표·현황",
+      "desc": "단일/소수 KPI 게이지·카드·불릿",
+      "when": "현재 값·달성률·목표 대비를 한눈에"
+    },
+    {
+      "id": "playback",
+      "title": "시간 재생",
+      "desc": "프레임 시퀀스를 재생하는 애니메이션 차트",
+      "when": "순위/분포가 시간에 따라 변하는 과정을 재생"
+    }
+  ],
+  "types": {
+    "base-xy": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series[] of (x,y)",
+      "use_when": "임의 X-Y 다중 곡선(기본)",
+      "keywords": [
+        "line",
+        "xy",
+        "시계열",
+        "곡선"
+      ]
+    },
+    "transient-time-history": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series:[{data:[[t,v]]}] 멀티채널",
+      "use_when": "충격/지진/과도 동적 응답 + 피크",
+      "keywords": [
+        "transient",
+        "시간이력",
+        "충격",
+        "crash",
+        "피크"
+      ]
+    },
+    "convergence-residual-plot": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series:[{data:[[iter,residual]]}]",
+      "use_when": "CFD/FEA 솔버 수렴(잔차 logY) 모니터",
+      "keywords": [
+        "수렴",
+        "residual",
+        "solver",
+        "CFD",
+        "FEA"
+      ]
+    },
+    "stress-strain": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "series data=[[변위,하중]] + params.A0/L0",
+      "use_when": "인장시험 σ-ε + Et 접선 + UTS/파단",
+      "keywords": [
+        "인장",
+        "stress",
+        "strain",
+        "탄성계수",
+        "tensile"
+      ]
+    },
+    "force-displacement": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "series data=[[변위,하중]]",
+      "use_when": "하중-변위 + 국소강성 dF/dd",
+      "keywords": [
+        "force",
+        "displacement",
+        "강성",
+        "stiffness"
+      ]
+    },
+    "nonlinear-load-displacement": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "series data=[[변위,하중]] + markers",
+      "use_when": "비선형 F-d/pushover + 항복/극한",
+      "keywords": [
+        "pushover",
+        "비선형",
+        "항복",
+        "좌굴",
+        "buckling"
+      ]
+    },
+    "correlation-scatter": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "series (x=test, y=cae)",
+      "use_when": "두 변수 상관 + 회귀선/R²/y=x",
+      "keywords": [
+        "correlation",
+        "scatter",
+        "상관",
+        "검증",
+        "R2"
+      ]
+    },
+    "error-bar": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "series data=[[x,y,err]]",
+      "use_when": "측정 불확도/반복편차 오차막대",
+      "keywords": [
+        "error bar",
+        "불확도",
+        "오차",
+        "uncertainty"
+      ]
+    },
+    "cfd-line-extract-compare": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "series 멀티케이스 (+실험 err)",
+      "use_when": "라인 추출 해석 vs 실험·격자독립성",
+      "keywords": [
+        "CFD",
+        "Cp",
+        "검증",
+        "격자독립성",
+        "validation"
+      ]
+    },
+    "dual-axis": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "series axis:left/right + axes.y2",
+      "use_when": "이종 물리량 좌/우 이중축",
+      "keywords": [
+        "dual axis",
+        "이중축",
+        "secondary axis"
+      ]
+    },
+    "histogram": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "values:[...] + axes.x",
+      "use_when": "한 변수의 분포 히스토그램",
+      "keywords": [
+        "histogram",
+        "분포",
+        "frequency"
+      ]
+    },
+    "box-plot": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "groups:[{label,values}]",
+      "use_when": "그룹별 산포(사분위/이상치)",
+      "keywords": [
+        "box plot",
+        "산포",
+        "사분위",
+        "outlier",
+        "상자그림",
+        "박스플롯"
+      ]
+    },
+    "qq-plot": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "values:[...] (>=3)",
+      "use_when": "정규성 Q-Q 점검",
+      "keywords": [
+        "qq",
+        "정규성",
+        "normality"
+      ]
+    },
+    "ecdf-plot": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "values:[...] + axes.x",
+      "use_when": "경험적 누적분포 F(x)",
+      "keywords": [
+        "ecdf",
+        "cdf",
+        "누적분포"
+      ]
+    },
+    "pole-zero-map": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "poles/zeros [[Re,Im]] + domain s|z",
+      "use_when": "시스템 극/영점 안정성·응답",
+      "keywords": [
+        "pole zero",
+        "극점",
+        "영점",
+        "안정성",
+        "pz"
+      ]
+    },
+    "cusum-chart": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "values:[...] + params.target/sd",
+      "use_when": "작은 평균이동 민감 탐지(누적합)",
+      "keywords": [
+        "cusum",
+        "누적합",
+        "관리도",
+        "drift"
+      ]
+    },
+    "goodman-haigh": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "Su/Se + points:[{mean,alt}]",
+      "use_when": "평균응력 피로(Goodman선)",
+      "keywords": [
+        "goodman",
+        "haigh",
+        "피로",
+        "평균응력",
+        "내구"
+      ]
+    },
+    "psd-welch": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "signal:[...] + params.fs",
+      "use_when": "전력스펙트럼밀도(Welch 평균)",
+      "keywords": [
+        "psd",
+        "welch",
+        "스펙트럼밀도",
+        "랜덤진동",
+        "소음"
+      ]
+    },
+    "smith-chart": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "series S11 data=[[Γre,Γim]] / mag+phase",
+      "use_when": "RF 임피던스 정합(반사계수 궤적)",
+      "keywords": [
+        "smith",
+        "스미스",
+        "임피던스",
+        "s11",
+        "정합",
+        "rf"
+      ]
+    },
+    "nichols-chart": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "series data=[[phase_deg, gain_dB]]",
+      "use_when": "Nichols 이득/위상 여유",
+      "keywords": [
+        "nichols",
+        "니콜스",
+        "안정도",
+        "여유"
+      ]
+    },
+    "parallel-coordinates": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "variables:{name:[values]}",
+      "use_when": "다변량 평행좌표(패턴/트레이드오프)",
+      "keywords": [
+        "parallel coordinates",
+        "평행좌표",
+        "다변량",
+        "parcoord"
+      ]
+    },
+    "multitrack-stack": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "channels:[{name,unit,data:[[t,v]]}]",
+      "use_when": "다채널 공유 시간축 세로 스택(낙하/진동)",
+      "keywords": [
+        "multitrack",
+        "멀티트랙",
+        "다채널",
+        "스택",
+        "진동"
+      ]
+    },
+    "response-surface-2d": {
+      "category": "doe",
+      "dims": "2D",
+      "data": "x1/x2/y (>=6점) + factors + z",
+      "use_when": "RSM 반응표면 컨투어(최적영역)",
+      "keywords": [
+        "rsm",
+        "반응표면",
+        "response surface",
+        "최적화",
+        "doe"
+      ]
+    },
+    "area-plot": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series + axes.x/y",
+      "use_when": "곡선 아래 면적 채움(추세 강조)",
+      "keywords": [
+        "area",
+        "면적",
+        "fill"
+      ]
+    },
+    "stacked-area": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "공유 x 멀티 series + axes",
+      "use_when": "구성 비중의 시간 변화(누적 면적)",
+      "keywords": [
+        "stacked area",
+        "누적",
+        "구성",
+        "composition"
+      ]
+    },
+    "waterfall-chart": {
+      "category": "ranking",
+      "dims": "2D",
+      "data": "categories+values(+kinds) + axes.y",
+      "use_when": "증감 분해/기여(누적 떠있는 막대)",
+      "keywords": [
+        "waterfall",
+        "워터폴",
+        "분해",
+        "기여",
+        "bridge",
+        "폭포",
+        "폭포차트"
+      ]
+    },
+    "violin-plot": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "groups:[{label,values}] + axes.y",
+      "use_when": "그룹 분포 형태(다봉성) 비교",
+      "keywords": [
+        "violin",
+        "바이올린",
+        "밀도",
+        "분포형태"
+      ]
+    },
+    "pdf-kde": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "values:[...] 또는 groups + axes.x",
+      "use_when": "커널밀도(매끈한 PDF)·그룹 분포 비교",
+      "keywords": [
+        "kde",
+        "density",
+        "밀도",
+        "pdf"
+      ]
+    },
+    "ridgeline": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "groups:[{label,values}] + axes.x",
+      "use_when": "그룹별 분포를 세로 오프셋(joyplot)",
+      "keywords": [
+        "ridgeline",
+        "joyplot",
+        "능선도",
+        "분포추세"
+      ]
+    },
+    "eye-diagram": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "signal:[...] + params.sps",
+      "use_when": "신호 무결성(아이 개구/지터)",
+      "keywords": [
+        "eye diagram",
+        "아이다이어그램",
+        "신호무결성",
+        "지터",
+        "si"
+      ]
+    },
+    "gauge-r-r": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "measurements[part][operator]=[trials]",
+      "use_when": "측정시스템분석(Gauge R&R)",
+      "keywords": [
+        "gauge r&r",
+        "msa",
+        "측정시스템",
+        "반복재현"
+      ]
+    },
+    "spectrogram": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "signal:[...] + params.fs",
+      "use_when": "시간-주파수 STFT 스펙트로그램",
+      "keywords": [
+        "spectrogram",
+        "stft",
+        "시간주파수",
+        "처프",
+        "비정상"
+      ]
+    },
+    "scatter-matrix": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "variables:{name:[values]}",
+      "use_when": "다변량 산점도 행렬(SPLOM)",
+      "keywords": [
+        "splom",
+        "scatter matrix",
+        "산점행렬",
+        "다변량",
+        "상관"
+      ]
+    },
+    "treemap": {
+      "category": "hierarchy",
+      "dims": "2D",
+      "data": "items:[{label,value}]",
+      "use_when": "면적으로 구성 비중(부품/비용/결함)",
+      "keywords": [
+        "treemap",
+        "트리맵",
+        "구성",
+        "면적",
+        "비중",
+        "구성비"
+      ]
+    },
+    "bar-plot": {
+      "category": "ranking",
+      "dims": "2D",
+      "data": "categories+values + axes.y",
+      "use_when": "범주별 막대 크기 비교",
+      "keywords": [
+        "bar",
+        "범주",
+        "막대"
+      ]
+    },
+    "pareto": {
+      "category": "ranking",
+      "dims": "2D",
+      "data": "categories+values + axes.y",
+      "use_when": "정렬막대+누적%(vital few)",
+      "keywords": [
+        "pareto",
+        "우선순위",
+        "결함",
+        "80/20"
+      ]
+    },
+    "weibull-prob-paper": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "values:[고장수명] + axes.x",
+      "use_when": "Weibull 확률지(형상 β·척도 η)",
+      "keywords": [
+        "weibull",
+        "신뢰성",
+        "수명",
+        "확률지",
+        "life"
+      ]
+    },
+    "kaplan-meier-survival": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "durations/events 또는 groups",
+      "use_when": "생존곡선 S(t) + 중도절단",
+      "keywords": [
+        "kaplan-meier",
+        "생존",
+        "survival",
+        "censoring"
+      ]
+    },
+    "s-n-fatigue-curve": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "series data=[[N,S]] + axes.y",
+      "use_when": "피로 S-N(Wöhler) + 피로한도",
+      "keywords": [
+        "fatigue",
+        "s-n",
+        "wohler",
+        "피로",
+        "수명"
+      ]
+    },
+    "paris-crack-growth": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "series data=[[ΔK,da/dN]]",
+      "use_when": "균열성장 Paris(log-log)",
+      "keywords": [
+        "crack",
+        "paris",
+        "da/dN",
+        "파괴역학"
+      ]
+    },
+    "rainflow-cycle-histogram": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "signal:[하중...] + load{label,unit}",
+      "use_when": "변동하중 rainflow 평균×범위 사이클",
+      "keywords": [
+        "rainflow",
+        "사이클",
+        "피로",
+        "변동하중"
+      ]
+    },
+    "spc-control-chart": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "series data=[[sample,value]] + axes.y",
+      "use_when": "관리도 CL/UCL/LCL + 이탈점",
+      "keywords": [
+        "spc",
+        "관리도",
+        "control chart",
+        "공정"
+      ]
+    },
+    "process-capability-hist": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "values + params.USL/LSL + axes.x",
+      "use_when": "공정능력 Cp/Cpk + 규격선",
+      "keywords": [
+        "cp",
+        "cpk",
+        "공정능력",
+        "규격",
+        "capability"
+      ]
+    },
+    "main-effects-plot": {
+      "category": "doe",
+      "dims": "2D",
+      "data": "factors:[{name,levels,means}] + axes.y",
+      "use_when": "DOE 주효과(인자 영향)",
+      "keywords": [
+        "doe",
+        "주효과",
+        "main effects"
+      ]
+    },
+    "interaction-plot": {
+      "category": "doe",
+      "dims": "2D",
+      "data": "factor_x/factor_series/means + axes.y",
+      "use_when": "DOE 교호작용(선 교차)",
+      "keywords": [
+        "doe",
+        "교호작용",
+        "interaction"
+      ]
+    },
+    "residual-diagnostic-panel": {
+      "category": "doe",
+      "dims": "2D",
+      "data": "x:[], y:[] (회귀 데이터)",
+      "use_when": "회귀 진단 4종 패널(가정 점검)",
+      "keywords": [
+        "회귀",
+        "진단",
+        "residual",
+        "regression"
+      ]
+    },
+    "bode": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "freqs/mag/phase",
+      "use_when": "보드선도 mag+phase(log f)",
+      "keywords": [
+        "bode",
+        "주파수응답",
+        "frf",
+        "제어"
+      ]
+    },
+    "fft-spectrum": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "series data=[[t,v]] + params.fs",
+      "use_when": "시간↔주파수 토글 FFT 스펙트럼",
+      "keywords": [
+        "fft",
+        "스펙트럼",
+        "주파수",
+        "spectrum"
+      ]
+    },
+    "filter-tuner": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "series data=[[t,v]] + params.fs",
+      "use_when": "FFT + 차단주파수 슬라이더(실시간 필터)",
+      "keywords": [
+        "filter",
+        "필터",
+        "차단주파수",
+        "cutoff"
+      ]
+    },
+    "nyquist-plot": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "series data=[[Re,Im]]",
+      "use_when": "Nyquist 안정도(등비율+단위원+−1)",
+      "keywords": [
+        "nyquist",
+        "안정도",
+        "stability",
+        "제어"
+      ]
+    },
+    "root-locus": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "series + poles/zeros",
+      "use_when": "근궤적(극/영점, 안정경계)",
+      "keywords": [
+        "root locus",
+        "근궤적",
+        "극점",
+        "pole"
+      ]
+    },
+    "campbell-diagram": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "modes:[{data:[[rpm,Hz]]}] + orders",
+      "use_when": "회전체 공진맵(엔진오더선)",
+      "keywords": [
+        "campbell",
+        "회전체",
+        "공진",
+        "rpm",
+        "rotor"
+      ]
+    },
+    "mac-matrix-heatmap": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "matrix:[[...]] (0~1)",
+      "use_when": "모드 상관 MAC 행렬(시험×해석)",
+      "keywords": [
+        "mac",
+        "모달",
+        "mode",
+        "상관",
+        "correlation"
+      ]
+    },
+    "contour-plot": {
+      "category": "field-2d",
+      "dims": "2D",
+      "data": "field={x,y,z} + z{label,unit}",
+      "use_when": "2D 스칼라장 컨투어+컬러바+probe",
+      "keywords": [
+        "contour",
+        "컨투어",
+        "필드",
+        "map"
+      ]
+    },
+    "heatmap-grid": {
+      "category": "field-2d",
+      "dims": "2D",
+      "data": "field={x,y,z}",
+      "use_when": "히트맵(색만, 등치선 없음)",
+      "keywords": [
+        "heatmap",
+        "히트맵"
+      ]
+    },
+    "scalar-field-2d": {
+      "category": "field-2d",
+      "dims": "2D",
+      "data": "field={x,y,z}",
+      "use_when": "일반 2D 스칼라장(온도/전위/SAR)",
+      "keywords": [
+        "field",
+        "스칼라장",
+        "scalar"
+      ]
+    },
+    "mcae-stress-contour": {
+      "category": "field-2d",
+      "dims": "2D",
+      "data": "field={x,y,z=응력}",
+      "use_when": "구조 CAE von Mises 응력 컨투어",
+      "keywords": [
+        "응력",
+        "stress contour",
+        "mcae",
+        "von mises"
+      ]
+    },
+    "vector-quiver-2d": {
+      "category": "field-2d",
+      "dims": "2D",
+      "data": "field={x,y,u,v}",
+      "use_when": "2D 벡터장 화살표(속도/열유속)",
+      "keywords": [
+        "quiver",
+        "벡터장",
+        "유동",
+        "속도",
+        "vector"
+      ]
+    },
+    "wind-rose": {
+      "category": "polar",
+      "dims": "2D",
+      "data": "directions/dir_labels + bins:[{label,counts}]",
+      "use_when": "방향별 빈도 분포(풍향/배향)",
+      "keywords": [
+        "wind rose",
+        "윈드로즈",
+        "풍향",
+        "방향분포",
+        "배향"
+      ]
+    },
+    "polar-plot": {
+      "category": "polar",
+      "dims": "2D",
+      "data": "series theta/r + radius{label,unit}",
+      "use_when": "극좌표(각-반경)",
+      "keywords": [
+        "polar",
+        "극좌표"
+      ]
+    },
+    "radar-chart": {
+      "category": "polar",
+      "dims": "2D",
+      "data": "axes_labels + series values",
+      "use_when": "다지표 레이더/스파이더(스펙 비교)",
+      "keywords": [
+        "radar",
+        "spider",
+        "다지표",
+        "스펙비교"
+      ]
+    },
+    "rf-radiation-pattern": {
+      "category": "polar",
+      "dims": "2D",
+      "data": "series theta/r(gain dBi)",
+      "use_when": "안테나 방사패턴(극좌표)",
+      "keywords": [
+        "antenna",
+        "방사",
+        "radiation",
+        "gain",
+        "안테나"
+      ]
+    },
+    "mesh-deformed-3d": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "mesh + displacement:[[dx,dy,dz]] + scale",
+      "use_when": "3D 변형형상(배율 슬라이더·원형상)",
+      "keywords": [
+        "deformed",
+        "변형형상",
+        "변위",
+        "warp",
+        "fea"
+      ]
+    },
+    "mode-shape-3d": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "mesh + modes:[{name,freq,disp}]",
+      "use_when": "3D 모드형상 애니메이션(모달)",
+      "keywords": [
+        "mode shape",
+        "모드형상",
+        "모달",
+        "고유모드",
+        "animation"
+      ]
+    },
+    "cad-3d-viewer": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "mesh={path|glb_b64|vertices/faces|primitive}",
+      "use_when": "3D 형상 뷰어(orbit·단면·와이어)",
+      "keywords": [
+        "3d",
+        "cad",
+        "stl",
+        "mesh",
+        "viewer",
+        "단면"
+      ]
+    },
+    "mesh-result-3d": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "mesh + field:[정점값] + z{label,unit}",
+      "use_when": "3D 메시 위 FE 결과 컨투어",
+      "keywords": [
+        "3d",
+        "fe result",
+        "응력",
+        "컨투어",
+        "mesh"
+      ]
+    },
+    "correlation-matrix": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "variables:{name:[values]}",
+      "use_when": "다변량 Pearson 상관 히트맵",
+      "keywords": [
+        "correlation",
+        "상관행렬",
+        "pearson",
+        "다변량"
+      ]
+    },
+    "confusion-matrix": {
+      "category": "table",
+      "dims": "2D",
+      "data": "matrix 또는 y_true/y_pred(+labels)",
+      "use_when": "분류 성능(혼동행렬+정확도)",
+      "keywords": [
+        "confusion",
+        "혼동행렬",
+        "분류",
+        "정확도",
+        "ml"
+      ]
+    },
+    "kpi-scorecard": {
+      "category": "table",
+      "dims": "table",
+      "data": "metrics:[{name,value,target,unit,goal}]",
+      "use_when": "KPI 대시보드(값/목표/상태/달성도 바)",
+      "keywords": [
+        "kpi",
+        "scorecard",
+        "스코어카드",
+        "대시보드",
+        "지표"
+      ]
+    },
+    "decision-matrix": {
+      "category": "table",
+      "dims": "table",
+      "data": "criteria(weight) × options × scores",
+      "use_when": "가중 의사결정(Pugh) 설계안 비교",
+      "keywords": [
+        "decision matrix",
+        "pugh",
+        "의사결정",
+        "가중",
+        "트레이드오프"
+      ]
+    },
+    "review-matrix": {
+      "category": "table",
+      "dims": "table",
+      "data": "states[]+items[] (셀: 값/상태/그래프/이미지)",
+      "use_when": "범용 점검/리뷰표",
+      "keywords": [
+        "table",
+        "점검표",
+        "리뷰",
+        "matrix"
+      ]
+    },
+    "design-state-compare": {
+      "category": "table",
+      "dims": "table",
+      "data": "states>=2 + items + meta.baseline",
+      "use_when": "설계 state 비교 + diff/합부 배지",
+      "keywords": [
+        "비교표",
+        "설계비교",
+        "diff",
+        "baseline"
+      ]
+    },
+    "single-state-checklist": {
+      "category": "table",
+      "dims": "table",
+      "data": "items (+spec)",
+      "use_when": "단일 설계안 항목별 점검표",
+      "keywords": [
+        "체크리스트",
+        "점검",
+        "합부",
+        "checklist"
+      ]
+    },
+    "flowchart": {
+      "category": "relations",
+      "dims": "graph",
+      "data": "nodes[]+edges[] (노드 content: text/value/kv/list/이미지/표/그래프) 또는 steps[]",
+      "use_when": "프로세스/의사결정 흐름, 그림·표·지표가 박힌 비정형 순서도",
+      "keywords": [
+        "flowchart",
+        "순서도",
+        "다이어그램",
+        "프로세스",
+        "node",
+        "edge",
+        "diagram",
+        "흐름도",
+        "플로우차트",
+        "공정도",
+        "업무흐름"
+      ]
+    },
+    "bubble-timeline": {
+      "category": "playback",
+      "dims": "2D+time",
+      "data": "frames[{t, entities[{id,x,y,size}]}]",
+      "use_when": "다변량 지표의 시간 변화 애니메이션",
+      "keywords": [
+        "bubble",
+        "gapminder",
+        "애니메이션",
+        "timeline",
+        "재생",
+        "버블"
+      ]
+    },
+    "animated-trajectory": {
+      "category": "trend",
+      "dims": "2D+time",
+      "data": "path[[x,y]] (+times)",
+      "use_when": "궤적/위상평면/sweep/히스테리시스 재생",
+      "keywords": [
+        "trajectory",
+        "phase portrait",
+        "위상평면",
+        "궤적",
+        "sweep",
+        "hysteresis",
+        "애니메이션"
+      ]
+    },
+    "bar-chart-race": {
+      "category": "playback",
+      "dims": "1D+time",
+      "data": "frames[{t, entities[{label,value}]}]",
+      "use_when": "순위 변화 애니메이션",
+      "keywords": [
+        "bar race",
+        "막대경주",
+        "순위",
+        "ranking",
+        "애니메이션",
+        "race"
+      ]
+    },
+    "sankey-diagram": {
+      "category": "relations",
+      "dims": "flow",
+      "data": "nodes[]+links[{source,target,value}]",
+      "use_when": "흐름량 분해(에너지/물질/예산)",
+      "keywords": [
+        "sankey",
+        "흐름도",
+        "flow",
+        "에너지흐름",
+        "전환",
+        "리본",
+        "샌키",
+        "생키"
+      ]
+    },
+    "network-graph": {
+      "category": "relations",
+      "dims": "graph",
+      "data": "nodes[]+links[]",
+      "use_when": "연결망/토폴로지/의존성",
+      "keywords": [
+        "network",
+        "그래프",
+        "force",
+        "토폴로지",
+        "연결망",
+        "node-link",
+        "의존성",
+        "네트워크",
+        "조직도",
+        "관계도"
+      ]
+    },
+    "chord-diagram": {
+      "category": "relations",
+      "dims": "matrix",
+      "data": "정사각 matrix(+labels) 또는 links",
+      "use_when": "그룹간 전이/상호참조 관계",
+      "keywords": [
+        "chord",
+        "코드다이어그램",
+        "전이",
+        "관계",
+        "리본",
+        "matrix"
+      ]
+    },
+    "gauge": {
+      "category": "kpi-status",
+      "dims": "scalar",
+      "data": "value(+min,max,target,bands)",
+      "use_when": "단일 KPI를 게이지로",
+      "keywords": [
+        "gauge",
+        "게이지",
+        "속도계",
+        "dial",
+        "kpi",
+        "지표",
+        "계기판",
+        "다이얼"
+      ]
+    },
+    "radial-progress": {
+      "category": "kpi-status",
+      "dims": "scalar",
+      "data": "value/min/max",
+      "use_when": "달성률/진척 링",
+      "keywords": [
+        "radial",
+        "progress",
+        "도넛",
+        "진행률",
+        "달성률",
+        "ring",
+        "kpi"
+      ]
+    },
+    "bullet-chart": {
+      "category": "kpi-status",
+      "dims": "scalar",
+      "data": "value+target+bands",
+      "use_when": "목표 대비 실적(조밀)",
+      "keywords": [
+        "bullet",
+        "불릿",
+        "목표",
+        "실적",
+        "kpi",
+        "target"
+      ]
+    },
+    "point-cloud-3d": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "points[[x,y,z]] (+scalar,z)",
+      "use_when": "3D 점군/측정점/스캔",
+      "keywords": [
+        "point cloud",
+        "3d scatter",
+        "포인트클라우드",
+        "점군",
+        "스캔",
+        "3차원"
+      ]
+    },
+    "surface-3d": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "z_grid[[…]] (+x,y,z_meta)",
+      "use_when": "z=f(x,y) 곡면을 3D로",
+      "keywords": [
+        "surface",
+        "곡면",
+        "3d surface",
+        "반응표면",
+        "지형",
+        "z=f(x,y)"
+      ]
+    },
+    "stat-card": {
+      "category": "kpi-status",
+      "dims": "scalar",
+      "data": "items[{label,value,delta,spark}]",
+      "use_when": "대시보드 KPI 요약 카드",
+      "keywords": [
+        "stat",
+        "kpi",
+        "card",
+        "빅넘버",
+        "스파크라인",
+        "지표카드",
+        "scorecard"
+      ]
+    },
+    "stream-graph": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series[{name,data}] 공유 x",
+      "use_when": "구성의 시간 변화(유려한 누적)",
+      "keywords": [
+        "stream",
+        "themeriver",
+        "스트림그래프",
+        "누적",
+        "흐름",
+        "구성변화"
+      ]
+    },
+    "sunburst": {
+      "category": "hierarchy",
+      "dims": "hierarchy",
+      "data": "tree{name,children/value}",
+      "use_when": "계층 구성(드릴다운)",
+      "keywords": [
+        "sunburst",
+        "선버스트",
+        "계층",
+        "hierarchy",
+        "드릴다운",
+        "방사",
+        "트리"
+      ]
+    },
+    "treemap-drilldown": {
+      "category": "hierarchy",
+      "dims": "hierarchy",
+      "data": "tree{name,children/value}",
+      "use_when": "계층 구성(클릭 드릴다운)",
+      "keywords": [
+        "treemap",
+        "트리맵",
+        "드릴다운",
+        "계층",
+        "hierarchy",
+        "drill"
+      ]
+    },
+    "isosurface-3d": {
+      "category": "geometry-3d",
+      "dims": "3D",
+      "data": "field[nx][ny][nz] + level",
+      "use_when": "체적 스칼라장의 등치면",
+      "keywords": [
+        "isosurface",
+        "등위면",
+        "등치면",
+        "marching",
+        "체적",
+        "volume",
+        "level set"
+      ]
+    },
+    "overview-detail": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "series[{name,data}] + axes",
+      "use_when": "긴 시계열 focus+context 탐색",
+      "keywords": [
+        "overview",
+        "focus context",
+        "개요",
+        "상세",
+        "범위선택",
+        "navigator",
+        "브러시줌"
+      ]
+    },
+    "gantt-chart": {
+      "category": "planning",
+      "dims": "time×task",
+      "data": "tasks[{name,start,end,progress,deps}]",
+      "use_when": "프로젝트 일정/진척/의존",
+      "keywords": [
+        "gantt",
+        "간트",
+        "일정",
+        "일정표",
+        "schedule",
+        "wbs",
+        "공정표",
+        "프로젝트",
+        "공정계획",
+        "바차트일정"
+      ]
+    },
+    "milestone-timeline": {
+      "category": "planning",
+      "dims": "time",
+      "data": "events[{date,label,status}]",
+      "use_when": "주요 이벤트/마일스톤 흐름",
+      "keywords": [
+        "timeline",
+        "타임라인",
+        "마일스톤",
+        "이정표",
+        "일정",
+        "로드맵"
+      ]
+    },
+    "calendar-heatmap": {
+      "category": "planning",
+      "dims": "calendar",
+      "data": "entries[{date,value}]",
+      "use_when": "날짜별 활동/부하 밀도",
+      "keywords": [
+        "calendar",
+        "캘린더",
+        "히트맵",
+        "잔디",
+        "활동",
+        "일별"
+      ]
+    },
+    "task-table": {
+      "category": "planning",
+      "dims": "table",
+      "data": "tasks[{name,owner,progress,status}] (+as_of)",
+      "use_when": "업무 목록/진척/담당 점검",
+      "keywords": [
+        "task",
+        "업무",
+        "할일",
+        "todo",
+        "진척",
+        "담당",
+        "업무목록",
+        "d-day"
+      ]
+    },
+    "work-plan": {
+      "category": "planning",
+      "dims": "composite",
+      "data": "period+tasks (+kpis/milestones/risks)",
+      "use_when": "종합 업무계획서(개요+KPI+간트+마일스톤+리스크 결합)",
+      "keywords": [
+        "계획서",
+        "업무계획",
+        "work plan",
+        "종합",
+        "프로젝트 계획",
+        "주간계획",
+        "분기계획"
+      ]
+    }
+  }
+}

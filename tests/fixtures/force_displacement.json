@@ -1,0 +1,8 @@
+{
+  "graph_type": "force-displacement",
+  "title": "Side button force-travel",
+  "axes": { "x": { "label": "Displacement", "unit": "mm" }, "y": { "label": "Force", "unit": "N" } },
+  "series": [
+    { "name": "button", "data": [[0,0],[0.05,0.6],[0.1,1.4],[0.15,2.2],[0.2,2.0],[0.25,1.2],[0.3,1.6],[0.35,2.8]] }
+  ]
+}

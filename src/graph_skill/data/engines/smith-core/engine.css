@@ -1,0 +1,39 @@
+/* smith-core engine styles. Canvas Smith chart on .gs-smith-root + a hover HUD. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+
+.gs-smith-root {
+  position: relative; width: 100%; height: 100%; aspect-ratio: 1 / 1; min-height: 300px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 13px;
+  -webkit-user-select: none; user-select: none;
+  --gs-bg: #ffffff; --gs-fg: #1a1a2e; --gs-sub: #6b7280; --gs-grid: #e3e7ec; --gs-accent: #2563eb;
+  --gs-panel: rgba(255,255,255,0.94); --gs-panel-border: #e5e7eb; --gs-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  background: var(--gs-bg); color: var(--gs-fg);
+}
+.gs-smith-root[data-theme="dark"] {
+  --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af; --gs-grid: #2a2f3a; --gs-accent: #60a5fa;
+  --gs-panel: rgba(20,25,33,0.94); --gs-panel-border: #2a2f3a;
+}
+@media (prefers-color-scheme: dark) {
+  .gs-smith-root[data-theme="auto"] {
+    --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af; --gs-grid: #2a2f3a; --gs-accent: #60a5fa;
+    --gs-panel: rgba(20,25,33,0.94); --gs-panel-border: #2a2f3a;
+  }
+}
+.gs-smith-root canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.gs-smith-hud {
+  position: absolute; top: 8px; left: 8px; z-index: 5; pointer-events: none;
+  background: var(--gs-panel); border: 1px solid var(--gs-panel-border); border-radius: 8px;
+  padding: 6px 9px; box-shadow: var(--gs-shadow); font-variant-numeric: tabular-nums; line-height: 1.5;
+}
+.gs-smith-hud b { color: var(--gs-fg); }
+.gs-error { padding: 16px; color: #dc2626; font-size: 14px; text-align: center; }
+@media print { .gs-smith-root { aspect-ratio: auto; } }
+
+.gs-smith-bar { position: absolute; top: 8px; right: 8px; z-index: 6; display: flex; gap: 3px; }
+.gs-smith-btn {
+  font: 600 11px/1 "Segoe UI", system-ui, sans-serif; color: var(--gs-sub); background: var(--gs-panel);
+  border: 1px solid var(--gs-panel-border); border-radius: 6px; padding: 4px 7px; cursor: pointer;
+}
+.gs-smith-btn:hover { color: var(--gs-fg); border-color: var(--gs-accent); }
+.gs-smith-btn:focus-visible { outline: 2px solid var(--gs-accent); outline-offset: 2px; }

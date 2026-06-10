@@ -1,0 +1,1 @@
+{"graph_type": "mesh-result-3d", "title": "응력 컨투어 데모 (구)", "mesh": {"primitive": "sphere", "subdivisions": 3}, "field": "auto", "z": {"label": "von Mises σ", "unit": "MPa"}, "colormap": "turbo"}

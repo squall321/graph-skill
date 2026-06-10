@@ -1,0 +1,1 @@
+{"graph_type": "mac-matrix-heatmap", "title": "MAC (시험 vs 해석)", "axis_x_label": "Test mode", "axis_y_label": "Analysis mode", "matrix": [[0.98, 0.05, 0.02, 0.01], [0.04, 0.95, 0.08, 0.03], [0.02, 0.07, 0.91, 0.12], [0.01, 0.02, 0.1, 0.88]]}

@@ -1,0 +1,148 @@
+/* flow-core — flowchart / node-link diagram. Scoped under .gs-flow. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+
+.gs-flow {
+  --gs-bg: #ffffff; --gs-fg: #1f2937; --gs-muted: #6b7280; --gs-line: #cbd5e1;
+  --gs-card: #ffffff; --gs-card-bd: #d1d5db; --gs-accent: #2563eb; --gs-fl-accent: #2563eb;
+  --gs-edge: #94a3b8; --gs-head: #f1f5f9; --gs-shadow: rgba(15, 23, 42, .12);
+  position: relative; width: 100%; height: 100%; min-height: 240px;
+  background: var(--gs-bg); color: var(--gs-fg); overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+}
+.gs-flow[data-theme="dark"] {
+  --gs-bg: #0f172a; --gs-fg: #e5e7eb; --gs-muted: #94a3b8; --gs-line: #334155;
+  --gs-card: #1e293b; --gs-card-bd: #334155; --gs-edge: #64748b; --gs-head: #273449; --gs-shadow: rgba(0, 0, 0, .4);
+}
+@media (prefers-color-scheme: dark) {
+  .gs-flow[data-theme="auto"] {
+    --gs-bg: #0f172a; --gs-fg: #e5e7eb; --gs-muted: #94a3b8; --gs-line: #334155;
+    --gs-card: #1e293b; --gs-card-bd: #334155; --gs-edge: #64748b; --gs-head: #273449; --gs-shadow: rgba(0, 0, 0, .4);
+  }
+}
+
+.gs-fl-toolbar { position: absolute; top: 8px; right: 8px; z-index: 6; display: flex; gap: 4px; align-items: center; }
+.gs-fl-title {
+  position: absolute; top: 10px; left: 12px; z-index: 6; font-weight: 600; font-size: 14px;
+  max-width: calc(100% - 220px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gs-fl-btn {
+  font: 600 12px/1 "Segoe UI", system-ui, sans-serif; padding: 5px 8px; cursor: pointer;
+  background: var(--gs-card); color: var(--gs-fg); border: 1px solid var(--gs-card-bd); border-radius: 6px;
+}
+.gs-fl-btn[aria-pressed="true"] { border-color: var(--gs-accent); }
+.gs-fl-clickable:focus-visible { outline: 2px solid var(--gs-accent); outline-offset: 2px; }
+.gs-fl-btn:hover { border-color: var(--gs-accent); }
+
+/* pan-y: vertical touch swipes keep scrolling the host page (embeds) */
+.gs-fl-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: pan-y; }
+.gs-fl-stage.gs-fl-grabbing { cursor: grabbing; }
+
+.gs-fl-zoom-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9;
+  padding: 8px 16px; border-radius: 8px; pointer-events: none;
+  background: rgba(15, 23, 42, 0.78); color: #fff; font-weight: 600; font-size: 13px;
+  opacity: 0; transition: opacity 0.25s;
+}
+.gs-fl-zoom-hint.gs-show { opacity: 1; }
+
+.gs-sem-small .gs-fl-body { opacity: 0.25; }              /* semantic zoom: headers stay readable */
+.gs-fl-found { outline: 2px solid var(--gs-accent); outline-offset: 2px; }
+.gs-fl-search {
+  font: 12px "Segoe UI", system-ui, sans-serif; color: var(--gs-fg); background: var(--gs-card);
+  border: 1px solid var(--gs-card-bd); border-radius: 6px; padding: 4px 8px; width: 130px;
+}
+.gs-fl-btn:focus-visible, .gs-fl-search:focus-visible, .gs-fl-x:focus-visible {
+  outline: 2px solid var(--gs-accent); outline-offset: 2px;
+}
+.gs-error {
+  display: inline-block; padding: 10px 14px; border-radius: 8px; font-size: 12px;
+  color: #b91c1c; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.35);
+}
+.gs-fl-vp { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.gs-fl-edges { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+.gs-fl-nodes { position: absolute; top: 0; left: 0; }
+
+.gs-fl-edge { fill: none; stroke: var(--gs-edge); stroke-width: 1.8; }
+.gs-fl-dashed { stroke-dasharray: 5 4; }
+.gs-fl-arrowhead { fill: var(--gs-edge); }
+.gs-fl-arrowhead-sel { fill: var(--gs-accent); }
+.gs-fl-elabel { fill: var(--gs-fg); font-size: 11px; }
+.gs-fl-elabel-bg { fill: var(--gs-bg); opacity: .85; }
+
+.gs-fl-node {
+  position: absolute; box-sizing: border-box; background: var(--gs-card);
+  border: 1px solid var(--gs-card-bd); border-top: 3px solid var(--gs-fl-accent);
+  border-radius: 8px; box-shadow: 0 1px 4px var(--gs-shadow); overflow: hidden;
+}
+.gs-fl-clickable { cursor: pointer; }
+.gs-fl-clickable:hover { border-color: var(--gs-accent); box-shadow: 0 3px 10px var(--gs-shadow); }
+.gs-fl-head {
+  padding: 7px 10px; font-size: 13px; font-weight: 600; background: var(--gs-head);
+  border-bottom: 1px solid var(--gs-card-bd);
+}
+.gs-fl-glyph { color: var(--gs-fl-accent); margin-right: 5px; }
+.gs-fl-terminal { border-radius: 18px; }
+.gs-fl-terminal .gs-fl-head { border-radius: 0; }
+.gs-fl-decision { --gs-fl-accent: #d97706; }
+.gs-fl-io, .gs-fl-data { --gs-fl-accent: #7c3aed; }
+.gs-fl-subprocess { --gs-fl-accent: #0891b2; border-left: 3px double var(--gs-card-bd); }
+
+.gs-fl-body { padding: 8px 10px; font-size: 12px; }
+.gs-fl-text { margin: 0; color: var(--gs-fg); line-height: 1.4; }
+.gs-fl-bignum { font-size: 22px; font-weight: 700; color: var(--gs-fl-accent); }
+.gs-fl-sub { font-size: 11px; color: var(--gs-muted); margin-top: 2px; }
+.gs-fl-kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+.gs-fl-k { color: var(--gs-muted); }
+.gs-fl-v { text-align: right; font-variant-numeric: tabular-nums; }
+.gs-fl-list { margin: 0; padding-left: 16px; }
+.gs-fl-list li { margin: 1px 0; }
+.gs-fl-img { width: 100%; border-radius: 4px; display: block; }
+.gs-fl-graph { width: 100%; height: 120px; }
+/* node-embedded xy-core mounts inherit .gs-root rules (min-height/aspect-ratio) — pin them */
+.gs-fl-graph.gs-root { width: 100%; height: 120px; min-height: 0; aspect-ratio: auto; }
+.gs-fl-modal-graph.gs-root { min-height: 180px; aspect-ratio: auto; }
+
+/* data-viz modes (sankey / network / chord) — SVG primitives. Re-enable pointer
+   events (the .gs-fl-edges svg is pointer-events:none for flowchart edges). */
+.gs-fl-ribbon, .gs-fl-snode, .gs-fl-nnode, .gs-fl-nedge, .gs-fl-crib, .gs-fl-carc { pointer-events: auto; }
+.gs-fl-ribbon { stroke: none; transition: fill-opacity .1s; }
+.gs-fl-snode { stroke: var(--gs-bg); stroke-width: 1; }
+.gs-fl-slabel, .gs-fl-nlabel, .gs-fl-clabel { fill: var(--gs-fg); font-size: 11px; }
+/* halo: labels stay readable over ribbons/edges in both themes */
+.gs-fl-slabel, .gs-fl-nlabel, .gs-fl-clabel, .gs-fl-sblabel, .gs-fl-sbctext {
+  paint-order: stroke; stroke: var(--gs-bg); stroke-width: 3px; stroke-linejoin: round;
+}
+.gs-fl-dense .gs-fl-nlabel { display: none; }      /* >40 nodes: tooltips instead of label soup */
+.gs-fl-nedge { stroke: var(--gs-edge); stroke-opacity: .55; stroke-width: 1; }
+.gs-fl-nnode { stroke: var(--gs-bg); stroke-width: 1.5; cursor: grab; }
+.gs-fl-nnode:hover { stroke: var(--gs-accent); stroke-width: 2; }
+.gs-fl-carc { stroke: var(--gs-bg); stroke-width: 1; }
+.gs-fl-crib { stroke: none; transition: fill-opacity .1s; }
+.gs-fl-sbseg { stroke: var(--gs-bg); stroke-width: 1; pointer-events: auto; transition: fill-opacity .1s; }
+.gs-fl-sblabel, .gs-fl-sbctext { fill: var(--gs-fg); font-size: 11px; }
+.gs-fl-sbctext { font-weight: 600; }
+.gs-fl-sbcenter { fill: var(--gs-head); stroke: var(--gs-card-bd); stroke-width: 1; pointer-events: auto; }
+
+.gs-fl-tbl { border-collapse: collapse; width: 100%; font-size: 11px; }
+.gs-fl-tbl th, .gs-fl-tbl td { border: 1px solid var(--gs-card-bd); padding: 2px 6px; text-align: right; }
+.gs-fl-tbl th { background: var(--gs-head); color: var(--gs-muted); font-weight: 600; }
+.gs-fl-tbl td:first-child, .gs-fl-tbl th:first-child { text-align: left; }
+
+/* modal */
+.gs-fl-modal {
+  display: none; position: absolute; inset: 0; z-index: 20; background: rgba(15, 23, 42, .55);
+  align-items: center; justify-content: center;
+}
+.gs-fl-modal.open { display: flex; }
+.gs-fl-modal-box {
+  width: min(880px, calc(100% - 16px)); max-height: calc(100% - 16px); display: flex; flex-direction: column;
+  background: var(--gs-card); border: 1px solid var(--gs-card-bd); border-radius: 10px; overflow: hidden;
+}
+.gs-fl-modal-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--gs-card-bd); font-weight: 600; }
+.gs-fl-x { font-size: 20px; line-height: 1; background: none; border: none; color: var(--gs-muted); cursor: pointer; }
+.gs-fl-modal-body { padding: 12px; overflow: auto; }
+.gs-fl-modal-graph { width: 100%; height: min(60vh, 520px); min-height: 180px; }
+.gs-fl-modal-img { max-width: 100%; display: block; margin: 0 auto; }
+.gs-fl-modal-tbl .gs-fl-tbl { font-size: 13px; }
+.gs-fl-modal-tbl .gs-fl-tbl th, .gs-fl-modal-tbl .gs-fl-tbl td { padding: 5px 12px; }

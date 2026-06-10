@@ -1,0 +1,1 @@
+{"graph_type": "mode-shape-3d", "title": "빔 모드형상", "mesh": {"primitive": "box", "extents": [8, 1, 0.5]}, "modes": "auto", "freqs": [124, 342, 671]}

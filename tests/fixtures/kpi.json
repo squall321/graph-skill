@@ -1,0 +1,1 @@
+{"graph_type": "kpi-scorecard", "title": "분기 KPI", "metrics": [{"name": "수율", "value": 92.5, "target": 95, "unit": "%", "goal": "max"}, {"name": "불량률", "value": 1.8, "target": 2.0, "unit": "%", "goal": "min"}, {"name": "Cpk", "value": 1.45, "target": 1.33, "goal": "max"}, {"name": "사이클", "value": 28, "target": 25, "unit": "s", "goal": "min"}]}

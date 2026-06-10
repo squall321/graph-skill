@@ -1,0 +1,99 @@
+{
+  "title": "마이크로서비스 의존성",
+  "nodes": [
+    {
+      "id": "gw",
+      "label": "gateway",
+      "group": "edge",
+      "value": 30
+    },
+    {
+      "id": "auth",
+      "label": "auth",
+      "group": "core",
+      "value": 18
+    },
+    {
+      "id": "user",
+      "label": "user",
+      "group": "core",
+      "value": 16
+    },
+    {
+      "id": "order",
+      "label": "order",
+      "group": "core",
+      "value": 20
+    },
+    {
+      "id": "pay",
+      "label": "payment",
+      "group": "core",
+      "value": 14
+    },
+    {
+      "id": "db",
+      "label": "db",
+      "group": "data",
+      "value": 24
+    },
+    {
+      "id": "cache",
+      "label": "cache",
+      "group": "data",
+      "value": 10
+    },
+    {
+      "id": "mq",
+      "label": "queue",
+      "group": "data",
+      "value": 12
+    }
+  ],
+  "links": [
+    {
+      "source": "gw",
+      "target": "auth"
+    },
+    {
+      "source": "gw",
+      "target": "user"
+    },
+    {
+      "source": "gw",
+      "target": "order"
+    },
+    {
+      "source": "order",
+      "target": "pay"
+    },
+    {
+      "source": "order",
+      "target": "db"
+    },
+    {
+      "source": "user",
+      "target": "db"
+    },
+    {
+      "source": "auth",
+      "target": "cache"
+    },
+    {
+      "source": "pay",
+      "target": "mq"
+    },
+    {
+      "source": "order",
+      "target": "cache"
+    },
+    {
+      "source": "pay",
+      "target": "db"
+    },
+    {
+      "source": "user",
+      "target": "cache"
+    }
+  ]
+}

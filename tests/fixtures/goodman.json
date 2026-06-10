@@ -1,0 +1,1 @@
+{"graph_type": "goodman-haigh", "title": "피로 Goodman 선도", "Su": 500, "Se": 200, "axes": {"unit": "MPa"}, "points": [{"mean": 100, "alt": 120}, {"mean": 200, "alt": 90}, {"mean": 300, "alt": 140}]}

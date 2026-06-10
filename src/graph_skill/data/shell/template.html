@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="graph-skill">
+<meta name="graph-engine" content="{{ENGINE_NAME}}@{{ENGINE_VERSION}}">
+<!-- graph-skill artifact — engine {{ENGINE_NAME}} v{{ENGINE_VERSION}}. self-contained, no external resources. -->
+<title>{{TITLE}}</title>
+<style>
+.gs-error{display:inline-block;margin:12px;padding:10px 14px;border-radius:8px;font:12px "Segoe UI",system-ui,sans-serif;
+color:#b91c1c;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.35)}
+</style>
+<style>{{CSS}}</style>
+</head>
+<body>
+<div id="graph-root" class="gs-root"></div>
+<script id="graph-config" type="application/json">{{CONFIG}}</script>
+<script>{{ENGINE_JS}}</script>
+<script>{{PLUGINS_JS}}</script>
+<script>{{BOOT_JS}}</script>
+</body>
+</html>

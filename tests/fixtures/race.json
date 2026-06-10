@@ -1,0 +1,191 @@
+{
+  "title": "누적 점수 경주",
+  "value_label": "누적 점수",
+  "value_unit": "pt",
+  "frames": [
+    {
+      "t": "R1",
+      "entities": [
+        {
+          "id": "Alpha",
+          "label": "Alpha",
+          "value": 8
+        },
+        {
+          "id": "Bravo",
+          "label": "Bravo",
+          "value": 5
+        },
+        {
+          "id": "Cobra",
+          "label": "Cobra",
+          "value": 9
+        },
+        {
+          "id": "Delta",
+          "label": "Delta",
+          "value": 4
+        },
+        {
+          "id": "Echo",
+          "label": "Echo",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "t": "R2",
+      "entities": [
+        {
+          "id": "Alpha",
+          "label": "Alpha",
+          "value": 14
+        },
+        {
+          "id": "Bravo",
+          "label": "Bravo",
+          "value": 14
+        },
+        {
+          "id": "Cobra",
+          "label": "Cobra",
+          "value": 16
+        },
+        {
+          "id": "Delta",
+          "label": "Delta",
+          "value": 9
+        },
+        {
+          "id": "Echo",
+          "label": "Echo",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "t": "R3",
+      "entities": [
+        {
+          "id": "Alpha",
+          "label": "Alpha",
+          "value": 23
+        },
+        {
+          "id": "Bravo",
+          "label": "Bravo",
+          "value": 18
+        },
+        {
+          "id": "Cobra",
+          "label": "Cobra",
+          "value": 23
+        },
+        {
+          "id": "Delta",
+          "label": "Delta",
+          "value": 17
+        },
+        {
+          "id": "Echo",
+          "label": "Echo",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "t": "R4",
+      "entities": [
+        {
+          "id": "Alpha",
+          "label": "Alpha",
+          "value": 30
+        },
+        {
+          "id": "Bravo",
+          "label": "Bravo",
+          "value": 26
+        },
+        {
+          "id": "Cobra",
+          "label": "Cobra",
+          "value": 29
+        },
+        {
+          "id": "Delta",
+          "label": "Delta",
+          "value": 26
+        },
+        {
+          "id": "Echo",
+          "label": "Echo",
+          "value": 19
+        }
+      ]
+    },
+    {
+      "t": "R5",
+      "entities": [
+        {
+          "id": "Alpha",
+          "label": "Alpha",
+          "value": 38
+        },
+        {
+          "id": "Bravo",
+          "label": "Bravo",
+          "value": 32
+        },
+        {
+          "id": "Cobra",
+          "label": "Cobra",
+          "value": 38
+        },
+        {
+          "id": "Delta",
+          "label": "Delta",
+          "value": 31
+        },
+        {
+          "id": "Echo",
+          "label": "Echo",
+          "value": 26
+        }
+      ]
+    },
+    {
+      "t": "R6",
+      "entities": [
+        {
+          "id": "Alpha",
+          "label": "Alpha",
+          "value": 47
+        },
+        {
+          "id": "Bravo",
+          "label": "Bravo",
+          "value": 37
+        },
+        {
+          "id": "Cobra",
+          "label": "Cobra",
+          "value": 46
+        },
+        {
+          "id": "Delta",
+          "label": "Delta",
+          "value": 38
+        },
+        {
+          "id": "Echo",
+          "label": "Echo",
+          "value": 32
+        }
+      ]
+    }
+  ],
+  "options": {
+    "top": 5,
+    "fps": 1.4
+  }
+}

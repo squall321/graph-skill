@@ -1,0 +1,20 @@
+{
+  "three.min.js": {
+    "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2",
+    "bytes": 603445,
+    "source": "unpkg three@0.128.0",
+    "license": "MIT"
+  },
+  "OrbitControls.js": {
+    "sha256": "02bb4ade710f3e607329e37a21f098bc3ac70eb6e33daf8a65e79f4db785e7b2",
+    "bytes": 26375,
+    "source": "unpkg three@0.128.0",
+    "license": "MIT"
+  },
+  "GLTFLoader.js": {
+    "sha256": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6",
+    "bytes": 96550,
+    "source": "unpkg three@0.128.0",
+    "license": "MIT"
+  }
+}

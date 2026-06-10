@@ -1,0 +1,1 @@
+{"graph_type": "decision-matrix", "title": "설계안 의사결정", "criteria": [{"name": "강성", "weight": 3}, {"name": "경량", "weight": 2}, {"name": "원가", "weight": 2}, {"name": "제조성", "weight": 1}], "options": ["안 A", "안 B", "안 C"], "scores": [[4, 3, 5], [3, 5, 4], [5, 4, 2], [4, 3, 4]]}

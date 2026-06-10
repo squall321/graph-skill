@@ -1,0 +1,99 @@
+{
+  "title": "신제품 개발 일정 (6~7월)",
+  "tasks": [
+    {
+      "name": "요구사항 정의",
+      "group": "기획",
+      "owner": "김PM",
+      "start": "2026-06-01",
+      "end": "2026-06-08",
+      "progress": 1.0,
+      "status": "완료",
+      "priority": "높음"
+    },
+    {
+      "name": "아키텍처 설계",
+      "group": "기획",
+      "owner": "박아키",
+      "start": "2026-06-05",
+      "end": "2026-06-15",
+      "progress": 0.9,
+      "status": "진행",
+      "priority": "높음",
+      "deps": [
+        "요구사항 정의"
+      ]
+    },
+    {
+      "name": "설계 리뷰",
+      "group": "기획",
+      "owner": "김PM",
+      "start": "2026-06-16",
+      "end": "2026-06-16",
+      "milestone": true,
+      "status": "예정"
+    },
+    {
+      "name": "백엔드 구현",
+      "group": "개발",
+      "owner": "이백",
+      "start": "2026-06-17",
+      "end": "2026-07-10",
+      "progress": 0.35,
+      "status": "진행",
+      "priority": "높음",
+      "deps": [
+        "아키텍처 설계"
+      ]
+    },
+    {
+      "name": "프론트 구현",
+      "group": "개발",
+      "owner": "최프",
+      "start": "2026-06-20",
+      "end": "2026-07-14",
+      "progress": 0.2,
+      "status": "진행",
+      "priority": "보통",
+      "deps": [
+        "아키텍처 설계"
+      ]
+    },
+    {
+      "name": "통합 테스트",
+      "group": "검증",
+      "owner": "정QA",
+      "start": "2026-07-11",
+      "end": "2026-07-24",
+      "progress": 0.0,
+      "status": "예정",
+      "priority": "높음",
+      "deps": [
+        "백엔드 구현",
+        "프론트 구현"
+      ]
+    },
+    {
+      "name": "성능 시험",
+      "group": "검증",
+      "owner": "정QA",
+      "start": "2026-07-20",
+      "end": "2026-07-28",
+      "progress": 0.0,
+      "status": "예정",
+      "priority": "보통",
+      "deps": [
+        "통합 테스트"
+      ]
+    },
+    {
+      "name": "출시",
+      "group": "검증",
+      "owner": "김PM",
+      "start": "2026-07-31",
+      "end": "2026-07-31",
+      "milestone": true,
+      "status": "예정"
+    }
+  ]
+}

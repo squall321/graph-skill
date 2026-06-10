@@ -1,0 +1,1 @@
+{"graph_type": "nonlinear-load-displacement", "title": "브래킷 pushover", "axes": {"x": {"label": "Displacement", "unit": "mm"}, "y": {"label": "Load", "unit": "kN"}}, "series": [{"name": "bracket", "data": [[0, 0], [0.5, 12], [1.0, 23], [1.5, 31], [2.0, 35], [2.5, 36.5], [3.0, 34], [3.5, 28]]}], "markers": [{"x": 1.0, "y": 23, "label": "항복"}, {"x": 2.5, "y": 36.5, "label": "극한"}]}

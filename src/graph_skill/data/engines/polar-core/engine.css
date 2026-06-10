@@ -1,0 +1,33 @@
+/* polar-core engine styles (Canvas chart on .gs-root, shared tokens). */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+.gs-root {
+  position: relative; width: 100%; height: 100%; aspect-ratio: 1 / 1; min-height: 260px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 13px;
+  -webkit-user-select: none; user-select: none;
+  --gs-bg: #ffffff; --gs-fg: #1a1a2e; --gs-sub: #6b7280; --gs-grid: #e3e7ec; --gs-axis: #9aa3af;
+  --gs-panel: rgba(255,255,255,.94); --gs-panel-border: #e5e7eb; --gs-accent: #2563eb;
+  --gs-shadow: 0 2px 12px rgba(0,0,0,.10);
+  background: var(--gs-bg); color: var(--gs-fg);
+}
+.gs-root[data-theme="dark"] {
+  --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af; --gs-grid: #2a2f3a; --gs-axis: #424a58;
+  --gs-panel: rgba(20,25,33,.94); --gs-panel-border: #2a2f3a; --gs-accent: #60a5fa;
+}
+@media (prefers-color-scheme: dark) {
+  .gs-root[data-theme="auto"] {
+    --gs-bg: #0f1419; --gs-fg: #e8eaed; --gs-sub: #9aa3af; --gs-grid: #2a2f3a; --gs-axis: #424a58;
+    --gs-panel: rgba(20,25,33,.94); --gs-panel-border: #2a2f3a; --gs-accent: #60a5fa;
+  }
+}
+.gs-root canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.gs-controlbar { position: absolute; top: 8px; right: 8px; z-index: 6; display: flex; gap: 3px; flex-wrap: wrap; }
+.gs-btn { font: 600 11px/1 "Segoe UI", system-ui, sans-serif; color: var(--gs-sub); background: var(--gs-panel); border: 1px solid var(--gs-panel-border); border-radius: 6px; padding: 5px 7px; cursor: pointer; }
+.gs-btn:hover { color: var(--gs-fg); }
+.gs-hud { position: absolute; top: 8px; left: 8px; z-index: 5; background: var(--gs-panel); border: 1px solid var(--gs-panel-border); border-radius: 8px; padding: 7px 10px; box-shadow: var(--gs-shadow); font-variant-numeric: tabular-nums; pointer-events: none; }
+.gs-hud b { color: var(--gs-fg); }
+.gs-legend { position: absolute; left: 10px; bottom: 8px; z-index: 5; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.gs-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gs-fg); }
+.gs-sw { width: 12px; height: 3px; border-radius: 2px; }
+.gs-error { padding: 16px; color: #dc2626; text-align: center; }
+@media print { .gs-controlbar { display: none !important; } }

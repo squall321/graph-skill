@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+graph-out/
+.venv/
+venv/
+audit-shots/
+.skill-cache/
+NVIDIA Corporation/

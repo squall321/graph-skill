@@ -1,0 +1,77 @@
+{
+  "title": "조직 인원 구성 (드릴다운)",
+  "tree": {
+    "name": "전체",
+    "children": [
+      {
+        "name": "엔지니어링",
+        "children": [
+          {
+            "name": "백엔드",
+            "children": [
+              {
+                "name": "API",
+                "value": 34
+              },
+              {
+                "name": "DB",
+                "value": 22
+              },
+              {
+                "name": "인프라",
+                "value": 18
+              }
+            ]
+          },
+          {
+            "name": "프론트",
+            "children": [
+              {
+                "name": "웹",
+                "value": 28
+              },
+              {
+                "name": "모바일",
+                "value": 20
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "영업",
+        "children": [
+          {
+            "name": "국내",
+            "value": 40
+          },
+          {
+            "name": "해외",
+            "value": 26
+          },
+          {
+            "name": "파트너",
+            "value": 14
+          }
+        ]
+      },
+      {
+        "name": "운영",
+        "children": [
+          {
+            "name": "CS",
+            "value": 18
+          },
+          {
+            "name": "물류",
+            "value": 24
+          },
+          {
+            "name": "품질",
+            "value": 12
+          }
+        ]
+      }
+    ]
+  }
+}

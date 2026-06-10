@@ -1,0 +1,1 @@
+{"graph_type": "kaplan-meier-survival", "title": "베어링 수명 (설계 비교)", "axes": {"x": {"label": "Time", "unit": "h"}}, "groups": [{"label": "설계 A", "durations": [120, 150, 150, 200, 260, 300, 340, 400, 450, 500], "events": [1, 1, 0, 1, 1, 1, 0, 1, 1, 0]}, {"label": "설계 B", "durations": [180, 220, 260, 320, 360, 420, 480, 520, 600, 650], "events": [1, 0, 1, 1, 1, 0, 1, 1, 0, 1]}]}

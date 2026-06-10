@@ -1,0 +1,1 @@
+{"graph_type": "waterfall-chart", "title": "원가 분해", "axes": {"y": {"label": "원가", "unit": "원"}}, "categories": ["기준", "재료↑", "공정↓", "물류↑", "최종"], "values": [1000, 200, -150, 80, 0], "kinds": ["total", "inc", "dec", "inc", "total"]}
