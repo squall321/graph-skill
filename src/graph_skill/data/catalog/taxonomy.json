@@ -1480,6 +1480,122 @@
         "용량",
         "전압곡선"
       ]
+    },
+    "mesh-convergence": {
+      "category": "doe",
+      "dims": "2D",
+      "data": "cases[{h,value}] 3+",
+      "use_when": "격자 수렴성/grid independence + Richardson/GCI",
+      "keywords": [
+        "격자수렴",
+        "mesh convergence",
+        "grid independence",
+        "richardson",
+        "gci",
+        "격자독립성"
+      ]
+    },
+    "stress-linearization": {
+      "category": "mechanics",
+      "dims": "path",
+      "data": "path[[x,σ]]",
+      "use_when": "두께 경로 응력 선형화(membrane/bending)",
+      "keywords": [
+        "응력선형화",
+        "linearization",
+        "membrane",
+        "bending",
+        "scl",
+        "asme",
+        "압력용기"
+      ]
+    },
+    "hysteresis-loop": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "loops[{data[[d,F]]}]",
+      "use_when": "반복하중 이력곡선 + 소산에너지",
+      "keywords": [
+        "이력곡선",
+        "히스테리시스",
+        "hysteresis",
+        "반복하중",
+        "cyclic",
+        "소산에너지"
+      ]
+    },
+    "thermal-response": {
+      "category": "trend",
+      "dims": "time",
+      "data": "data[[t,T]]",
+      "use_when": "가열/냉각 곡선 + 시정수 τ 추출",
+      "keywords": [
+        "열응답",
+        "가열곡선",
+        "냉각곡선",
+        "시정수",
+        "time constant",
+        "열측정",
+        "온도상승"
+      ]
+    },
+    "nusselt-correlation": {
+      "category": "comparison",
+      "dims": "log-log",
+      "data": "data[[Re,Nu]] (+references)",
+      "use_when": "무차원 열전달 상관 적합",
+      "keywords": [
+        "nusselt",
+        "reynolds",
+        "누셀",
+        "열전달계수",
+        "상관식",
+        "무차원"
+      ]
+    },
+    "frf-coherence": {
+      "category": "control-dynamics",
+      "dims": "freq",
+      "data": "freq+frf (+coherence)",
+      "use_when": "모달/임팩트 시험 FRF 품질 판정",
+      "keywords": [
+        "frf",
+        "주파수응답함수",
+        "coherence",
+        "모달시험",
+        "임팩트해머",
+        "공진"
+      ]
+    },
+    "allan-deviation": {
+      "category": "signal-frequency",
+      "dims": "log-log",
+      "data": "samples+params.fs",
+      "use_when": "센서 노이즈/안정도(ARW·bias instability)",
+      "keywords": [
+        "allan",
+        "알란",
+        "노이즈",
+        "자이로",
+        "imu",
+        "안정도",
+        "arw"
+      ]
+    },
+    "calibration-curve": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "data[[기준,측정]] (+tolerance)",
+      "use_when": "교정/검정 적합 + 잔차",
+      "keywords": [
+        "교정",
+        "calibration",
+        "검정",
+        "잔차",
+        "기준기",
+        "측정기",
+        "선형성"
+      ]
     }
   }
 }

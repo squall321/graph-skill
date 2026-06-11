@@ -46,6 +46,16 @@ from .leftovers import OverviewDetailRecipe, StreamGraphRecipe, SunburstRecipe, 
 from .playback import AnimatedTrajectoryRecipe, BarChartRaceRecipe, BubbleTimelineRecipe
 from .force_displacement import ForceDisplacementRecipe
 from .matrix_compare import MatrixRecipe
+from .mte import (
+    AllanRecipe,
+    CalibrationRecipe,
+    FRFCoherenceRecipe,
+    HysteresisRecipe,
+    MeshConvergenceRecipe,
+    NusseltRecipe,
+    StressLinearizationRecipe,
+    ThermalResponseRecipe,
+)
 from .polar import PolarRecipe, RadarRecipe, RadiationPatternRecipe
 from .schedule import (
     CalendarHeatmapRecipe,
@@ -173,6 +183,14 @@ REGISTRY: dict[str, Recipe] = {
     "spec-margin-chart": SpecMarginRecipe(),
     "derating-curve": DeratingRecipe(),
     "battery-discharge": BatteryDischargeRecipe(),
+    "mesh-convergence": MeshConvergenceRecipe(),
+    "stress-linearization": StressLinearizationRecipe(),
+    "hysteresis-loop": HysteresisRecipe(),
+    "thermal-response": ThermalResponseRecipe(),
+    "nusselt-correlation": NusseltRecipe(),
+    "frf-coherence": FRFCoherenceRecipe(),
+    "allan-deviation": AllanRecipe(),
+    "calibration-curve": CalibrationRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

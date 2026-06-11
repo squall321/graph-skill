@@ -1,0 +1,1 @@
+{"title": "최대 von Mises 격자 수렴성", "cases": [{"h": 4, "value": 286.1}, {"h": 2, "value": 304.5}, {"h": 1, "value": 309.2}, {"h": 0.5, "value": 310.4}], "axes": {"y": {"label": "최대 von Mises", "unit": "MPa"}}}
