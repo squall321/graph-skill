@@ -1,60 +1,68 @@
 # graph-skill
 
-Generate **self-contained interactive HTML graphs** from data + axis metadata, driven by an
-LLM skill. The rendering engine is a fixed, version-controlled asset — so the same `(x, y)`
-data always yields the same rich interaction level (hover tracking, zoom/pan, log toggle,
-legend isolate, dark mode, export) with **zero per-request configuration**.
+**LLM 스킬로 구동되는 self-contained 인터랙티브 HTML 그래프 생성기.**
+데이터 + 축 메타(+필요 시 물리 배경값)를 받아 **외부 의존 0, 바이트 결정적**인 단일 `.html`
+아티팩트를 만든다. report-archive 등 `html_embed` 기반 사이트에 그대로 게시한다.
 
-Engine-family based: `xy-core` (Canvas 2D) is the first family. The same builder / catalog /
-validate / self-contained machinery is designed to host future families such as `cad-viewer`
-(3D CAD: STEP→GLB, section views). See [docs/SKILL-PLAN.md](docs/SKILL-PLAN.md) §18.
+핵심 원칙: **LLM은 차트 코드를 쓰지 않는다.** 렌더 엔진·인터랙션은 버전관리된 고정 자산이고,
+LLM의 일은 (a) 데이터 수집 (b) 축·배경값 확인(부족하면 *질문* — 추측 금지) (c) 타입 선택
+(d) 렌더 호출뿐이다. 같은 입력이면 항상 같은 고품질 인터랙션이 나온다.
 
-## Status — v0.1.0 (base-xy MVP)
-`base-xy` is implemented and verified end-to-end (Python pipeline, tool layer, and headless
-engine execution). Output is a single `.html` with **0 external resources**, byte-deterministic.
+## 현재 규모 — v0.45.0
 
-## Install
-```powershell
-pip install -e .            # or: pip install dist/graph_skill-0.1.0-py3-none-any.whl
+- **119 그래프 타입 / 9 엔진 패밀리 / 19 분류 카테고리**
+- 엔진: `xy-core`(Canvas 2D, 80+ 타입·플러그인 25종) · `field-core` · `polar-core` · `smith-core`
+  · `review-matrix`(DOM 표·셀=값/상태/heat/bar/그래프/이미지) · `flow-core`(순서도·sankey·network
+  ·chord·sunburst) · `gauge-core`(게이지·마진·카드) · `cad3d-core`(WebGL, three.js 벤더링)
+  · linked-view 플러그인 버스(focus+context·공유 크로스헤어·SPLOM 브러싱)
+- 도메인 정형 플롯: E-CAE(SRS·EMI·Zth·PDN·온도사이클·spec-margin·derating·배터리),
+  구조·열·측정(격자수렴 GCI·응력선형화·이력곡선·열응답 τ·Nu-Re·FRF+coherence·Allan·교정),
+  디스플레이·음향·RF·재료(CIE 색역·1/3옥타브·VSWR·DMA·모터 T-N·토네이도),
+  일정/계획(간트·타임라인·업무계획서), **컴포지트**(work-plan·test-report — 멀티엔진 1파일)
+- 자동 인터랙션: 호버/크로스헤어/툴팁/HUD, Ctrl+휠 줌(임베드 스크롤 통과)·핀치·키보드,
+  로그 토글, 범례 isolate, 다크모드(+부모 postMessage 동기화), PNG/CSV/source 내보내기,
+  LTTB 자동 다운샘플, 도움말(?) 오버레이, 접근성(aria/focus-visible/reduced-motion)
+
+## 사용 (LLM 스킬 / 도구)
+
+`.claude/skills/graph-skill/SKILL.md`가 LLM-facing 계약(SSOT)이다. 도구 흐름:
+
+```text
+graph_types_list / graph_find  →  graph_schema_get(hint=입력 키 SSOT)
+  →  graph_validate_inputs (missing이면 렌더 금지, 사용자에게 질문)
+  →  graph_render  →  graph_lint_output  →  graph_embed_block (report-write 게시)
 ```
-Bundled JS engine assets ship as `package_data` (`src/graph_skill/data/**`).
 
-## CLI
-```powershell
-graph-skill types
-graph-skill schema base-xy
-graph-skill validate --in tests/fixtures/base_xy.json
-graph-skill render   --in tests/fixtures/base_xy.json --out graph-out/plot.html
-graph-skill lint     graph-out/plot.html
-graph-skill embed-block graph-out/plot.html --height 520
-graph-skill version
+데이터 인입 보조: `ingest_csv`(장비 CSV/TSV), `ingest_s2p`(Touchstone S-파라미터),
+`resample`, `smooth`.
+
+Python 직접 호출:
+
+```python
+from graph_skill import tools
+tools.types_find("낙하 충격")                     # → srs-spectrum …
+tools.render_payload("gantt-chart", payload, out_path="out.html")
 ```
 
-## MCP
-Register the stdio server (`graph-skill-mcp`) in your MCP config:
-```json
-{ "mcpServers": { "graph-skill": { "command": "graph-skill-mcp" } } }
-```
-Tools: `graph_types_list`, `graph_schema_get`, `graph_validate_inputs`, `graph_render`,
-`graph_lint_output`, `graph_embed_block`. See `.claude/skills/graph-skill/SKILL.md`.
+## 개발
 
-## Architecture (recipe → artifact model)
-| layer | file | role |
-|---|---|---|
-| catalog | `data/catalog/types.json` + `catalog.py` | type → {engine, plugins, requires} (single source of truth) |
-| recipe | `recipes/*.py` | normalize loose input → `{engine, assets, options}` |
-| gate | `validate.py` | compute `missing[]` background params → LLM asks the user |
-| builder | `builder.py` | engine + plugins + config + data → single self-contained `.html` |
-| serialize | `serialize.py` | safe, deterministic JSON inlining + self-contained lint |
-| engine | `data/engines/xy-core/engine.js` | fixed Canvas 2D engine (all interactions) |
-| shell | `data/shell/{template.html,boot.js}` | family-agnostic bootstrap (engine registry) |
-| tools | `tools.py` | shared logic behind both MCP (`mcp_server.py`) and CLI (`cli.py`) |
+```bash
+pip install -e ".[postprocess,cad3d,test]"
+python -m playwright install chromium
 
-## Tests
-```powershell
-pytest                                   # if pytest installed
-# dependency-free smokes:
-$env:PYTHONPATH="src"; python tests/smoke_build.py
-$env:PYTHONPATH="src"; python tests/smoke_tools.py
-node tests/node_render.mjs               # headless engine execution (no browser needed)
+python build_gallery.py     # graph-out/gallery — 엔진 버전 범프 시 필수(신선도 게이트)
+pytest tests/ -q            # 396+ tests (수치 검증·게이트·결정성·실브라우저 시각)
+for f in tests/node_*.mjs; do node "$f"; done
+python tests/playwright_smoke.py   # 119/119 실 Chromium 부팅+무에러 스모크
 ```
+
+검증 4층: ① Python(결정성·lint·NEVER-invent 게이트) ② Node(헤드리스 엔진 실행)
+③ **실 Chromium**(전 타입 부팅·콘솔 0에러·인터랙션 픽셀 검증 verify_ux_p0/p1/p2)
+④ 갤러리 신선도 CI 게이트. CI: `.github/workflows/ci.yml`.
+
+## 문서
+
+- [docs/UX-ROADMAP.md](docs/UX-ROADMAP.md) — UX 감사(73건)→로드맵 30건 전체 구현 기록
+- [docs/PUBLISH-INSIGHTS.md](docs/PUBLISH-INSIGHTS.md) — report-archive 실전 게시 검증/인사이트
+- [docs/DYNAMIC-VIZ-IDEAS.md](docs/DYNAMIC-VIZ-IDEAS.md) — 표현법 백로그
+- [CHANGELOG.md](CHANGELOG.md)

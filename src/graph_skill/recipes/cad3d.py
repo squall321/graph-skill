@@ -124,7 +124,7 @@ class Cad3dDeformRecipe(Cad3dViewerRecipe):
             scal = np.linalg.norm(disp, axis=1).tolist()
         rgb, rng = field_to_color.scalar_to_rgb(scal, cmap=cmap)
         surf = mesh_ingest.to_surface(mesh, decimals=5)
-        model = {"vertices": surf["vertices"], "indices": surf["indices"],
+        model = {"vertices": surf["vertices"], "indices": surf["indices"], "lit": True,
                  "displacement": [round(x, 6) for x in disp.reshape(-1).tolist()],
                  "colors": np.asarray(rgb, dtype="uint8").reshape(-1).tolist(),
                  "zrange": [rng[0], rng[1]], "lut": field_to_color.lut(cmap, 32),

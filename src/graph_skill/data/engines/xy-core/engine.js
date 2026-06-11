@@ -425,7 +425,15 @@
     if (this.opts.title) {
       ctx.fillStyle = tok.fg; ctx.font = "700 13px Segoe UI, system-ui, sans-serif";
       ctx.textAlign = "center"; ctx.textBaseline = "top";
-      ctx.fillText(this.opts.title, (plot.left + plot.right) / 2, 4);
+      var tcx = (plot.left + plot.right) / 2;
+      var cbW = this.controlbar ? this.controlbar.offsetWidth + 16 : 0;
+      var tAvail = Math.max(60, 2 * Math.min(tcx - plot.left, (this.W - cbW) - tcx));
+      var tTxt = this.opts.title;
+      if (ctx.measureText(tTxt).width > tAvail) {
+        while (tTxt.length > 1 && ctx.measureText(tTxt + "…").width > tAvail) tTxt = tTxt.slice(0, -1);
+        tTxt += "…";
+      }
+      ctx.fillText(tTxt, tcx, 4);
     }
     ctx.restore();
     this._updateHUD();

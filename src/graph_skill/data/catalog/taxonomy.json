@@ -1596,6 +1596,107 @@
         "측정기",
         "선형성"
       ]
+    },
+    "cie-chromaticity": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "gamuts+points (+measured_gamut)",
+      "use_when": "디스플레이 색역/색좌표 검증",
+      "keywords": [
+        "cie",
+        "색도",
+        "색역",
+        "chromaticity",
+        "gamut",
+        "srgb",
+        "dci-p3",
+        "디스플레이",
+        "색좌표"
+      ]
+    },
+    "octave-band": {
+      "category": "signal-frequency",
+      "dims": "freq",
+      "data": "bands[[fc,level]] 또는 spectrum",
+      "use_when": "음향 1/3 옥타브 밴드 분석",
+      "keywords": [
+        "옥타브",
+        "octave",
+        "소음",
+        "음향",
+        "스피커",
+        "spl",
+        "밴드"
+      ]
+    },
+    "tornado-chart": {
+      "category": "doe",
+      "dims": "1D",
+      "data": "factors[{name,low,high}]+baseline",
+      "use_when": "인자 민감도 순위",
+      "keywords": [
+        "토네이도",
+        "tornado",
+        "민감도",
+        "sensitivity",
+        "인자",
+        "기여도"
+      ]
+    },
+    "motor-tn-curve": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "curves[[rpm,T]] (+efficiency,points)",
+      "use_when": "모터/액추에이터 특성",
+      "keywords": [
+        "모터",
+        "토크",
+        "t-n",
+        "액추에이터",
+        "회전수",
+        "효율"
+      ]
+    },
+    "vswr-curve": {
+      "category": "signal-frequency",
+      "dims": "freq",
+      "data": "vswr 또는 s11_db (+limit)",
+      "use_when": "안테나 정합/VSWR 검증",
+      "keywords": [
+        "vswr",
+        "정재파",
+        "안테나",
+        "정합",
+        "s11",
+        "리턴로스"
+      ]
+    },
+    "dma-curve": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "temp+e_storage (+e_loss,tan_delta)",
+      "use_when": "폴리머/접착 DMA·Tg",
+      "keywords": [
+        "dma",
+        "tg",
+        "유리전이",
+        "탄성률",
+        "tan delta",
+        "점탄성"
+      ]
+    },
+    "test-report": {
+      "category": "table",
+      "dims": "composite",
+      "data": "info+margins/results+verdict",
+      "use_when": "시험성적서(개요+판정+그래프 결합)",
+      "keywords": [
+        "시험성적서",
+        "성적서",
+        "test report",
+        "판정",
+        "시험보고"
+      ]
     }
   }
 }

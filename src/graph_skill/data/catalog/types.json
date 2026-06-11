@@ -1617,6 +1617,101 @@
       "options_defaults": {},
       "height_px": 520,
       "hint": "교정/검정 곡선. data:[[기준값, 측정값], …] + axes.x/y(label/unit) 필수 → 선형 적합(기울기/절편/R²) + 잔차(우축) + tolerance(±허용오차 밴드, 우축) 오버레이."
+    },
+    "cie-chromaticity": {
+      "title": "CIE 1931 chromaticity diagram",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 560,
+      "hint": "CIE 1931 색도도. 스펙트럼 궤적은 공식 CIE 표 내장 — 입력 불필요. gamuts:['srgb','dci_p3','bt2020'] 표준 색역 삼각형 + points:[{x,y,label?}] 측정점 + white:{x,y}(기본 D65) + measured_gamut:{r:{x,y},g,b}(측정 색역 → coverage_ref 대비 면적비 제목 표기). equalAspect 자동."
+    },
+    "octave-band": {
+      "title": "1/3 octave band spectrum",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 440,
+      "hint": "1/3 옥타브 밴드(IEC 61260 공칭 fc). bands:[[fc, level], …] 직접 또는 spectrum:[[Hz, dB], …](에너지 합산 자동) + level_unit 필수('dB SPL'/'dBA' 등) + limit:[[fc, level]] 한계 오버레이. 막대=밴드."
+    },
+    "tornado-chart": {
+      "title": "Tornado sensitivity chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "tornado"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "민감도 토네이도. factors:[{name, low:하한응답, high:상한응답}, …] + baseline(공칭 응답) + unit 필수. 스팬 큰 순 자동 정렬, low(파랑)/high(주황) 분할 막대 + baseline 점선."
+    },
+    "motor-tn-curve": {
+      "title": "Motor T-N curve",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "모터 T-N 특성. curves:[{name, data:[[rpm, 토크], …]}] + axes.y.unit(토크 단위) 필수 + efficiency:[[rpm, %]](우축) + points:[[rpm, 토크]] 동작점."
+    },
+    "vswr-curve": {
+      "title": "VSWR vs frequency",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "threshold-lines"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 440,
+      "hint": "VSWR. vswr:[[주파수, VSWR], …] 또는 s11_db:[[주파수, dB], …](|Γ|→VSWR 자동 변환) + limit(한계선, 예 2.0) + f_unit(기본 MHz). 최대값/합부를 제목에 표기. ingest_s2p 도구 출력과 직결."
+    },
+    "dma-curve": {
+      "title": "DMA curve (E'/E''/tan-delta)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 500,
+      "hint": "DMA. temp:[°C…] + e_storage:[E'…] + e_unit 필수 (+e_loss, tan_delta). 탄성률 좌축 log, tanδ 우축, Tg(tanδ 피크) 자동 마커·제목 표기."
+    },
+    "test-report": {
+      "title": "Test report (시험성적서)",
+      "engine": "review-matrix",
+      "extends": null,
+      "backend": "dom",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 1000,
+      "hint": "시험성적서 컴포지트 — info:{시험명,규격,시료,장비,일자,…}(자유 kv) + margins:[{label,value,min/max,unit}](spec-margin 임베드) + results:[{label, graph_ref:{type,payload}, h?}](임의 타입 그래프 임베드) + verdict:{status:'pass|fail|warn', note?}. 한 파일에 멀티엔진 결합."
     }
   }
 }

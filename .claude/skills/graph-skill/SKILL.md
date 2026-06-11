@@ -4,7 +4,7 @@
 
 핵심 원칙 한 줄: **너(LLM)는 그래프 엔진을 직접 코딩하지 않는다.** 엔진/인터랙션은 버전관리된 번들 자산이고, 너의 일은 (a) 데이터 수집, (b) 축·배경값 확인(부족하면 질문), (c) 타입 선택, (d) 렌더 호출이다. 이렇게 해야 "같은 입력이면 항상 동일한 고품질 인터랙션"이 보장된다.
 
-엔진은 **9개 패밀리 / 112+ 타입**으로 일반화돼 있다(도구 사용법은 패밀리와 무관하게 동일):
+엔진은 **9개 패밀리 / 119+ 타입**으로 일반화돼 있다(도구 사용법은 패밀리와 무관하게 동일):
 
 | 패밀리 | 렌더 | 대표 타입 | 자동 인터랙션 |
 |---|---|---|---|
@@ -43,6 +43,7 @@ xy-core 계열 렌더 시 아래가 **별도 설정 없이** 전부 켜진다. �
 | `graph_render` | 검증된 입력 → 단일 self-contained `.html`. 배경값 부족하면 `needs_input` 반환(렌더 안 함). |
 | `graph_lint_output <html_path>` | 산출 HTML 정적 검증(외부 URL 0 / 단일 루트). 게시 전 게이트. |
 | `graph_embed_block <html_path>` | report-write `html_embed` draft 조각 생성. height 생략 시 **아티팩트의 권장 높이 자동 사용**. |
+| `ingest_s2p <text>` | Touchstone .s2p → S-파라미터(freq/s11_db/s21_db/vswr/s11_gamma + usage 조각). |
 | `ingest_csv <text>` | 장비 raw CSV/TSV 텍스트 → 수치 컬럼 파싱(헤더/단위행/구분자 자동). 컬럼을 골라 series 구성. |
 | `resample` | 시계열을 균일 dt로 리샘플(선형보간). FFT/스펙트럼 전처리. |
 | `smooth` | 스무딩(savgol/moving). |
@@ -76,6 +77,8 @@ xy-core 계열 렌더 시 아래가 **별도 설정 없이** 전부 켜진다. �
 | **geometry-3d** 3D 형상·결과 | 3D 형상/FE 결과/점군/곡면 | cad-3d-viewer, mesh-result-3d, mesh-deformed-3d, mode-shape-3d, point-cloud-3d, surface-3d, isosurface-3d |
 | **table** 점검·비교표·다이어그램 | 항목/설계안 점검·비교·순서도 | review-matrix, design-state-compare, kpi-scorecard, decision-matrix, correlation-matrix, confusion-matrix, flowchart, multitrack-stack |
 | **planning** 일정·계획 | 일정/마일스톤/업무 진척/계획서 | gantt-chart, milestone-timeline, calendar-heatmap, task-table, work-plan(종합 계획서: KPI+간트+마일스톤+리스크 결합) |
+
+디스플레이·음향·RF·재료: cie-chromaticity(색역) · octave-band · vswr-curve · dma-curve · motor-tn-curve · tornado-chart(민감도) · test-report(시험성적서 컴포지트). RF는 `ingest_s2p`로 .s2p→smith/VSWR/S21 직결.
 
 구조·열·측정 정형 플롯: mesh-convergence(GCI) · stress-linearization · hysteresis-loop · thermal-response(τ) · nusselt-correlation · frf-coherence · allan-deviation · calibration-curve.
 

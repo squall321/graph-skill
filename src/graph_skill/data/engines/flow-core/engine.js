@@ -276,10 +276,44 @@
     function tick() {                                 // one physics iteration (no scheduling)
       var i, j;
       for (i = 0; i < nodes.length; i++) { nodes[i]._fx = 0; nodes[i]._fy = 0; }
-      for (i = 0; i < nodes.length; i++) for (j = i + 1; j < nodes.length; j++) {
-        var a = nodes[i], b = nodes[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
-        var f = kRep / d2, ux = dx / d, uy = dy / d;
-        a._fx += f * ux; a._fy += f * uy; b._fx -= f * ux; b._fy -= f * uy;
+      if (nodes.length <= 150) {
+        for (i = 0; i < nodes.length; i++) for (j = i + 1; j < nodes.length; j++) {
+          var a = nodes[i], b = nodes[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
+          var f = kRep / d2, ux = dx / d, uy = dy / d;
+          a._fx += f * ux; a._fy += f * uy; b._fx -= f * ux; b._fy -= f * uy;
+        }
+      } else {                                            // grid-bucket far-field approximation (O(n·k))
+        var cell = 80, gridMap = {};
+        for (i = 0; i < nodes.length; i++) {
+          var gk = Math.floor(nodes[i].x / cell) + "_" + Math.floor(nodes[i].y / cell);
+          (gridMap[gk] = gridMap[gk] || { x: 0, y: 0, n: 0, list: [] });
+          gridMap[gk].x += nodes[i].x; gridMap[gk].y += nodes[i].y; gridMap[gk].n++;
+          gridMap[gk].list.push(nodes[i]);
+        }
+        var cells = [];
+        for (var key in gridMap) {
+          if (!gridMap.hasOwnProperty(key)) continue;
+          var g = gridMap[key]; g.cx = g.x / g.n; g.cy = g.y / g.n; cells.push(g);
+        }
+        for (i = 0; i < nodes.length; i++) {
+          var nd = nodes[i];
+          for (var ci = 0; ci < cells.length; ci++) {
+            var cg = cells[ci];
+            var ddx = nd.x - cg.cx, ddy = nd.y - cg.cy, dd2 = ddx * ddx + ddy * ddy;
+            if (dd2 > cell * cell * 4) {                  // far cell → centroid 근사
+              var dd = Math.sqrt(dd2 + 0.01), ff = kRep * cg.n / (dd2 + 0.01);
+              nd._fx += ff * ddx / dd; nd._fy += ff * ddy / dd;
+            } else {                                       // near cell → exact pairs
+              for (var li = 0; li < cg.list.length; li++) {
+                var ob = cg.list[li];
+                if (ob === nd) continue;
+                var edx = nd.x - ob.x, edy = nd.y - ob.y, ed2 = edx * edx + edy * edy + 0.01, ed = Math.sqrt(ed2);
+                var ef = kRep / ed2;
+                nd._fx += ef * edx / ed; nd._fy += ef * edy / ed;
+              }
+            }
+          }
+        }
       }
       links.forEach(function (l) {
         var a = byId[l.source], b = byId[l.target]; if (!a || !b) return;

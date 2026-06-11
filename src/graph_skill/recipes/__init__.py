@@ -37,6 +37,14 @@ from .engineering2d import (
     SNCurveRecipe,
     TransientRecipe,
 )
+from .ext import (
+    CIEChromaticityRecipe,
+    DMARecipe,
+    MotorTNRecipe,
+    OctaveBandRecipe,
+    TornadoRecipe,
+    VSWRRecipe,
+)
 from .fft_spectrum import FFTSpectrumRecipe
 from .field2d import FieldRecipe, RainflowRecipe, VectorQuiverRecipe
 from .filter_tuner import FilterTunerRecipe
@@ -68,6 +76,7 @@ from .relations import ChordRecipe, NetworkRecipe, SankeyRecipe
 from .statistical import BarPlotRecipe, BoxPlotRecipe, ErrorBarRecipe, HistogramRecipe
 from .statistical2 import ECDFRecipe, ParetoRecipe, QQRecipe, SPCRecipe
 from .stress_strain import StressStrainRecipe
+from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
 from .wave3 import NicholsRecipe, ParallelCoordinatesRecipe, SmithChartRecipe, WindRoseRecipe
@@ -191,6 +200,13 @@ REGISTRY: dict[str, Recipe] = {
     "frf-coherence": FRFCoherenceRecipe(),
     "allan-deviation": AllanRecipe(),
     "calibration-curve": CalibrationRecipe(),
+    "cie-chromaticity": CIEChromaticityRecipe(),
+    "octave-band": OctaveBandRecipe(),
+    "tornado-chart": TornadoRecipe(),
+    "motor-tn-curve": MotorTNRecipe(),
+    "vswr-curve": VSWRRecipe(),
+    "dma-curve": DMARecipe(),
+    "test-report": TestReportRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

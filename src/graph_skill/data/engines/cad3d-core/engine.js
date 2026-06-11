@@ -104,8 +104,11 @@
     if (m.indices) g.setIndex(m.indices);
     if (m.colors) g.setAttribute("color", new T.Uint8BufferAttribute(m.colors, 3, true));
     g.computeVertexNormals();
-    var mat = new T.MeshStandardMaterial({ vertexColors: !!m.colors, color: m.colors ? 0xffffff : 0x9aa6b2,
-      metalness: 0.08, roughness: 0.7, side: T.DoubleSide });
+    // CAE 컨투어 관례: 정점색 결과는 unlit(조명 무관 원색) — m.lit=true로 음영 복원 가능
+    var mat = (m.colors && m.lit !== true)
+      ? new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide })
+      : new T.MeshStandardMaterial({ vertexColors: !!m.colors, color: m.colors ? 0xffffff : 0x9aa6b2,
+          metalness: 0.08, roughness: 0.7, side: T.DoubleSide });
     mat.clippingPlanes = this.clipOn ? [this.clip] : [];
     this.mesh = new T.Mesh(g, mat);
     this.model = new T.Group(); this.model.add(this.mesh);

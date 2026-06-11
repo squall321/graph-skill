@@ -150,6 +150,12 @@ TOOLS = [
             "additionalProperties": False},
     },
     {
+        "name": "ingest_s2p",
+        "description": "Touchstone .s2p 텍스트를 파싱해 S-파라미터를 반환(freq_mhz/s11_db/s21_db/vswr/s11_gamma + 그래프 입력 조각 usage). smith-chart·vswr-curve·base-xy(S21)에 바로 사용.",
+        "inputSchema": {"type": "object", "required": ["text"], "properties": {
+            "text": {"type": "string", "description": ".s2p 파일 원문"}}, "additionalProperties": False},
+    },
+    {
         "name": "resample",
         "description": "시계열을 균일 dt 그리드로 리샘플(선형보간). 비균일 입력 여부(uniform_input)도 반환. 수치만(HTML 아님). FFT/SG 전처리.",
         "inputSchema": {"type": "object", "required": ["series"], "properties": {
@@ -302,6 +308,11 @@ def _xy(s: dict):
             except (TypeError, ValueError):
                 ys.append(None)
     return xs, ys
+
+
+def ingest_s2p(text: str) -> dict:
+    from .postprocess import touchstone
+    return touchstone.to_tool_payload(text)
 
 
 def ingest_csv(text: str, delimiter: str | None = None, header: bool = True, units_row: bool = False) -> dict:

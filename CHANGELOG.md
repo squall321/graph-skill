@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.45.0 (2026-06-12)
+- 확장 7종: cie-chromaticity(공식 CIE 018:2019 궤적 내장) · octave-band(IEC 61260) ·
+  tornado-chart · motor-tn-curve · vswr-curve(S11→VSWR) · dma-curve(Tg 자동) ·
+  **test-report**(시험성적서 컴포지트, 멀티엔진 1파일)
+- `ingest_s2p` 도구: Touchstone .s2p → smith/VSWR/S21 직결
+- GitHub Actions CI(.github/workflows/ci.yml): pytest+node+갤러리 신선도 게이트+실브라우저 스모크
+- P2 잔여: 3D 컨투어 unlit 정점색(변형/모드는 음영 유지), xy 제목 말줄임(컨트롤바 겹침 해소),
+  네트워크 반발력 그리드 근사(n>150)
+
+## 0.40.0 ~ 0.44.0 (2026-06-10 ~ 06-11) — 요약
+- 0.44.0: 구조·열·측정 8종(mesh-convergence GCI · stress-linearization · hysteresis ·
+  thermal-response τ · nusselt · frf-coherence · allan-deviation · calibration) — 수치 자가검증 포함
+- 0.43.0: E-CAE 8종(SRS Smallwood · EMI CISPR · Zth JESD51-14 · PDN target · 온도사이클 ·
+  spec-margin(gauge-core margin kind) · derating · battery)
+- 0.42.x: 실전 게시 검증(report-archive #54, sandbox iframe에서 Ctrl+휠 줌·WebGL orbit 픽셀 검증)
+  + LLM 블라인드 사용성 테스트 10/10 → hint 자체완결화/escape hatch 반영 + git 버전관리 시작
+- 0.40.0~0.41.0: UX 감사(멀티에이전트 73건→로드맵 30건) **P0/P1/P2 전체 구현** —
+  임베드 휠 스크롤 통과(Ctrl+휠), 터치/핀치/키보드, a11y(aria/focus-visible/reduced-motion),
+  LTTB 갭/log 수리(2.5ms/frame), 도움말 오버레이, 에러 표준화, 테마 postMessage,
+  taxonomy 19카테고리, 일정/계획 5종(gantt·timeline·calendar-heatmap·task-table·work-plan)
+
+## 0.2.0 ~ 0.39.0 (요약)
+- 엔진 패밀리 9개 구축(field/polar/smith/review-matrix/flow/gauge/cad3d + linked-view 버스)
+- 그래프 타입 1 → 96 (공학 2D·신뢰성·제어·신호·3D WebGL·표·관계흐름·계층·KPI·재생 애니)
+- 검증 4층 체계: 결정성/lint + node 헤드리스 + 실 Chromium 스모크 + 인터랙션 픽셀 검증
+
+
 All notable changes to graph-skill. SemVer (0.x). Engine assets carry a separate
 `ENGINE_VERSION` baked into every artifact.
 

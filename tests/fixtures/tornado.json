@@ -1,0 +1,1 @@
+{"title": "낙하 최대응력 민감도", "baseline": 118, "unit": "MPa", "factors": [{"name": "보드 두께", "low": 96, "high": 147}, {"name": "솔더 직경", "low": 109, "high": 131}, {"name": "커버 강성", "low": 112, "high": 122}, {"name": "낙하 자세", "low": 101, "high": 139}, {"name": "접착 폭", "low": 115, "high": 121}]}
