@@ -32,9 +32,10 @@ jobs:
       - name: pytest (renders root artifacts; incl. freshness gate + visual tests)
         run: pytest tests/ -q
 
-      - name: Node engine suite (reads artifacts rendered by pytest)
+      - name: Node engine suite
         run: |
           set -e
+          python tests/render_node_fixtures.py   # legacy-named artifacts the node tests read
           for f in tests/node_*.mjs; do node "$f"; done
 
       - name: Full real-Chromium smoke (every type boots, zero console errors)
