@@ -62,6 +62,23 @@ def test_sunburst_tree_passthrough():
     assert any(leaf.get("value") for leaf in media["children"])
 
 
+def test_log_axis_key_reaches_engine():
+    # 회귀: _axis 가 죽은 `scale` 키 대신 엔진이 읽는 `log` 불리언을 방출해야 한다.
+    # (엔진은 axes.x.log 만 읽음 — scale:"log" 는 과거 묵묵히 무시됐다.)
+    from graph_skill.recipes.leftovers import _axis as ax_lo
+    from graph_skill.recipes.playback import _axis as ax_pb
+    for ax in (ax_lo, ax_pb):
+        log_ax = ax({"x": {"label": "f", "unit": "Hz", "scale": "log"}}, "x", "X", "")
+        assert log_ax["log"] is True and "scale" not in log_ax
+        lin_ax = ax({"x": {"label": "t", "unit": "s"}}, "x", "X", "")
+        assert lin_ax["log"] is False and "scale" not in lin_ax
+    # 엔드투엔드: stream-graph normalize → options.axes.x.log 까지 전달
+    p = {"axes": {"x": {"label": "f", "unit": "Hz", "scale": "log"}, "y": {"label": "p", "unit": ""}},
+         "series": [{"name": "a", "data": [[1, 1], [2, 2]]}, {"name": "b", "data": [[1, 1], [2, 2]]}]}
+    out = REGISTRY["stream-graph"].normalize(p, catalog.resolve_type("stream-graph"))
+    assert out["options"]["axes"]["x"]["log"] is True and "scale" not in out["options"]["axes"]["x"]
+
+
 def test_gating():
     assert not validate.check("stat-card", {"items": [{"label": "x"}]})["ok"]
     assert not validate.check("stream-graph",

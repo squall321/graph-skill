@@ -159,3 +159,19 @@ def linear_fit(x, y):
     ss_res = sum(r * r for r in resid)
     ss_tot = sum((yi - ym) ** 2 for yi in y) or 1e-12
     return {"slope": slope, "intercept": intercept, "r2": 1 - ss_res / ss_tot, "residuals": resid}
+
+
+def bland_altman(a, b):
+    """Paired method comparison (Bland & Altman 1986). Per pair: mean=(a+b)/2, diff=a-b.
+    Returns means/diffs + bias(평균 차이) + sd + ±1.96·SD limits of agreement."""
+    n = min(len(a), len(b))
+    if n < 2:
+        return None
+    a = [float(x) for x in a[:n]]
+    b = [float(x) for x in b[:n]]
+    means = [(a[i] + b[i]) / 2.0 for i in range(n)]
+    diffs = [a[i] - b[i] for i in range(n)]
+    bias = sum(diffs) / n
+    sd = (sum((d - bias) ** 2 for d in diffs) / (n - 1)) ** 0.5
+    return {"means": means, "diffs": diffs, "bias": bias, "sd": sd,
+            "loa_hi": bias + 1.96 * sd, "loa_lo": bias - 1.96 * sd, "n": n}

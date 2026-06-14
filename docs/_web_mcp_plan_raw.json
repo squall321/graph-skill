@@ -1,0 +1,447 @@
+{
+ "facts": [
+  {
+   "area": "graph-skill 도구 표면 (tools.py / mcp_server.py / settings.py) — 원격 MCP(HTTP)+REST 노출 관점",
+   "summary": "TOOLS(정의)+DISPATCH(name→fn)가 전송과 무관한 순수 함수 코어로 깔끔히 분리돼 있어 HTTP/REST 양쪽에 거의 그대로 재사용 가능하다. 다만 (1) DISPATCH가 TOOLS에 광고된 ingest_s2p를 누락하고, (2) out_path/GRAPH_OUT_DIR가 임의 디스크 경로에 쓰는 파일시스템 부작용·전역 cwd 의존이라 멀티테넌트/원격에서 가장 큰 작업 대상이며, (3) lint 게이트가 #graph-config JSON 채널의 image.ref 외부 URL을 못 잡는 보안 갭이 그대로 남아 있다.",
+   "facts": [
+    {
+     "fact": "코어는 전송 비의존 순수 함수로 설계됨 — tools.py 모듈 docstring이 'no mcp/typer deps so it stays unit-testable'라고 명시. TOOLS는 11개 도구 정의(name/description/inputSchema) 리스트, DISPATCH는 name→lambda(args)→dict 매핑. 둘 다 JSON 직렬화 가능한 dict만 반환.",
+     "evidence": "tools.py:1-3 \"Pure functions returning JSON-serializable dicts; no mcp/typer deps so it stays unit-testable.\"; tools.py:88 TOOLS = [ ; tools.py:346 DISPATCH = {"
+    },
+    {
+     "fact": "MCP 서버는 매우 얇은 어댑터다. list_tools()는 TOOLS를 그대로 mcp.types.Tool로 매핑하고, call_tool()은 DISPATCH.get(name)으로 디스패치한 뒤 예외를 데이터로 감싼다(서버 크래시 없음). 전송 계층(stdio)만 _serve()에 격리돼 있다.",
+     "evidence": "mcp_server.py:19-22 \"Tool(name=t['name'], description=t['description'], inputSchema=t['inputSchema']) for t in tools.TOOLS\"; mcp_server.py:26-33 \"fn = tools.DISPATCH.get(name) ... except Exception as e: result = {'error': type(e).__name__, 'message': str(e)}\"; mcp_server.py:39-44 stdio_server()"
+    },
+    {
+     "fact": "전송 교체만으로 재사용 가능한 구조다. 전송 결합은 _serve()의 stdio_server() 한 곳뿐이고 _build_server()/list_tools/call_tool은 전송 무관. HTTP(SSE/Streamable)로 바꾸려면 _serve()만 교체하면 _build_server()를 그대로 재사용 가능.",
+     "evidence": "mcp_server.py:11 \"def _build_server():\"; mcp_server.py:39-44 \"async def _serve(): from mcp.server.stdio import stdio_server ... async with stdio_server() as (reader, writer): await server.run(reader, writer, ...)\""
+    },
+    {
+     "fact": "CLI(3-view golden rule의 세 번째 뷰)도 동일 코어를 공유 — tools.render_payload/types_list/validate_inputs 등을 직접 호출. 즉 tools.py가 MCP/CLI/REST 공통 SSOT.",
+     "evidence": "cli.py:2 \"Same logic via tools.py.\"; cli.py:12 \"from . import __version__, tools\"; cli.py:61 \"tools.render_payload(gt, data, out_path=str(out), embed_mode=embed_mode)\""
+    },
+    {
+     "fact": "DISPATCH가 TOOLS에 광고된 도구 하나를 누락한다. ingest_s2p는 TOOLS(tools.py:153)에 정의되고 구현 함수(tools.py:313 ingest_s2p)도 있으나 DISPATCH(tools.py:346-359) 매핑에 없다. 따라서 MCP/원격에서 호출하면 mcp_server.py:27-28의 'unknown tool' 경로로 빠진다 — CLI에는 ingest_s2p 진입점도 없음.",
+     "evidence": "tools.py:153 \"'name': 'ingest_s2p'\"; tools.py:313 \"def ingest_s2p(text: str) -> dict:\"; tools.py:346-359 DISPATCH dict에 ingest_s2p 키 부재; mcp_server.py:28 \"result = {'error': f'unknown tool: {name}'}\""
+    },
+    {
+     "fact": "render는 디스크에 .html을 쓰는 파일시스템 부작용을 갖는다. out_path가 주어지면 builder.render가 p.parent.mkdir(parents=True, exist_ok=True) 후 임의 절대경로에 write_text한다(경로 sanitize/허용목록 없음). out_path 미지정 시 Settings.out_dir로 fallback.",
+     "evidence": "tools.py:83 \"'out_path': {... '산출 .html 절대경로'}\"; builder.py:116-121 \"if out_path: p = Path(out_path); p.parent.mkdir(parents=True, exist_ok=True); p.write_text(html, encoding='utf-8', newline='\\n'); result['html_path'] = str(p.resolve())\""
+    },
+    {
+     "fact": "out_path가 비면 출력 경로가 프로세스 cwd에 의존하는 전역 상태로 결정된다. Settings.load()는 GRAPH_OUT_DIR env가 없으면 Path.cwd()/'graph-out'을 쓴다 — 멀티테넌트에서 모든 요청이 한 디렉터리를 공유.",
+     "evidence": "settings.py:18-22 \"out = os.environ.get('GRAPH_OUT_DIR', '').strip(); out_dir = Path(out) if out else Path.cwd() / 'graph-out'\"; tools.py:262-264 \"if not out_path: s = Settings.load(); out_path = str(s.out_dir / f'{_safe_name(...)}.html')\""
+    },
+    {
+     "fact": "Settings는 토큰/네트워크가 없고 출력 경로+embed_mode 두 값뿐이며 frozen dataclass다. 전역 가변 싱글톤은 없으나 env(GRAPH_OUT_DIR/GRAPH_EMBED_MODE)와 cwd가 프로세스 전역으로 모든 요청에 공유되는 점이 멀티테넌트 격리 문제.",
+     "evidence": "settings.py:1 \"Runtime settings — no network, no tokens. Just where artifacts are written.\"; settings.py:10-15 \"@dataclass(frozen=True) class Settings: out_dir: Path; embed_mode: str\"; settings.py:21 \"embed = os.environ.get('GRAPH_EMBED_MODE', 'standalone')\""
+    },
+    {
+     "fact": "needs_input 게이트는 예외→데이터 변환 패턴. render_payload가 builder.MissingFieldsError를 잡아 status='needs_input' + missing[] + questions[] dict로 반환(예외를 호출자에게 던지지 않음). 이 모양은 전송 무관하게 REST/HTTP에서 그대로 유효.",
+     "evidence": "tools.py:270-277 \"except builder.MissingFieldsError as e: return {'status':'needs_input','graph_type':graph_type,'missing':e.missing,'questions':[m['ask'] for m in e.missing], ...}\"; builder.py:97-98 \"if not v['ok']: raise MissingFieldsError(...)\""
+    },
+    {
+     "fact": "lint 게이트는 정규식 src/href= 와 @import url(https?) 만 검사한다 — JSON #graph-config 채널 내부의 image.ref 외부 URL은 잡지 못한다(self-contained 우회). 즉 lint_output을 통과해도 렌더된 HTML이 런타임에 외부 URL을 fetch할 수 있다.",
+     "evidence": "serialize.py:41-42 \"_EXTERNAL_URL = re.compile(r'(?:src|href)\\\\s*=\\\\s*[\\\"\\\\']...https?...'); _IMPORT_URL = re.compile(r'@import\\\\s+url\\\\(...https?...')\"; serialize.py:48 \"external = _EXTERNAL_URL.findall(html) + _IMPORT_URL.findall(html)\" (graph-config JSON 채널 미검사)"
+    },
+    {
+     "fact": "lint_output / embed_block / render(out_path 후속) 은 입력으로 디스크 경로(html_path)를 받아 그 파일을 읽는다 — 도구 간 상태가 '공유 파일시스템'을 통해 전달되는 stateful 체인. 원격에서는 도구 호출 간 같은 파일이 보장되지 않음.",
+     "evidence": "tools.py:280-281 \"def lint_output(html_path): return builder.lint_file(html_path)\"; builder.py:131-132 \"def lint_file(html_path): html = Path(html_path).read_text(...)\"; tools.py:284-285 embed_block(html_path,...); builder.py:152-160 embed_block가 Path(html_path).resolve()를 local_path로 사용"
+    },
+    {
+     "fact": "ingest_*/resample/smooth/validate/types_list/schema_get/find 7개 도구는 순수 계산형이라 부작용·디스크 의존 없이 그대로 원격 노출 가능(수치 dict 반환). embed_block은 report-write의 html_embed 조각(local_path→file_id 치환 전제)을 만든다.",
+     "evidence": "tools.py:146 \"ingest_csv ... HTML 아님\"; tools.py:160 \"resample ... 수치만(HTML 아님)\"; tools.py:167 \"smooth ... 수치만(HTML 아님)\"; tools.py:131-132 \"embed_block ... local_path 는 업로드 시 file_id 로 치환\"; builder.py:153 \"upload_chain swaps local_path -> file_id\""
+    },
+    {
+     "fact": "inputSchema는 일부 도구만 additionalProperties:False로 닫혀 있고, render/validate 페이로드 스키마는 의도적으로 열려 있다(신규 패밀리 키 거부 방지). 즉 게이트웨이단 엄격 검증을 추가하려면 이 의도와 충돌하지 않게 화이트박스 키가 아니라 graph_type별 동적 검증을 써야 한다.",
+     "evidence": "tools.py:69-76 \"여기 미열거 키를 additionalProperties:false 로 막으면 신규 패밀리 호출이 전부 거부되므로 막지 않는다. VALIDATE_SCHEMA = {'type':'object','required':['graph_type'],'properties':_PAYLOAD_PROPS}\"; tools.py:92 graph_types_list만 \"additionalProperties: False\""
+    }
+   ],
+   "service_implications": [
+    "그대로 쓸 것 (transport-agnostic 코어): tools.TOOLS + tools.DISPATCH는 HTTP MCP와 REST 양쪽의 단일 SSOT로 재사용. REST는 DISPATCH를 자동 라우팅 테이블로 그대로 매핑 가능 — 예: POST /tools/{name} → DISPATCH[name](json_body), TOOLS의 inputSchema를 그대로 OpenAPI requestBody로 변환. mcp_server.py의 _build_server()/list_tools/call_tool도 재사용하고 _serve()의 stdio_server()만 HTTP(SSE/Streamable) 전송으로 교체하면 됨(전송 결합이 그 한 줄뿐).",
+    "바꿔야 할 것 1 — DISPATCH 누락 수정: ingest_s2p가 TOOLS에 광고되지만 DISPATCH에 없어 원격에서 'unknown tool'로 실패한다(tools.py:153 vs 346-359). REST/HTTP로 표면을 닫기 전에 DISPATCH에 'ingest_s2p': lambda a: ingest_s2p(a['text']) 추가 필요. 동시에 list_tools(TOOLS)와 DISPATCH 키 집합 일치를 부팅 시 assert/테스트로 강제(광고-실행 드리프트 방지).",
+    "바꿔야 할 것 2 — 파일시스템 부작용 제거/격리(멀티테넌트 핵심): builder.render가 임의 out_path에 mkdir+write_text(builder.py:116-121)하고 빈 경우 Path.cwd()/graph-out으로 쓴다(settings.py:18). 원격에서는 (a) 클라이언트 제공 out_path를 신뢰하지 말고 무시하거나 테넌트별 샌드박스 루트로 강제(경로 traversal·임의쓰기 방지), (b) 더 권장: out_path 미지정 시 builder.render의 else 분기(html을 dict로 반환, builder.py:122-123)를 원격 기본값으로 채택해 디스크에 안 쓰고 바이트/콘텐츠를 응답으로 반환 → object store(file_id) 업로드로 대체. cwd 의존(Path.cwd())은 요청별 cwd가 없는 HTTP 서버에서 비결정적이므로 제거.",
+    "바꿔야 할 것 3 — 전역 상태(env/cwd) 요청 스코프화: Settings.load()가 GRAPH_OUT_DIR env + Path.cwd()를 읽는다(settings.py:18-22). 프로세스 전역이라 멀티테넌트 격리 불가. 요청 컨텍스트(테넌트 id)에서 out_dir/embed_mode를 주입하도록 Settings를 호출 단위 인자로 전달하게 바꾸거나, render_payload에 settings를 명시적으로 받게 시그니처 확장. frozen dataclass라 가변 싱글톤 경쟁은 없지만 '한 디렉터리 공유' 문제는 남는다.",
+    "바꿔야 할 것 4 — stateful 파일 체인 → 콘텐츠/핸들 기반: render→lint_output→embed_block 체인이 html_path 디스크 파일로 상태를 전달한다(tools.py:280-285, builder.py:131-160). 원격에서는 노드 간 파일 공유가 안 되므로 (a) render가 반환한 html 바이트/콘텐츠 해시나 (b) object-store file_id 를 토큰으로 받아 lint/embed가 그 핸들로 재조회하도록 인터페이스 변경. 그렇지 않으면 분산 환경에서 lint_output(html_path)/embed_block(html_path)가 FileNotFound.",
+    "바꿔야 할 것 5 — 보안 게이트 강화(알려진 갭): serialize.lint_self_contained가 src/href= 와 @import만 정규식 검사하고(serialize.py:41-48) #graph-config JSON 내부 image.ref 외부 URL은 통과시킨다. 원격 게시 표면에서는 lint를 신뢰 경계로 쓰지 말고, render 단계에서 graph-config JSON을 파싱해 image.ref/모든 임베드 URL의 http(s)/스킴을 거부(또는 인라인 data: 강제)하는 검증을 추가. lint_output의 ok=true가 SSRF/외부 fetch 부재를 보장하지 않음을 API 계약에 반영.",
+    "그대로 쓸 것 — 에러/게이트 응답 모양: needs_input(status+missing+questions, tools.py:270-277)과 call_tool의 예외→데이터 래핑(mcp_server.py:32-33)은 전송 무관하게 REST 4xx/200+payload로 자연스럽게 매핑된다. 이 dict 계약은 변경 불필요.",
+    "REST 게이트웨이 검증 전략: render/validate 페이로드 스키마는 의도적으로 open(additionalProperties 미설정, tools.py:69-76)이라 API gateway에서 일괄 strict-schema 거부를 걸면 신규 그래프 패밀리가 전부 막힌다. 대신 graph_validate_inputs(validate.check)를 게이트웨이 검증 1차로 재사용하고, 최상위 키 화이트리스트가 아니라 graph_type별 동적 검증에 의존해야 함.",
+    "순수 계산 도구는 즉시 노출 가능: types_list/find/schema_get/validate_inputs/ingest_csv/ingest_s2p(누락 수정 후)/resample/smooth는 부작용 없는 수치 dict 반환이라 HTTP/REST에 무수정 노출 안전. 입력 크기 제한(ingest_csv text, resample/smooth series 배열)만 게이트웨이에서 추가(현재 inputSchema에 maxLength/maxItems 없음 — tools.py:147-172)."
+   ]
+  },
+  {
+   "area": "산출물 생애주기 (render → serialize/lint → embed_block)",
+   "summary": "render()는 out_path가 없으면 디스크를 건드리지 않고 결과 dict에 html 문자열을 직접 담아 반환할 수 있으나(메모리 경로 이미 존재), 상위 래퍼 tools.render_payload가 out_path를 강제 주입하고 embed_block/lint_file는 html_path(디스크)만 받으므로 웹서비스화 시 \"바이트 직접 반환\"이 코어 1개 함수만으로 자연스럽고, 디스크 의존은 래퍼·embed·lint 층에서 우회 변경이 필요하다.",
+   "facts": [
+    {
+     "fact": "builder.render()는 out_path가 falsy면 파일을 쓰지 않고 결과 dict에 html 문자열을 그대로 담는다 — '항상 파일을 쓰는' 함수가 아니다. 분기: if out_path → write_text 후 result['html_path']=절대경로, else → result['html']=html. 즉 메모리(바이트 직접 반환) 경로가 이미 코어에 존재한다.",
+     "evidence": "src/graph_skill/builder.py:116-124 `if out_path:` … `p.write_text(html, encoding=\"utf-8\", newline=\"\\n\"); result[\"html_path\"] = str(p.resolve())` `else: result[\"html\"] = html; return result`"
+    },
+    {
+     "fact": "반환 dict 공통 키: graph_type, engine, engine_version, recommended_height_px, bytes(len(html.encode('utf-8'))), lint. out_path 유무에 따라 html_path(절대경로) 또는 html(문자열) 중 하나가 추가된다. recommended_height_px는 resolved.height_px에서 온다.",
+     "evidence": "src/graph_skill/builder.py:108-124 `result = { \"graph_type\": graph_type, \"engine\": resolved.engine, \"engine_version\": …, \"recommended_height_px\": resolved.height_px, \"bytes\": len(html.encode(\"utf-8\")), \"lint\": lint }`"
+    },
+    {
+     "fact": "그러나 MCP/CLI가 실제로 부르는 래퍼 tools.render_payload()는 out_path가 없으면 Settings에서 디폴트 디스크 경로를 합성해 항상 builder.render에 out_path를 넘긴다 — 즉 현 서비스 표면에서는 항상 파일이 써진다. 메모리 경로는 builder 직접 호출로만 도달 가능.",
+     "evidence": "src/graph_skill/tools.py:262-264 `if not out_path: s = Settings.load(); out_path = str(s.out_dir / f\"{_safe_name(payload.get('title') or graph_type)}.html\")`"
+    },
+    {
+     "fact": "render의 MCP 스키마는 out_path를 required로 강제한다(RENDER_SCHEMA.required=['graph_type','out_path']). 따라서 원격 MCP에서 out_path를 빼고 '바이트만 받기'는 현재 스키마상 불가.",
+     "evidence": "src/graph_skill/tools.py:78-86 `RENDER_SCHEMA = { … \"required\": [\"graph_type\", \"out_path\"], … \"out_path\": {…\"산출 .html 절대경로\"}}`"
+    },
+    {
+     "fact": "serialize.safe_js_literal는 sort_keys=True, separators=(',',':'), ensure_ascii=False로 결정적 직렬화를 보장하고, builder는 write_text(newline='\\n')로 CRLF 변환을 막아 플랫폼 간 byte-identical을 명시 목표로 한다. → 같은 입력이면 같은 바이트가 계약이므로 콘텐츠주소(hash) 캐싱이 원리적으로 가능.",
+     "evidence": "src/graph_skill/serialize.py:29-35 `json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(\",\",\":\"), allow_nan=False)`; builder.py:119-120 `# newline=\"\\n\": no CRLF translation -> byte-identical artifacts across platforms.`"
+    },
+    {
+     "fact": "콘텐츠주소화에 쓸 hash 인프라는 코드에 없다. sha256은 오로지 vendored 엔진 자산 핀(assets/vendor manifest)에만 쓰이고, 렌더 산출 HTML을 해싱하거나 hash로 캐싱/주소화하는 로직은 전무하다. 캐시 키는 직접 추가해야 함.",
+     "evidence": "Grep hashlib|sha256|digest 결과 = assets.py:41(vendor sha256-pin), data/vendor/manifest.json sha256 항목들, cad3d engine 주석뿐 — builder/serialize/tools 어디에도 산출물 hash 없음"
+    },
+    {
+     "fact": "lint_self_contained 게이트는 render 내부에서 assemble 직후 무조건 실행되며 ok가 아니면 RuntimeError로 렌더를 막는다(출력 게이트). 정규식은 외부 URL 0개(src=/href= //, @import url(https)) + <html> 루트 정확히 1개를 검사.",
+     "evidence": "src/graph_skill/builder.py:104-106 `lint = serialize.lint_self_contained(html); if not lint[\"ok\"]: raise RuntimeError(f\"self-contained gate failed: {lint}\")`; serialize.py:41-54 `_EXTERNAL_URL = re.compile(r'(?:src|href)\\s*=\\s*[\"\\'](?:https?:)?//' …)`"
+    },
+    {
+     "fact": "lint 우회 보안 갭 확정: 외부 이미지 URL이 #graph-config JSON 채널의 image.ref로 들어가면 attribute(src=/href=) 정규식에 안 걸려 self-contained 게이트를 통과하고, 런타임에 flow-core 엔진이 그 ref를 그대로 img.src로 로드한다. lint는 JSON config 내용을 파싱하지 않음.",
+     "evidence": "src/graph_skill/data/engines/flow-core/engine.js:552 `img.src = c.image.mode === \"inline\" ? (\"data:\" + … + c.image.data) : (c.image.ref || \"\");` — lint 정규식(serialize.py:41)은 src=\"…\" 형태만 검사하므로 JSON 안의 \"ref\":\"https://…\"는 미검출"
+    },
+    {
+     "fact": "embed_block은 디스크 산출물 전제다: html_path(필수, 파일 경로)를 받아 그 파일을 다시 읽어 recommended_height_px를 역추출(_artifact_height: 파일을 열어 #graph-config 정규식 파싱)하고, report-write html_embed 조각 {id, type:'html_embed', input:{local_path:절대경로, height_px, caption?}}을 만든다. 반환은 iframe URL이 아니라 local_path 기반 임베드 조각이며, 업로드 체인이 local_path→file_id로 치환한다.",
+     "evidence": "src/graph_skill/builder.py:152-164 `def embed_block(html_path…): … block = { \"id\": f\"graph-{Path(html_path).stem}\", \"type\": \"html_embed\", \"input\": {\"local_path\": str(Path(html_path).resolve()), \"height_px\": h}}`; _artifact_height: 139-149 `html = Path(html_path).read_text(…)` 파일 재읽기"
+    },
+    {
+     "fact": "MCP 서버는 stdio 전용 어댑터이며 결과를 JSON 텍스트 1개로 직렬화해 돌려준다(html 문자열도 그 JSON 안에 통째로 들어감). HTTP/SSE·바이너리 스트림·artifact GET 엔드포인트는 없다.",
+     "evidence": "src/graph_skill/mcp_server.py:42-44 `async with stdio_server() as (reader, writer):`; 34 `return [TextContent(type=\"text\", text=json.dumps(result, ensure_ascii=False))]`"
+    }
+   ],
+   "service_implications": [
+    "바이트 직접 반환 vs 저장 후 GET /artifact/{hash}: 현 코드에는 '저장 후 경로 참조'가 더 자연스럽게 박혀 있다 — render_payload가 항상 out_path를 합성하고, embed_block·lint_file가 html_path(파일)만 입력으로 받기 때문이다. 그러나 코어 builder.render는 이미 out_path 없이 result['html']로 바이트를 돌려주므로, 웹서비스의 가장 작은 변경은 'builder.render를 직접 호출해 html을 받아 HTTP 200 text/html로 그대로 반환'하는 얇은 핸들러를 추가하는 것이다(tools.render_payload 우회).",
+    "디스크쓰기 의존 제거가 필요한 지점은 3곳이다. (1) tools.render_payload:262-264 — out_path 미지정 시 Settings.out_dir 경로를 강제 합성하는 분기. 서비스에서는 out_path를 옵셔널·None 허용으로 두고 builder의 else(메모리) 경로를 타게 해야 함. (2) RENDER_SCHEMA.required=['graph_type','out_path'] (tools.py:78-86) — 원격 MCP/HTTP에서 out_path를 required로 두면 클라이언트가 임의 디스크 경로를 강제하게 되므로, 서비스 표면에서는 out_path를 제거하고 대신 inline_html(or return_html) 플래그를 노출해야 함. (3) embed_block/_artifact_height/lint_file (builder.py:131-164) — html_path 파일 재읽기에 의존. 서비스에서는 html 문자열을 직접 받는 오버로드(embed_block(html=…, height=…))와 lint(html) 경로(이미 builder.lint(html) 존재, builder.py:127)를 써서 디스크를 우회해야 함.",
+    "콘텐츠주소(GET /artifact/{hash}) 캐싱은 결정적 바이트 계약 덕에 안전하다(serialize sort_keys + newline='\\n'). 다만 hash 인프라가 전무하므로 서비스 층에서 sha256(html.encode('utf-8'))를 직접 계산해 캐시 키/URL로 삼아야 한다. result['bytes']는 이미 len(html.encode('utf-8'))로 계산하므로 같은 지점에서 digest를 함께 계산하면 됨. 같은 payload→같은 hash→캐시 히트(재렌더 생략) 가능. (주의: engine_version/vendored asset이 바뀌면 같은 입력이라도 바이트가 달라지므로 hash가 버전 핀을 자연히 포함한다.)",
+    "embed_block은 웹서비스에서 iframe URL을 돌려주지 않는다 — report-write의 file_id 업로드 체인 전용 조각(local_path 기반)이다. 원격 임베드를 제공하려면 별도로 (a) 저장형: GET /artifact/{hash} URL을 만들어 iframe src로 주고, (b) 인라인형: srcdoc-fragment(builder.assemble이 embed_mode 인자 지원, 현재는 standalone과 동일 문서 반환)나 html 바이트를 직접 srcdoc 속성에 넣게 하는 두 경로를 새로 노출해야 한다. 현재 embed_mode='srcdoc-fragment'는 builder.py:82-84 주석대로 standalone과 같은 문서를 돌려주므로 진짜 fragment 분기는 미구현 상태다.",
+    "보안: image.ref 외부 URL이 #graph-config JSON으로 self-contained 게이트를 우회하는 갭(flow-core engine.js:552)은 원격 서비스에서 SSRF/추적/프라이버시 누출 벡터가 된다. lint_self_contained가 attribute 정규식만 보고 inline JSON config를 파싱하지 않으므로, 서비스화 전에 (a) lint를 #graph-config JSON을 파싱해 image.ref/외부 URL 키를 거부하도록 강화하거나 (b) normalize 단계에서 mode!='inline'인 image.ref를 차단해야 한다. 현 게이트만 신뢰하고 GET /artifact를 외부에 노출하면 안 된다.",
+    "원격 MCP 전환: 서버는 stdio_server 전용(mcp_server.py:42)이라 HTTP/SSE 트랜스포트가 없다. TOOLS/DISPATCH가 트랜스포트 비의존 순수 함수(tools.py)이므로 어댑터만 streamable-http로 교체하면 코어 재사용이 가능하다. 단 결과를 TextContent(JSON 문자열)로 싸는 구조(mcp_server.py:34)는 큰 html을 통째로 JSON에 인코딩하므로, 대용량 self-contained HTML(엔진+vendored three.js 포함)을 매 호출 본문에 넣는 부담이 크다 — 저장 후 hash URL을 돌려주는 방식이 페이로드 면에서 유리하다."
+   ]
+  },
+  {
+   "area": "런타임/배포 표면 (deps 분리 · 패키지 자산 번들 · 진입점/ASGI/스케일)",
+   "summary": "베이스 런타임은 순수 파이썬 4개 deps(typer/rich/jsonschema/mcp)만으로 119개 타입 중 112개를 렌더 가능하며, numpy/trimesh는 cad3d/isosurface 7개 타입의 렌더 경로에서만 lazy-import된다(empirically 검증). 단 scipy·fast_simplification은 선언만 되고 실제 import 0건이라 죽은 의존성이다. render는 순수함수+디스크쓰기라 수평확장 친화적이나, 진입점은 stdio MCP 전용이고 ASGI/헬스체크/공유 out_dir·보안 lint 우회가 미해결이다.",
+   "facts": [
+    {
+     "fact": "베이스 런타임 필수 deps는 순수 파이썬 4개뿐이다. numpy/scipy(postprocess), trimesh/fast-simplification(cad3d)는 optional, playwright(test)는 테스트 전용으로 분리돼 있다.",
+     "evidence": "pyproject.toml:10-23 dependencies=[\"typer>=0.12\",\"rich>=13.7\",\"jsonschema>=4.22\",\"mcp>=1.0\"]; [project.optional-dependencies] postprocess=[\"numpy>=1.26\",\"scipy>=1.11\"]; cad3d=[\"trimesh>=4\",\"fast-simplification\"]; test=[\"pytest>=8.0\",\"playwright>=1.44\"]"
+    },
+    {
+     "fact": "numpy/scipy/trimesh/fast_simplification을 import 차단한 상태에서 tools/mcp_server/builder/REGISTRY(119타입) 전부 import 성공 — 베이스 deps만으로 패키지 적재가 가능함을 실측 확인. 즉 무거운 deps는 타입별 lazy이며 슬림 런타임 이미지에 불필요.",
+     "evidence": "실측: PYTHONPATH=src + __import__ 가드로 {numpy,scipy,trimesh,fast_simplification} 차단 → 'import OK without numpy/scipy/trimesh / TOOLS:11 DISPATCH:10 REGISTRY types:119'"
+    },
+    {
+     "fact": "numpy/trimesh가 실제로 필요한 타입은 cad3d 계열 7개(cad-3d-viewer, isosurface-3d, mesh-deformed-3d, mesh-result-3d, mode-shape-3d, point-cloud-3d, surface-3d)뿐이고, 나머지 112개 타입은 순수 파이썬으로 렌더된다.",
+     "evidence": "실측: REGISTRY 순회 결과 'cad3d/numpy-path types (7): [cad-3d-viewer, isosurface-3d, mesh-deformed-3d, mesh-result-3d, mode-shape-3d, point-cloud-3d, surface-3d] / total types: 119'"
+    },
+    {
+     "fact": "무거운 import는 모두 메서드 본문(normalize/렌더 시점)에서 lazy 수행된다. cad3d.py:17 trimesh, cad3d.py:100/146·cad3d_xtra.py:78 numpy, isosurface.py:16/62·mesh_ingest.py:42/49 numpy — 전부 함수 내부(noqa PLC0415).",
+     "evidence": "recipes/cad3d.py:16-19 'def normalize(...): import trimesh  # noqa: PLC0415 (optional [cad3d] dep, lazy) / from ..postprocess import decimate, field_to_color, mesh_ingest'; Grep: numpy import은 isosurface.py/mesh_ingest.py/cad3d*.py의 함수 내부 4~6곳에만 존재"
+    },
+    {
+     "fact": "recipes/__init__.py가 모든 recipe 모듈을 eager import해 REGISTRY를 만들지만, 여러 recipe가 top-level로 당기는 postprocess 코어 모듈(stats/spectral/reliability/srs 등)은 numpy/scipy를 쓰지 않는 순수 파이썬이라 무거운 deps를 끌고 오지 않는다.",
+     "evidence": "postprocess/spectral.py:1-6 'Pure Python (no numpy) — iterative radix-2...'; postprocess/srs.py:3 'Deterministic pure-python (no scipy).'; postprocess/__init__.py:2 'numpy/scipy only when a type needs it'; Grep로 postprocess 내 numpy import는 isosurface.py/mesh_ingest.py 함수내부뿐, scipy import은 전무"
+    },
+    {
+     "fact": "scipy와 fast_simplification은 선언만 되고 코드에서 실제 import가 0건인 죽은(미사용) 의존성이다.",
+     "evidence": "grep 'scipy': postprocess/srs.py:3·__init__.py:2 의 docstring 언급뿐(실 import 없음); grep 'fast_simplification'/'fast-simplification': 소스 전체 0건 매치(선언은 pyproject.toml:21)"
+    },
+    {
+     "fact": "엔진 자산은 패키지 데이터로 번들된다(data/**/*). vendored three.js 스택(three.min.js 603KB + GLTFLoader 96KB + OrbitControls 26KB)을 포함해 data 디렉터리 총 ~1.3MB.",
+     "evidence": "pyproject.toml:32-33 [tool.setuptools.package-data] graph_skill=[\"data/**/*\"]; ls vendor: three.min.js 603445 / GLTFLoader.js 96550 / OrbitControls.js 26375 / manifest.json 563; du -sh data → 1.3M"
+    },
+    {
+     "fact": "자산 경로는 패키지 위치 기준 상대해석(__file__/data)이므로 컨테이너 재배치에 안전. 단 결정성을 위해 vendor 파일은 sha256으로 manifest.json에 핀된다.",
+     "evidence": "assets.py:13 '_DATA = Path(__file__).resolve().parent / \"data\"'; assets.py:38-43 'vendor files ... are sha256-pinned via data/vendor/manifest.json (determinism) and inlined ahead of engine.js'; vendor/manifest.json 존재 확인"
+    },
+    {
+     "fact": "현 진입점은 두 개: CLI(graph-skill=cli:app)와 MCP(graph-skill-mcp=mcp_server:main). MCP는 stdio 전용이며 ASGI/HTTP 서버 진입점은 없다.",
+     "evidence": "pyproject.toml:25-27 [project.scripts] graph-skill=\"graph_skill.cli:app\" / graph-skill-mcp=\"graph_skill.mcp_server:main\"; mcp_server.py:39-44 'from mcp.server.stdio import stdio_server ... async with stdio_server() as (reader, writer): await server.run(...)'"
+    },
+    {
+     "fact": "MCP 어댑터는 tools.TOOLS/DISPATCH를 그대로 등록·디스패치하는 얇은 층이며, 모든 예외를 데이터로 surface해 서버를 크래시시키지 않는다. 핵심 로직은 순수함수(tools.py)라 어떤 트랜스포트(stdio/HTTP)로도 재사용 가능.",
+     "evidence": "mcp_server.py:30-34 'try: result = fn(arguments or {}) except Exception as e: # surface as data, never crash the server / result = {\"error\": type(e).__name__, \"message\": str(e)}'; tools.py:1-3 'Pure functions returning JSON-serializable dicts; no mcp/typer deps so it stays unit-testable'"
+    },
+    {
+     "fact": "render는 출력경로를 받으면 디스크에 byte-결정적으로 .html을 쓰고, 미지정 시 Settings의 out_dir(기본 cwd/graph-out 또는 env GRAPH_OUT_DIR)로 떨어뜨린다 — 로컬 파일시스템 의존.",
+     "evidence": "builder.py:116-121 'if out_path: p=Path(out_path); p.parent.mkdir(parents=True, exist_ok=True); p.write_text(html, encoding=\"utf-8\", newline=\"\\n\"); result[\"html_path\"]=str(p.resolve())'; settings.py:19-20 'out=os.environ.get(\"GRAPH_OUT_DIR\",\"\")... out_dir=Path(out) if out else Path.cwd()/\"graph-out\"'"
+    },
+    {
+     "fact": "self-contained lint 게이트는 src/href 속성과 @import url()의 http(s)/protocol-relative URL만 정규식으로 잡는다 — #graph-config JSON 문자열값에 박힌 외부 URL(예 image.ref)은 통과하는 우회 갭이 존재.",
+     "evidence": "serialize.py:41-42 '_EXTERNAL_URL=re.compile(r\\'(?:src|href)\\\\s*=\\\\s*[\"\\\\'](?:https?:)?//\\') / _IMPORT_URL=re.compile(r\\'@import\\\\s+url\\\\(...https?:\\')'; serialize.py:48 'external=_EXTERNAL_URL.findall(html)+_IMPORT_URL.findall(html)' (JSON 채널 미검사)"
+    },
+    {
+     "fact": "버전은 importlib.metadata.version(\"graph-skill\")로 해석되며 미설치 소스 실행 시 폴백 문자열을 쓴다. 즉 컨테이너에서 정확한 버전을 노출하려면 단순 복사가 아니라 pip install이 되어 dist-info가 있어야 한다.",
+     "evidence": "__init__.py 'from importlib.metadata import ... version; try: __version__=version(\"graph-skill\") except PackageNotFoundError: __version__=\"0.1.0+src\"'; 실측: PYTHONPATH 미설치 실행 시 'ModuleNotFoundError'/소스 폴백 경로 확인"
+    }
+   ],
+   "service_implications": [
+    "슬림 베이스 이미지: 웹서비스 런타임 이미지는 베이스 deps만 설치하면 119타입 중 112개를 처리한다. pyproject.toml:10-15 '[\"typer>=0.12\",\"rich>=13.7\",\"jsonschema>=4.22\",\"mcp>=1.0\"]'만으로 충분(실측 검증). numpy/trimesh를 무조건 굽지 말 것 — 이미지 크기·콜드스타트가 불필요하게 커진다.",
+    "cad3d 분리 배포: 무거운 7개 타입(cad-3d-viewer, isosurface-3d, mesh-*-3d, mode-shape-3d, point-cloud-3d, surface-3d)은 trimesh/numpy를 normalize 시점에 lazy-import하므로(cad3d.py:17 'import trimesh # ... lazy'), 두 가지 선택지: (a) 단일 이미지에 pip install '.[cad3d]'까지 포함, 또는 (b) cad3d 전용 워커/이미지로 라우팅. 베이스 이미지에서 cad3d 타입 호출 시 ImportError를 needs_input/422류로 변환해 노출 필요(현재는 mcp_server.py:30-34가 generic error dict로 surface).",
+    "죽은 deps 정리: optional에 선언된 scipy(>=1.11)와 fast-simplification은 코드에서 import 0건(grep 검증)이다. 이미지 빌드 시 이 둘은 설치 불필요 — postprocess extra를 깐다면 numpy만 실제 사용되고 scipy는 빌드 무게만 늘린다. pyproject.toml:19,21에서 미사용 의존성을 정리하거나, 최소한 컨테이너 install에선 제외할 것.",
+    "자산 번들·경로: package-data data/**/*(pyproject.toml:33)와 assets.py:13 'Path(__file__).resolve().parent/\"data\"' 덕에 컨테이너 경로 문제는 없다. 단 wheel/sdist에 data가 실제 포함되도록 빌드해야 하고, vendored three.js(~727KB)는 self-contained 산출물에 매번 인라인되므로 산출 HTML이 cad3d일 때 수백 KB 커진다 — 응답 페이로드/스토리지 용량 산정에 반영.",
+    "ASGI 진입점 신설: 현 진입점은 stdio MCP(mcp_server.py:43 stdio_server)뿐이라 원격 서비스화 불가. tools.TOOLS/DISPATCH가 순수함수(tools.py:1-3 'no mcp/typer deps')이므로 FastAPI/Starlette 라우터에서 DISPATCH[name](args)로 그대로 재사용 가능. uvicorn 진입점을 새 console_scripts로 추가하고, MCP HTTP/SSE 트랜스포트가 필요하면 mcp의 streamable-http 서버로 _build_server()를 재호스팅(현 _build_server는 트랜스포트 무관하게 재사용 가능).",
+    "헬스체크: builder/REGISTRY가 import만으로 119타입을 구성하고 외부 네트워크·토큰이 없으므로(settings.py:1 'no network, no tokens') /healthz는 catalog.known_types() 비어있지 않음 + assets.read_shell('template.html') 읽힘 정도의 경량 체크로 충분. /readyz는 베이스 렌더(base-xy) 1회 dry-run으로 자산 무결성 확인 권장.",
+    "수평확장: render는 입력→byte-결정적 출력(builder.py:6 'Deterministic (same input -> same bytes)')의 순수변환이라 상태 없는 다중 워커로 자유 확장 가능. 단 builder.py:116-121이 결과를 로컬 디스크에 쓰고 html_path를 절대경로로 반환하므로, 멀티 인스턴스에서는 (a) 디스크 대신 html 본문을 응답에 직접 반환(out_path 미지정 시 builder가 result['html']을 채움, builder.py:122-123)하거나 (b) 공유 오브젝트 스토리지(S3/blob)로 out_dir를 추상화해야 한다. GRAPH_OUT_DIR(settings.py:19) 로컬 경로 가정을 깨야 함.",
+    "임시파일·동시성 안전: out_path 미지정 시 Settings.load()가 title 기반 파일명으로 떨어뜨려(tools.py:262-264 + settings.py) 동일 제목 동시요청 시 파일명 충돌 위험. 서비스에서는 out_path를 요청별 유니크 경로로 강제하거나 in-memory 모드(html 반환)를 기본으로 둘 것.",
+    "보안 게이트 강화(배포 전 필수): lint_self_contained(serialize.py:46-55)는 src/href·@import URL만 검사해 #graph-config JSON 값에 박힌 외부 URL(image.ref 등)을 놓친다. 원격 서비스는 신뢰되지 않은 입력을 받으므로, 렌더 전 페이로드 측에서 외부 URL ref를 거부/인라인 강제하는 입력단 검증을 추가해야 self-contained 보증과 SSRF/추적픽셀 리스크를 막을 수 있다.",
+    "버전 노출: 컨테이너에서 정확한 __version__(현 0.45.0)을 /version 등에 노출하려면 소스 복사가 아니라 pip install로 dist-info를 남겨야 한다(__init__.py importlib.metadata.version). COPY+PYTHONPATH 방식이면 '0.1.0+src' 폴백이 나오므로 멀티스테이지 빌드에서 build wheel → install을 권장."
+   ]
+  },
+  {
+   "area": "보안 / 멀티테넌시 (원격 공개 서비스 관점)",
+   "summary": "graph-skill은 단일 신뢰 사용자(stdio MCP + 로컬 LLM)를 가정해 설계됐다 — 인증·레이트리밋·입력크기·경로 샌드박스·CSP가 전무하고, lint 게이트는 HTML 속성만 보므로 image.ref 외부 URL이 #graph-config JSON 채널로 통과한다. 공개/원격 호출자에게 서비스하려면 게이트 강화와 전송계층 인증·격리를 새로 얹어야 한다.",
+   "facts": [
+    {
+     "fact": "MCP 서버는 stdio 전용이며 인증·세션·전송계층 보안이 0이다. 전송은 stdio_server() 하나뿐이고 HTTP/SSE/streamable-HTTP 어댑터가 없다. 따라서 공개 HTTP/원격 MCP로 노출하려면 인증·인가 계층을 전부 새로 추가해야 한다.",
+     "evidence": "mcp_server.py:43 `async with stdio_server() as (reader, writer):` — 전체 파일에 auth/token/HTTP 코드 부재. pyproject.toml:27 `graph-skill-mcp = \"graph_skill.mcp_server:main\"` (stdio 진입점만)"
+    },
+    {
+     "fact": "call_tool은 모든 예외를 데이터로 변환해 서버를 죽이지 않는다 — DoS로 서버를 크래시시키긴 어렵지만, 동시에 인증 실패/권한 거부 개념 자체가 없어 호출자 구분이 불가능하다.",
+     "evidence": "mcp_server.py:30-34 `try: result = fn(arguments or {}) except Exception as e: result = {\"error\": type(e).__name__, \"message\": str(e)}` — 누가 호출했는지 검사하는 분기 없음"
+    },
+    {
+     "fact": "알려진 보안 갭 확정: lint 정규식은 HTML의 src=/href= 속성과 @import url(https:만 본다. image.ref 외부 URL은 <script id=\"graph-config\" type=\"application/json\"> JSON 안에 safe_js_literal로 직렬화돼 들어가므로 이 정규식에 절대 매치되지 않아 lint를 통과한다.",
+     "evidence": "serialize.py:41 `_EXTERNAL_URL = re.compile(r'(?:src|href)\\s*=\\s*[\"\\'](?:https?:)?//', ...)`; serialize.py:46-55 `lint_self_contained` 은 `html` 문자열만 findall — JSON 페이로드 내부 URL 검사 없음. template.html:20 `<script id=\"graph-config\" type=\"application/json\">{{CONFIG}}</script>` 가 그 채널"
+    },
+    {
+     "fact": "렌더 시점에 엔진 JS가 image.ref 값을 그대로 img.src에 대입해 임의 외부 URL을 iframe 내부에서 fetch한다. 즉 신뢰 불가 호출자가 image.ref로 추적 픽셀/콜백 URL을 심으면, 임베드가 모달로 열릴 때마다 그 URL로 요청이 나가 IP/User-Agent/열람시각이 외부로 누출된다(self-contained·바이트결정성 계약 위반).",
+     "evidence": "review-matrix/engine.js:224 `img.src = c.image.mode === \"inline\" ? (\"data:\"+...) : (c.image.ref || \"\");`; flow-core/engine.js:552 동일 패턴. 둘 다 c.image.ref를 무검증 대입"
+    },
+    {
+     "fact": "산출 HTML 템플릿에 Content-Security-Policy가 없다. report-write가 sandbox=\"allow-scripts\" iframe으로 렌더하므로 스크립트는 실행되지만, CSP가 없어 위 image.ref 같은 outbound 요청(img/connect)을 차단할 2차 방어선이 없다.",
+     "evidence": "template.html:3-9 <head>에 meta CSP 부재(charset/viewport/color-scheme/generator/graph-engine만). 전체 레포 grep 'Content-Security-Policy' 매치 0건. PUBLISH-INSIGHTS.md:13 `sandbox=\"allow-scripts\"`; verify_publish.py:72-73 가 sandbox 속성이 정확히 'allow-scripts'임을 검증"
+    },
+    {
+     "fact": "NEVER-invent 게이트는 단위/배경값 누락 시 값을 지어내지 않고 질문 목록을 반환한다. validate.check가 {ok:false, missing[], questions[]}를, render_payload가 status:\"needs_input\"를 돌려준다. 예외가 아니라 정상 데이터 응답이라, 자동화(headless) 클라이언트는 이를 에러로 못 보고 '빈 결과'로 오인하거나 무한 재질의 루프에 빠질 수 있다(사람/LLM 루프 전제).",
+     "evidence": "validate.py:80 `result = {\"ok\": not missing, \"missing\": missing, \"questions\": [m[\"ask\"] for m in missing]}`; tools.py:271-277 `return {\"status\": \"needs_input\", ..., \"questions\": [...], \"rule\": prompt.PREAMBLE}` — render 안 하고 200-류 dict 반환"
+    },
+    {
+     "fact": "입력 크기 제한이 없다. series 길이/포인트 수에 상한이 없고, render는 전체 데이터를 JSON으로 인라인해 HTML 문자열을 메모리에 만든 뒤 디스크에 쓴다. bytes는 사후 보고일 뿐 차단 임계가 아니다. 거대 series는 메모리/CPU(직렬화+정규식 lint가 전체 문자열 스캔) 폭증으로 이어진다.",
+     "evidence": "builder.py:102-113 `html = assemble(...)` 후 `\"bytes\": len(html.encode(\"utf-8\"))` (사후 측정). 크기 가드 grep 결과 builder.py에서 limit/max는 embed height clamp(builder.py:156)뿐. tools.py의 _SERIES_SCHEMA(25-48)에 maxItems 없음(minItems:1만)"
+    },
+    {
+     "fact": "out_path가 호출자 값 그대로 디스크에 기록된다 — 경로 검증/샌드박싱이 없어 신뢰 불가 호출자가 임의 경로에 .html을 쓸 수 있다(path traversal/덮어쓰기). 기본 out_dir도 CWD/graph-out로 프로세스 작업디렉터리에 묶인다.",
+     "evidence": "builder.py:116-121 `p = Path(out_path); p.parent.mkdir(parents=True, exist_ok=True); p.write_text(html, ...)` — out_path 정규화/허용목록 검사 없음. settings.py:19-20 `out_dir = Path(out) if out else Path.cwd() / \"graph-out\"`"
+    },
+    {
+     "fact": "tools.py가 TOOLS(정의)+DISPATCH(name→fn) 단일 코어로 MCP/CLI가 공유한다. 보안 통제를 한 곳(DISPATCH 경계)에 얹으면 두 표면에 동시 적용 가능하다는 점은 방어에 유리하다.",
+     "evidence": "tools.py:346-359 `DISPATCH = { \"graph_render\": lambda a: render_payload(...), ... }`; mcp_server.py:26 `fn = tools.DISPATCH.get(name)` — MCP와 CLI(cli.py)가 동일 DISPATCH 경유"
+    }
+   ],
+   "service_implications": [
+    "전송계층 인증 추가: 원격 MCP 규약대로 streamable-HTTP/SSE 전송 + OAuth 2.1 bearer(또는 최소 API key) 게이트를 mcp_server 앞단에 둔다. 현재 stdio_server 단일 경로에는 인증 후크가 없으므로, HTTP 어댑터에서 토큰 검증→실패 시 401, 통과분만 tools.DISPATCH로 디스패치하는 미들웨어를 신설해야 한다.",
+    "image.ref 갭 차단(P0): lint를 HTML 문자열 스캔에서 '#graph-config JSON 파싱 후 재귀 URL 검사'로 강화한다. JSON을 로드해 image.ref/모든 문자열 값에서 http(s)://·protocol-relative(//)·data:가 아닌 외부 스킴을 거부. 신뢰 불가 호출자에게는 image.mode를 inline(base64)만 허용하고 ref 모드를 서버측에서 강제 비활성화한다.",
+    "산출 HTML에 엄격 CSP meta 삽입: template.html에 default-src 'none'; img-src data: blob:; script-src 'unsafe-inline'(인라인 엔진 실행에 필요); style-src 'unsafe-inline'; connect-src 'none' 류를 추가해 외부 outbound를 원천 차단. sandbox=allow-scripts는 유지하되 allow-same-origin은 절대 부여하지 않아 토큰/쿠키 접근·동일출처 fetch를 막는다(report-write 측 iframe 속성 계약 확인 필요).",
+    "입력 크기·복잡도 상한: _SERIES_SCHEMA에 maxItems, series당 포인트 수·총 데이터 셀 수·문자열 라벨 길이 상한을 두고, render 진입 시 payload 직렬화 추정 크기를 사전 계산해 임계 초과 시 즉시 413류 거부(현재는 무제한 인라인 후 사후 bytes 보고). 4000점 LTTB는 클라이언트 렌더 다운샘플일 뿐 서버 입력 가드가 아니므로 별도 필요.",
+    "레이트리밋·쿼터: 테넌트(토큰)별 요청수/초, 동시 render 수, 일일 산출 바이트 합계 제한. render는 CPU(직렬화+전체문자열 정규식 lint)·메모리 집약이라 멀티테넌트에서 한 호출자가 자원을 독점하지 못하게 큐/세마포어로 격리.",
+    "out_path 샌드박싱: 원격 호출자에게 out_path를 노출하지 말 것. 서버가 테넌트별 격리 디렉터리 아래 무작위 파일명을 생성하고, 호출자 지정 경로는 무시·거부한다(현재 Path(out_path).write_text는 임의 경로 쓰기 가능 — path traversal). 산출물은 디스크 대신 응답 바디(html 문자열)나 서명付 URL로 반환하는 편이 멀티테넌시에 안전.",
+    "NEVER-invent 게이트의 자동화 계약화: needs_input/{ok:false}는 사람·LLM 루프 전제이므로, 자동화 클라이언트용으로는 응답 스키마에 'machine_actionable' 플래그와 명시적 비-200 의미(또는 구조화된 error code)를 부여해 무한 재질의/빈결과 오인을 방지. 헤드리스 호출자가 missing을 받으면 렌더를 시도하지 않도록 계약 문서화.",
+    "멀티테넌시 데이터 격리: 현재 Settings/out_dir·디스크 산출 모델은 단일 사용자 전제(CWD/graph-out). 테넌트별 네임스페이스·산출물 수명(TTL)·열람 권한을 도입하고, file_id 기반 report-write 업로드 사슬에서도 테넌트 경계를 검증해야 다른 테넌트 산출물 참조를 막을 수 있다.",
+    "방어 일원화 활용: 인증·레이트리밋·크기검사·경로검증을 tools.DISPATCH 호출 경계(또는 그 직전 래퍼)에 한 번 얹으면 MCP·CLI 양 표면에 동시 적용된다 — 코어가 단일이라는 설계 이점을 보안 통제 지점으로 사용할 것."
+   ]
+  }
+ ],
+ "proposals": [
+  {
+   "name": "graph-skill 웹서비스화 + 원격 MCP (최소 점진 / 단일 ASGI)",
+   "summary": "tools.TOOLS/DISPATCH(전송 비의존 순수 코어)를 그대로 SSOT로 두고, 단일 ASGI 앱(serve.py) 안에서 (1) mcp SDK 1.27.x의 Streamable HTTP 전송으로 기존 _build_server()를 재호스팅, (2) 같은 DISPATCH 위에 얇은 Starlette REST(POST /tools/{name}, /healthz, GET /artifact/{hash})를 얹는다. 핵심 변경 3건만: DISPATCH 누락(ingest_s2p) 보강 + 광고/실행 키 일치 assert, builder.render의 이미 존재하는 디스크-프리 분기(result['html'])를 서비스 기본 경로로 채택해 sha256 콘텐츠주소 캐시에 적재, 그리고 serialize 측에 #graph-config JSON 채널을 파싱하는 보안 게이트(lint_self_contained 강화 + image.ref http(s) 거부) 추가. stdio 진입점(graph-skill-mcp)은 그대로 유지(병행). 사내/소규모 우선이므로 인증은 API key 헤더 + 인메모리 토큰버킷 레이트리밋으로 시작하고, 멀티테넌시는 out_path 무시 + 응답바디/artifact URL 반환으로 디스크 부작용 자체를 제거해 격리한다. 실측: mcp 1.27.2 StreamableHTTPSessionManager / starlette 1.2.1 / uvicorn 0.49.0 모두 venv에 이미 존재 → 신규 런타임 deps는 starlette/uvicorn 2개뿐.",
+   "mcp_transport": "원격 표준은 'Streamable HTTP'(mcp >=1.0; 설치본 1.27.2에서 mcp.server.streamable_http_manager.StreamableHTTPSessionManager 실측 확인). 구현: mcp_server.py의 _build_server()/list_tools()/call_tool()을 무수정 재사용하고 _serve()의 stdio_server()만 갈아끼우는 게 아니라, 전송별 진입을 분리한다. 신규 serve.py에서 StreamableHTTPSessionManager(app=_build_server(), event_store=None, json_response=True)를 생성하고 그 handle_request(scope,receive,send)를 Starlette Mount('/mcp')로 마운트한다(단일 ASGI). 세션은 manager가 Mcp-Session-Id 헤더로 관리하므로 코어는 무상태 유지. stdio 진입점(pyproject [project.scripts] graph-skill-mcp=...:main)은 삭제하지 말고 그대로 둬 로컬 LLM/CLI 병행. call_tool()이 모든 예외를 {error,message} 데이터로 싸는 패턴(mcp_server.py:30-34)은 HTTP에서도 200+payload로 자연 매핑되어 변경 불필요. 인증은 Mount('/mcp') 앞 미들웨어에서 Authorization: Bearer/X-API-Key 검증(사내 소규모이므로 OAuth 2.1 전체 대신 정적 API key 셋으로 시작, 후일 토큰 도입 여지만 남김). 대용량 self-contained HTML(cad3d는 vendored three.js ~727KB 인라인)을 매 호출 JSON(TextContent)에 통째로 싣는 부담이 크므로, graph_render의 HTTP 응답은 html 본문 대신 {artifact:{hash,url,bytes,recommended_height_px}}를 기본 반환하고 html 전문은 inline_html=true일 때만 포함(아래 artifact 전략).",
+   "rest_surface": "비-MCP 웹클라이언트용 얇은 Starlette 라우터(serve.py). DISPATCH를 자동 라우팅 테이블로 그대로 사용: POST /tools/{name} → body(JSON)를 tools.DISPATCH[name](body)로 디스패치, name 미존재 시 404 {error:'unknown tool'}. TOOLS[*].inputSchema를 그대로 GET /tools(목록) 및 (선택)OpenAPI requestBody로 노출. 구체 엔드포인트: GET /tools(=TOOLS 그대로), POST /tools/graph_render(서비스 셰입: out_path 무시, inline_html?:bool, 응답에 artifact{hash,url} 추가), POST /tools/graph_validate_inputs·graph_schema_get·graph_types_list·graph_find·ingest_csv·ingest_s2p·resample·smooth(순수 계산형 8개 무수정 노출), GET /artifact/{hash}(text/html; charset=utf-8, 콘텐츠주소 캐시에서 서빙 — 외부 비공개/사내 게이트 뒤), GET /healthz·/readyz·/version. graph_lint_output/graph_embed_block은 원격에선 html_path(디스크) 입력이 분산 환경서 깨지므로 서비스 표면에서 시그니처를 html 또는 hash 핸들 기반으로 노출(builder.lint(html)는 이미 존재; embed_block은 html_path 대신 hash→캐시 재조회 오버로드 추가). 검증 전략: render/validate 페이로드 스키마는 의도적으로 open(additionalProperties 미설정, tools.py:69-76)이므로 게이트웨이단 일괄 strict-schema 거부 금지 — 대신 graph_validate_inputs(validate.check)를 1차 검증으로 재사용하고 graph_type별 동적 검증에 의존. 입력 크기 가드(현재 _SERIES_SCHEMA에 maxItems 없음)는 라우터 미들웨어에서 Content-Length 상한 + series 총 포인트 수 상한으로 추가(413).",
+   "artifact_strategy": "render-to-string + 콘텐츠주소(sha256) 캐시. builder.render는 out_path가 falsy면 이미 디스크를 안 쓰고 result['html']에 문자열을 담아 반환한다(builder.py:122-123) — 이 분기를 서비스 기본 경로로 채택(tools.render_payload:262-264의 Settings.out_dir 강제 합성 우회). 신규 artifacts.py: render_cached(graph_type,payload)가 builder.render(...,out_path=None)을 호출해 html을 받고 digest=sha256(html.encode('utf-8'))를 계산(builder.py:113이 이미 같은 지점에서 len(html.encode('utf-8'))를 bytes로 계산하므로 동일 위치에서 digest 동시 산출). 캐시 키=digest. 결정성 계약(serialize sort_keys=True+separators+ensure_ascii=False; builder write_text(newline='\\n') byte-identical 목표; serialize.py:29-35, builder.py:119)이 보장하므로 같은 payload→같은 hash→재렌더 생략. 핵심: engine_version/vendored asset이 바뀌면 바이트가 달라져 hash가 버전 핀을 자연 포함(별도 무효화 불필요). 저장: 인메모리 LRU(OrderedDict, 용량/총바이트 상한) 1차 + 디스크 spill(테넌트 무관 콘텐츠주소라 한 디렉터리 공유가 안전, GRAPH_OUT_DIR 충돌 문제 소멸) 2차. 서빙: GET /artifact/{hash} → 캐시에서 html 반환(ETag=hash, immutable Cache-Control). 원격 임베드: report-write용 embed_block(local_path 기반, builder.py:152-164)은 그대로 두되, 웹 임베드는 GET /artifact/{hash} URL을 iframe src로 주거나 inline_html로 받은 html을 iframe.srcdoc에 세팅(embed_mode='srcdoc-fragment'는 builder.py:82-84 주석대로 아직 standalone과 동일 문서 — 진짜 fragment는 미구현이므로 서비스는 standalone+URL 경로만 노출).",
+   "auth": "사내/소규모 우선: 정적 API key 셋(env GRAPH_API_KEYS=comma-list 또는 keys.json) 기반 Bearer/X-API-Key 헤더 검증을 Starlette 미들웨어로 /mcp와 /tools 양쪽 앞단에 1회 적용(tools.DISPATCH 호출 경계 직전 = 방어 일원화, 코어 단일 설계 이점 활용). 실패 시 401. 멀티테넌시: 본격 테넌트 격리 대신 '디스크 부작용 제거'로 격리 문제를 소멸 — 서비스 표면에서 클라이언트 out_path를 절대 신뢰/사용하지 않고(임의경로 write/traversal 차단; builder.py:116-121 무방비), 항상 out_path=None으로 메모리 렌더→콘텐츠주소 캐시. Settings.load()의 Path.cwd() 의존(settings.py:18-22)은 HTTP 서버에 요청별 cwd가 없어 비결정적이므로 서비스 경로에서 미사용. 레이트리밋: API key별 인메모리 토큰버킷(req/s) + 동시 render 세마포어(render는 CPU/메모리 집약: 전체 문자열 정규식 lint+JSON 인라인) — 단일 프로세스 전제라 인메모리로 충분. 입력 상한: 라우터에서 Content-Length 및 series 총 포인트 수 상한(현 inputSchema에 maxItems 없음, tools.py:25-48) 초과 시 413.",
+   "deploy": "패키징: pyproject [project.scripts]에 graph-skill-serve='graph_skill.serve:main'(uvicorn 부트) 추가, graph-skill-mcp(stdio) 병행 유지. 신규 런타임 deps는 starlette,uvicorn[standard] 2개만(베이스 deps typer/rich/jsonschema/mcp + 신규 2 = 6개; mcp가 이미 starlette/uvicorn를 끌어오나 명시 선언 권장). 죽은 deps(scipy>=1.11, fast-simplification)는 코드 import 0건 실측이므로 런타임 이미지서 제외(numpy는 cad3d 7타입만 lazy; 베이스로 112/119 타입 렌더 가능 실측). Docker: 멀티스테이지(build wheel→pip install)로 dist-info를 남겨 __version__(0.45.0)이 importlib.metadata로 정확히 노출되게(COPY+PYTHONPATH면 '0.1.0+src' 폴백; __init__.py:11-16). package-data data/**/*(~1.3MB, vendored three.js 727KB 포함)가 wheel에 실제 포함되는지 빌드 검증. 슬림 베이스 이미지(cad3d 미포함) + 필요 시 .[cad3d] 워커 이미지 분리, 베이스서 cad3d 호출 시 ImportError를 422류로 변환. 헬스체크: /healthz=catalog.known_types() 비어있지 않음 + assets.read_shell('template.html') 읽힘(경량), /readyz=base-xy 1회 dry-run 렌더로 자산 무결성. 런타임: 단일 ASGI 프로세스(uvicorn), render가 입력→byte-결정적 순수변환이라 무상태 다중 워커 수평확장 자유(디스크 부작용 제거 후). 테스트 deps(pytest/playwright)는 런타임 이미지서 제외.",
+   "new_files": [
+    {
+     "path": "src/graph_skill/serve.py",
+     "purpose": "단일 ASGI 진입점. _build_server()를 StreamableHTTPSessionManager로 감싸 Mount('/mcp'); 같은 tools.DISPATCH 위에 Starlette REST(POST /tools/{name}, GET /tools, GET /artifact/{hash}, /healthz,/readyz,/version) 라우터; API key 미들웨어 + 토큰버킷 레이트리밋 + 입력크기 가드; main()=uvicorn.run. pyproject scripts에 graph-skill-serve로 등록."
+    },
+    {
+     "path": "src/graph_skill/artifacts.py",
+     "purpose": "콘텐츠주소 캐시 코어. render_cached(graph_type,payload)→builder.render(out_path=None)로 html 수신 후 sha256 digest 계산, 인메모리 LRU(+선택 디스크 spill)에 적재, {hash,url,bytes,recommended_height_px,html?} 반환. get(hash)→html. tools.render_payload의 Settings.out_dir 강제 합성을 우회하는 서비스 전용 렌더 경로."
+    },
+    {
+     "path": "src/graph_skill/security.py",
+     "purpose": "#graph-config JSON 채널 파싱 보안 게이트. parse_config(html)로 {{CONFIG}} JSON 로드 후 image.ref/모든 문자열값에서 http(s)·protocol-relative(//)·data: 외 외부 스킴 재귀 검출→거부. assert_safe_payload(payload)로 렌더 전 입력단 차단(image.mode!='inline' ref 거부). serialize.lint_self_contained가 못 잡는 SSRF/추적픽셀 갭(serialize.py:48, flow-core engine.js:552) 봉쇄."
+    },
+    {
+     "path": "tests/test_serve_parity.py",
+     "purpose": "광고/실행 드리프트 방지: set(t['name'] for t in tools.TOOLS)==set(tools.DISPATCH) assert(ingest_s2p 누락 회귀 차단); REST POST /tools/{name} smoke; artifact hash 결정성(같은 payload→같은 hash) 테스트."
+    }
+   ],
+   "changed_files": [
+    {
+     "path": "src/graph_skill/tools.py",
+     "change": "DISPATCH에 'ingest_s2p': lambda a: ingest_s2p(a['text']) 추가(현재 10키, ingest_s2p 누락 — tools.py:346-359 vs 광고 tools.py:153). 모듈 하단에 광고/실행 키 일치 부팅 assert(set(t['name'] for t in TOOLS)==set(DISPATCH)) 추가. render_payload(258-264)에 settings 주입 가능하도록 시그니처에 settings=None 옵션 추가(서비스는 out_path=None+캐시 경로 사용, 디스크 합성 분기 우회). 순수 코어이므로 transport 코드는 넣지 않음(no mcp/typer deps 계약 유지)."
+    },
+    {
+     "path": "src/graph_skill/serialize.py",
+     "change": "lint_self_contained 강화: 기존 src/href·@import 정규식(serialize.py:41-48)에 더해 <script id=\"graph-config\"> JSON을 파싱해 image.ref 등 문자열값의 외부 URL을 검출하는 검사를 추가(security.parse_config 위임), external_urls 카운트에 합산. ok=true가 SSRF 부재를 보장하도록 신뢰 경계 격상. 결정적 직렬화(29-35)는 불변."
+    },
+    {
+     "path": "src/graph_skill/builder.py",
+     "change": "embed_block/_artifact_height/lint_file(131-164)에 html 문자열/hash 핸들을 직접 받는 오버로드 추가(원격은 노드 간 디스크 공유 불가 → FileNotFound 방지). lint(html)는 이미 존재(127)하므로 서비스는 그대로 사용. render의 메모리 분기(122-123) 불변 — 서비스가 out_path=None으로 진입. assemble 전/직후 security.assert_safe_payload 훅 지점만 노출."
+    },
+    {
+     "path": "src/graph_skill/data/shell/template.html",
+     "change": "<head>에 엄격 CSP meta 추가: default-src 'none'; img-src data: blob:; script-src 'unsafe-inline'(인라인 엔진 실행 필수); style-src 'unsafe-inline'; connect-src 'none'. image.ref outbound의 2차 방어선(현재 CSP 부재, template.html:3-9). sandbox=allow-scripts는 report-write 측 계약 유지, allow-same-origin은 절대 미부여."
+    },
+    {
+     "path": "pyproject.toml",
+     "change": "[project.scripts]에 graph-skill-serve='graph_skill.serve:main' 추가(graph-skill-mcp stdio 병행 유지). dependencies에 starlette,uvicorn[standard] 명시(실측 venv에 1.2.1/0.49.0 존재). optional-dependencies의 미사용 scipy/fast-simplification은 런타임 이미지 install에서 제외(코드 import 0건)."
+    }
+   ],
+   "pros": [
+    "기존 tools.TOOLS/DISPATCH·_build_server()/list_tools/call_tool 100% 재사용 — 코어 로직 변경 0, 전송 어댑터만 추가(설계 의도 그대로)",
+    "원격 MCP(Streamable HTTP)와 REST가 같은 DISPATCH SSOT를 공유 → 도구 정의/검증/에러 모양이 두 표면에서 자동 일치, 드리프트 0",
+    "신규 런타임 deps 2개(starlette/uvicorn)뿐이고 실측상 이미 venv에 존재 → 콜드스타트/이미지 영향 미미; 단일 ASGI 프로세스로 사내/소규모에 적합",
+    "builder.render의 이미 존재하는 디스크-프리 분기(result['html'])를 채택 → 멀티테넌트 격리 문제(out_path 임의쓰기/cwd 공유/파일명 충돌)를 코드 추가가 아니라 '부작용 제거'로 한 방에 소멸",
+    "결정적 바이트 계약(sort_keys+newline='\\n') 위에 sha256 콘텐츠주소 캐시 → 같은 payload 재렌더 생략, hash가 engine_version/asset 핀을 자연 포함해 무효화 로직 불필요",
+    "DISPATCH 누락(ingest_s2p)을 1줄로 보강하고 키-일치 assert로 회귀 차단 → 원격에서 'unknown tool' 실패 영구 차단",
+    "보안 게이트(JSON 채널 파싱+CSP)를 DISPATCH 경계 1곳에 얹어 MCP/REST 양 표면에 동시 적용 — 코어 단일 설계를 통제 지점으로 활용",
+    "stdio 진입점 유지로 로컬 LLM/CLI 워크플로 무중단 병행"
+   ],
+   "cons": [
+    "인메모리 LRU 캐시·토큰버킷 레이트리밋이 단일 프로세스 전제 — 다중 워커로 확장 시 캐시 미스 중복렌더/레이트 분산 부정확(콘텐츠주소라 정합성은 안전하나 효율 저하; 추후 Redis/공유 blob 필요)",
+    "embed_block/lint_file의 html_path 디스크 의존을 오버로드로 우회하지만, report-write 업로드 체인(local_path→file_id)은 여전히 로컬파일 전제라 원격 임베드와 보고서 임베드 경로가 이원화됨",
+    "CSP에 script-src 'unsafe-inline'이 불가피(인라인 엔진 실행) — XSS 차단력 약화, image.ref 봉쇄는 입력단+JSON 파싱 게이트에 의존",
+    "정적 API key는 사내/소규모용 최소 인증 — 외부 공개/멀티조직엔 OAuth 2.1·테넌트 네임스페이스·산출물 TTL/권한이 추가로 필요",
+    "render_payload 시그니처에 settings 주입 추가는 작지만 코어 변경 — 기존 호출부(CLI 등) 회귀 테스트 필요",
+    "cad3d 7타입은 trimesh/numpy lazy-import라 슬림 베이스 이미지서 호출 시 ImportError → 422 변환/워커 분리 운영 부담",
+    "대용량 self-contained HTML(cad3d ~727KB+ 인라인)을 artifact로 저장/전송 시 캐시 메모리·대역 산정 필요"
+   ],
+   "effort": "M"
+  },
+  {
+   "name": "graph-skill production platform: single ASGI app mounting REST + Streamable-HTTP MCP, with object-store artifacts, an image.ref input-gate, and CSP-hardened output",
+   "summary": "현황 정독을 코드로 검증 완료: tools.TOOLS/DISPATCH는 전송 비의존 순수 코어(tools.py:1-3), DISPATCH(tools.py:346-359)에 ingest_s2p(TOOLS tools.py:153, 구현 tools.py:313) 누락 확정, render_payload가 항상 out_path를 합성(tools.py:262-264)하지만 builder.render는 out_path falsy 시 result['html']로 바이트 반환(builder.py:122-123), lint_self_contained는 src/href·@import만 정규식 검사(serialize.py:41-48)해 #graph-config JSON의 image.ref를 통과시키고 flow-core/engine.js:552·review-matrix/engine.js:224가 그 ref를 무검증 img.src 대입, template.html(1-24)에 CSP 부재, mcp_server는 stdio 전용(mcp_server.py:39-44). 설치 SDK는 mcp 1.27.2이며 FastMCP.streamable_http_app()/StreamableHTTPSessionManager 사용 가능을 실측 확인.\n\n제안 아키텍처: 코어(builder/serialize/normalize)는 거의 그대로 두고 그 위에 server/ 패키지를 신설해 하나의 Starlette ASGI 앱에 (1) REST 라우터(/v1/tools/{name}를 DISPATCH로 자동 매핑) + (2) 원격 MCP(Streamable HTTP)를 StreamableHTTPSessionManager로 /mcp에 마운트한다. 두 표면은 공통 미들웨어 스택(인증→테넌트 컨텍스트→레이트리밋→크기가드)을 거쳐 동일 DISPATCH 경계로 수렴(보안 통제 일원화, tools.py:346 단일 코어 이점 활용). 산출물은 디스크 대신 sha256(html) 콘텐츠주소로 오브젝트스토리지에 올리고 CDN+서명URL로 서빙, embed_block은 file_id 대신 iframe URL을 발급하는 새 경로를 추가한다. 보안 P0는 lint를 신뢰경계로 쓰지 않고 normalize 진입 전 image.ref/모든 외부 스킴을 거부하는 입력게이트 + template.html에 엄격 CSP를 박는 2중 방어로 닫는다.\n\n검증된 변경 핵심 5개: ingest_s2p DISPATCH 추가(드리프트 방지 부팅 assert 포함), render_payload의 out_path 강제합성 분기 제거(서비스는 in-memory 바이트 경로 사용), Settings 프로세스전역(env+cwd) → 요청스코프 TenantContext 주입, render→lint→embed 파일체인 → 콘텐츠/file_id 핸들 기반, image.ref 게이트+CSP.",
+   "mcp_transport": "SDK는 mcp 1.27.2(실측). 원격 전송은 현 표준인 Streamable HTTP를 채택한다. 두 가지 호스팅 방식 중 'A. 단일 ASGI 마운트'를 권장:\n\nA) 권장 — StreamableHTTPSessionManager를 공통 Starlette 앱에 마운트.\n- server/mcp_http.py: 기존 mcp_server._build_server()(전송 무관, mcp_server.py:11)를 그대로 재사용하고, stdio_server() 대신 `StreamableHTTPSessionManager(app=_build_server(), event_store=None, stateless=True, json_response=False)`를 생성한다. stateless=True로 가는 이유: graph-skill 도구는 세션 상태가 없는 순수 함수라(tools.py:1-3) 세션 고정/이벤트 재생이 불필요하고 오토스케일(라운드로빈)에 가장 안전하다. SSE 스트리밍 청크가 필요 없으면 json_response=True로 단일 JSON 응답을 쓴다(대용량 HTML을 청크 안 나눠 프록시 친화).\n- 마운트: Starlette `Mount('/mcp', app=session_manager.handle_request)` + lifespan에서 `async with session_manager.run():`. 이 경로는 POST(클라→서버 JSON-RPC)와 GET(서버→클라 SSE) 둘 다 받는 단일 엔드포인트로, '원격 MCP=Streamable HTTP' 규약을 그대로 만족한다.\n- 인증: MCP 권장대로 OAuth 2.1 Bearer를 우선, 비대화형 에이전트엔 API key fallback. ASGI 미들웨어(server/auth.py)에서 Authorization/`X-API-Key` 헤더를 검증→실패 401(MCP는 401+WWW-Authenticate로 OAuth 메타데이터 디스커버리 유도)→통과분의 tenant_id를 ASGI scope/contextvar에 실어 call_tool이 읽게 한다. 인증은 전송 앞단(미들웨어)에 두므로 _build_server()/call_tool(mcp_server.py:24-34)은 무수정.\n- list_tools/call_tool은 mcp_server.py 그대로 재사용. 단 call_tool의 TextContent(JSON) 응답에 큰 self-contained HTML(cad3d면 vendored three.js ~727KB 인라인)을 통째로 싣지 않도록, 서비스 모드에서는 graph_render가 html 본문 대신 {artifact_url, sha256, bytes, recommended_height_px}를 반환하게 한다(아래 artifact_strategy). 즉 MCP 응답은 작게, 바이트는 CDN으로.\n\nB) 대안 — FastMCP.streamable_http_app(): 독립 Starlette 앱을 빠르게 얻을 수 있으나(실측 가능), 이미 list_tools/call_tool이 low-level Server로 구현돼 있어 재작성이 필요하므로 비권장. stdio 진입점(graph-skill-mcp=mcp_server:main, pyproject.toml:27)은 로컬/CI용으로 그대로 유지(전송 결합이 _serve()의 stdio_server() 한 곳뿐이라 양립 가능).",
+   "rest_surface": "비-MCP 웹클라이언트(브라우저/백엔드)용 HTTP는 DISPATCH를 자동 라우팅 테이블로 매핑한다(코어가 SSOT라 도구별 핸들러를 손으로 안 짠다).\n\n엔드포인트(server/rest.py, prefix /v1):\n- GET  /v1/tools — TOOLS(tools.py:88)를 그대로 카탈로그로 노출(OpenAPI requestBody는 각 도구 inputSchema에서 생성). REST 디스커버리.\n- POST /v1/tools/{name} — body=JSON args → `tools.DISPATCH[name](args)` → 200+result dict. name 미존재 404. 이 한 라우트가 graph_types_list/find/schema_get/validate_inputs/ingest_csv/ingest_s2p/resample/smooth를 전부 커버(부작용 없는 8개 도구는 무수정 노출 가능).\n- POST /v1/render — graph_render 전용 1급 엔드포인트. body=payload(graph_type+series/axes/... open schema 유지). 동작: out_path를 받지 않고(클라 디스크 경로 신뢰 금지) builder.render(out_path=None)로 html 바이트를 받아 sha256 계산→오브젝트스토어 put→{status, artifact_url, sha256, bytes, recommended_height_px, lint} 반환. needs_input(tools.py:271-277)은 200 + status:needs_input(계약 유지). graph_type 미존재/스키마 위반은 422, 크기초과 413.\n- POST /v1/embed — render 결과(sha256 또는 artifact_url)를 iframe 임베드 디스크립터로 변환(아래 report-archive 연동).\n- GET  /v1/artifacts/{sha256} — 콘텐츠주소 산출물 서빙(인증/테넌트 ACL 적용, CDN 오리진). text/html, 강한 캐시(immutable, max-age 1y) + ETag=sha256.\n- GET  /healthz, /readyz, /metrics, /version (관측성 항목 참조).\n\n검증 전략(중요): render/validate 페이로드 스키마는 의도적으로 open(additionalProperties 미설정, tools.py:69-76)이라 게이트웨이에서 일괄 strict-schema 거부를 걸면 신규 그래프 패밀리가 전부 막힌다. 따라서 REST 입력검증 1차는 최상위 키 화이트리스트가 아니라 tools.validate_inputs(=validate.check, tools.py:227-233)를 재사용하고, 추가로 크기/복잡도 가드(아래)만 게이트웨이에서 얹는다. graph_type별 동적 검증에 의존.\n\n응답 매핑: needs_input/{ok:false} dict는 사람·LLM 루프 전제(validate.py:80)라 헤드리스 오인을 막기 위해 응답에 machine_actionable:false 플래그와 error code를 부여해 자동화 클라이언트가 무한 재질의에 빠지지 않게 계약화한다.",
+   "artifact_strategy": "콘텐츠주소(sha256) + 오브젝트스토리지 + CDN. 결정적 바이트 계약(serialize sort_keys+separators, serialize.py:29-35; builder write newline='\\n' byte-identical, builder.py:119-120) 덕에 같은 payload→같은 바이트→같은 hash가 보장되므로 콘텐츠주소 캐싱이 원리적으로 안전하다(engine_version/vendored asset이 바뀌면 바이트가 달라져 hash가 버전 핀을 자연히 포함).\n\nrender-to-string(디스크 미경유):\n- 현 render_payload는 out_path 미지정 시 Settings.out_dir 경로를 강제 합성해 항상 디스크에 쓴다(tools.py:262-264). 서비스 경로는 이 분기를 타지 않고 builder.render(graph_type, payload, out_path=None)을 직접 호출 → builder.py:122-123의 else 분기가 result['html']에 바이트를 담아 반환(이미 코어에 존재, 신규 코드 불필요).\n- 서비스 래퍼 server/artifacts.py가 html=result['html'] → digest=sha256(html.encode('utf-8')) 계산. result['bytes']가 이미 len(html.encode('utf-8'))(builder.py:113)이므로 같은 지점에서 digest를 함께 구한다.\n\n콘텐츠주소 캐시 & 스토리지:\n- key = f\"{tenant_id}/{digest}.html\" (테넌트 네임스페이스). put 전 HEAD로 존재 확인 → 히트면 재렌더/재업로드 생략. 같은 payload 반복요청이 캐시 히트.\n- 오브젝트스토어(S3/Azure Blob/GCS) 추상화는 server/storage.py의 ArtifactStore 인터페이스(put/head/get/signed_url). 로컬 개발은 파일시스템 백엔드, 프로덕션은 S3 백엔드(GRAPH_OUT_DIR 로컬경로 가정 settings.py:19를 대체).\n- TTL/수명: 테넌트별 산출물에 TTL(예 30d) 라이프사이클. 콘텐츠주소라 동일내용 dedupe.\n\n서빙:\n- GET /v1/artifacts/{sha256}는 CDN 오리진. text/html, Content-Disposition inline, 강한 캐시(immutable)+ETag=sha256, 그리고 아래 CSP/X-Content-Type-Options/X-Frame-Options(또는 frame-ancestors로 보고서 도메인 허용) 응답헤더. 외부 노출 전 보안게이트(image.ref 입력게이트)를 반드시 통과한 산출물만 저장되도록 보장(저장 직전이 아니라 render 직전 게이트).\n- 대용량(cad3d vendored three.js ~727KB 인라인)은 MCP/REST 응답 본문에 싣지 않고 항상 artifact_url로 우회 → 페이로드 폭증 방지.\n\nembed_mode: 현재 'srcdoc-fragment'는 standalone과 같은 문서를 반환하는 미구현 상태(builder.py:82-84). 인라인 임베드가 필요하면 (a) iframe src=artifact_url(저장형, 권장) 또는 (b) 작은 산출물 한정 srcdoc 직접 주입(html 바이트)을 노출. 진짜 fragment 분기 구현은 별도 작업으로 분리.",
+   "auth": "멀티테넌시·인증·레이트리밋을 tools.DISPATCH 호출 경계 직전의 단일 미들웨어 스택에 얹어 REST·MCP 양 표면에 동시 적용(코어 단일 SSOT 이점, tools.py:346).\n\n인증/멀티테넌시:\n- server/auth.py ASGI 미들웨어: OAuth 2.1 Bearer(공개 멀티테넌트 1순위) + API key fallback(비대화형 에이전트). 토큰 검증→tenant_id/스코프 해석→실패 시 401(MCP는 WWW-Authenticate로 OAuth 메타데이터 디스커버리). 통과분은 tenant_id를 contextvar(server/context.py: TenantContext)로 주입.\n- 요청스코프 격리: Settings.load()가 GRAPH_OUT_DIR env + Path.cwd()를 읽어 프로세스 전역(settings.py:18-22)이라 멀티테넌트 격리 불가. 해결: Settings를 호출 단위로 주입하도록 render_payload 시그니처를 settings 인자(또는 ctx) 받게 확장하고, 서비스는 contextvar의 tenant_id로 out_dir/스토리지 prefix를 결정. cwd 의존은 요청별 cwd가 없는 HTTP에서 비결정적이므로 제거. (frozen dataclass라 가변 싱글톤 경쟁은 없으나 '한 디렉터리 공유' 문제가 핵심.)\n- 산출물 ACL: /v1/artifacts/{sha256} 및 file_id 사슬에서 key prefix(tenant_id/)로 교차테넌트 참조 차단.\n\n레이트리밋/쿼터(server/limits.py):\n- 테넌트(토큰)별 req/s 토큰버킷 + 동시 render 세마포어 + 일일 산출 바이트 합계 쿼터. render는 CPU(직렬화+전체문자열 정규식 lint, serialize.py:48)·메모리 집약이라 한 호출자가 자원 독점 못 하게 큐/세마포어로 격리.\n\n입력 크기·복잡도 가드(server/guards.py, render/validate 진입 전):\n- 현재 _SERIES_SCHEMA(tools.py:25-48)에 maxItems 없고 minItems:1만 있어 무제한 인라인 후 사후 bytes 보고(builder.py:113)뿐이다. series 수·series당 포인트 수·총 셀 수·라벨 길이·요청 본문 바이트 상한을 두고 초과 시 즉시 413. ingest_csv text/resample·smooth series 배열에도 maxLength/maxItems 상한.\n\n보안 게이트 강화(P0, 신뢰경계 재정의) — server/security.py:\n- lint_self_contained(serialize.py:46-55)는 src/href·@import만 보고 #graph-config JSON의 image.ref를 통과시킨다(serialize.py:41-48). 그리고 flow-core/engine.js:552·review-matrix/engine.js:224가 c.image.ref를 무검증 img.src 대입 → SSRF/추적픽셀/IP·UA·열람시각 누출. lint의 ok=true가 외부 fetch 부재를 보장하지 않는다.\n- 차단: builder.render의 normalize 진입 전(또는 그 직전 서비스 훅) payload를 재귀 순회해 image.ref/모든 문자열 값에서 http(s)://·protocol-relative(//)·data: 외 외부 스킴을 거부. 신뢰 불가 호출자에겐 image.mode=inline(base64)만 허용하고 ref 모드를 서버측에서 강제 비활성화. lint는 2차 방어(회귀 감지)로만 사용.\n- 산출 HTML 2차 방어: template.html(현재 CSP 부재)에 엄격 CSP meta 추가 — default-src 'none'; img-src data: blob:; script-src 'unsafe-inline'(인라인 엔진 실행 필요); style-src 'unsafe-inline'; connect-src 'none'. report-write가 sandbox='allow-scripts' iframe으로 렌더(allow-same-origin 절대 미부여)하는 계약과 맞물려 outbound를 원천 차단.\n\nreport-archive 연동(iframe URL 발급):\n- embed_block(builder.py:152-164)은 현재 iframe URL이 아니라 local_path 기반 html_embed 조각{id,type:'html_embed',input:{local_path,height_px,caption?}}을 만들고 report-write 업로드 사슬이 local_path→file_id로 치환한다(report-write widgets: media는 file_id 필수). 원격에선 노드 간 파일 공유가 안 되므로 builder.embed_block을 html 문자열/핸들 입력 오버로드로 확장(현재 html_path 파일 재읽기 _artifact_height: builder.py:139-149 의존 제거)하고, 서비스는 두 임베드 모드를 발급: (a) iframe URL: report-archive에 산출물 등록→GET /v1/artifacts/{sha256}(또는 서명URL)을 iframe src로, (b) file_id: 기존 업로드 사슬 호환(report-write html_embed 유지). 어느 쪽이든 테넌트 경계 검증.",
+   "deploy": "패키징/런타임/스케일 — 슬림 베이스 + cad3d 선택 + ASGI 진입점.\n\ndeps(테스트 deps 제외): 베이스는 순수 파이썬 4개(typer/rich/jsonschema/mcp, pyproject.toml:10-15)만으로 119타입 중 112개 렌더(실측). + 서버 deps로 starlette, uvicorn[standard]을 신설 의존성에 추가(아래 changed_files). cad3d 7개 타입(cad-3d-viewer/isosurface-3d/mesh-*-3d/mode-shape-3d/point-cloud-3d/surface-3d)만 trimesh/numpy를 normalize 시점 lazy-import(cad3d.py:17). 죽은 deps 정리: scipy(>=1.11)·fast-simplification은 코드 import 0건이므로 컨테이너에서 설치 제외(빌드 무게만 늘림). test deps(pytest/playwright)는 런타임 이미지에 미포함.\n\nDocker(멀티스테이지):\n- stage build: pip wheel '.' → wheel 생성(data/**/* 포함되게, pyproject.toml:33).\n- stage runtime-base(권장 기본): python:3.x-slim에 wheel을 pip install(소스 COPY+PYTHONPATH가 아니라 install — 그래야 importlib.metadata.version이 정확한 0.45.0을 반환, __init__.py 폴백 0.1.0+src 회피). ENTRYPOINT는 새 ASGI 진입점.\n- stage runtime-cad3d(선택): runtime-base + pip install '.[cad3d]'(numpy/trimesh). 라우팅: 베이스 워커가 cad3d 타입 호출 시 ImportError를 422/needs_input류로 surface(현재 mcp_server.py:30-34는 generic error dict)하고 cad3d 워커로 라우팅하거나, 단일 이미지에 cad3d 포함.\n- 자산 경로는 패키지 위치 기준(__file__/data, assets.py:13)이라 컨테이너 재배치 안전. vendor sha256 핀(manifest.json) 유지.\n\n진입점/ASGI(신규):\n- pyproject [project.scripts]에 `graph-skill-serve = graph_skill.server.app:main` 추가(uvicorn 기동). 기존 graph-skill(cli:app)/graph-skill-mcp(stdio)는 유지.\n- server/app.py가 Starlette 앱에 /v1(REST) + /mcp(StreamableHTTPSessionManager) 마운트 + 공통 미들웨어 + lifespan(session_manager.run()). uvicorn으로 다중 워커.\n\n헬스체크(server/health.py):\n- /healthz: catalog.known_types() 비어있지 않음 + assets.read_shell('template.html') 읽힘(외부 네트워크·토큰 없음, settings.py:1) 경량 체크.\n- /readyz: base-xy 1회 dry-run 렌더(out_path=None)로 자산 무결성/엔진 인라인 확인 + 오브젝트스토어 연결 확인.\n- /metrics: 도구별 호출수/지연/에러율, render 바이트 히스토그램, 캐시 히트율, 동시 render 게이지(Prometheus).\n- /version: importlib.metadata.version('graph-skill').\n\n스케일: render는 입력→byte-결정적 순수변환(builder.py:1-6)이라 상태 없는 다중 워커로 수평확장 자유. 단 (a) 디스크 대신 html 본문 반환(out_path=None, builder.py:122-123) + 오브젝트스토어로 out_dir 추상화, (b) MCP는 stateless=True 세션 매니저로 라운드로빈 안전. HPA 트리거는 동시 render 세마포어 점유율/CPU. 동일 제목 동시요청의 파일명 충돌(tools.py:262-264 title 기반)은 in-memory+콘텐츠주소로 자연 소멸.",
+   "new_files": [
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\__init__.py",
+     "purpose": "서버 패키지. 코어(tools/builder/serialize/settings)에 의존하되 코어는 server에 의존하지 않음(단방향). 전송/인증/스토리지 결합을 코어 밖으로 격리."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\app.py",
+     "purpose": "Starlette ASGI 조립 + main(). /v1(REST)와 /mcp(Streamable HTTP)를 한 앱에 Mount, 공통 미들웨어(auth→tenant→limits→guards) 적용, lifespan에서 StreamableHTTPSessionManager.run(). graph-skill-serve 진입점."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\rest.py",
+     "purpose": "REST 라우터. GET /v1/tools(TOOLS 노출), POST /v1/tools/{name}→DISPATCH[name](args), POST /v1/render, POST /v1/embed, GET /v1/artifacts/{sha256}. needs_input/error dict를 200/4xx로 매핑."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\mcp_http.py",
+     "purpose": "mcp_server._build_server()를 재사용해 StreamableHTTPSessionManager(stateless=True)로 감싸 /mcp ASGI 핸들러 제공. stdio 경로(mcp_server.py)는 무수정 유지."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\auth.py",
+     "purpose": "ASGI 미들웨어: OAuth 2.1 Bearer + API key 검증, 401/WWW-Authenticate, tenant_id/scope 해석→contextvar 주입."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\context.py",
+     "purpose": "TenantContext(contextvar): tenant_id, scopes, 요청별 Settings(out_dir/스토리지 prefix). 프로세스 전역 env/cwd(settings.py) 대체."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\limits.py",
+     "purpose": "테넌트별 토큰버킷 레이트리밋 + 동시 render 세마포어 + 일일 바이트 쿼터."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\guards.py",
+     "purpose": "입력 크기/복잡도 가드: series 수·포인트 수·총 셀·라벨 길이·본문 바이트 상한, 초과 시 413. render/validate 진입 전 호출."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\security.py",
+     "purpose": "P0 image.ref 입력게이트: payload 재귀 순회로 image.ref/외부 스킴(http(s)/protocol-relative) 거부, mode=inline만 허용. lint를 2차 방어로 강등."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\storage.py",
+     "purpose": "ArtifactStore 추상화(put/head/get/signed_url) + 콘텐츠주소(sha256) 키. 로컬FS/S3 백엔드. GRAPH_OUT_DIR 로컬 가정 대체."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\artifacts.py",
+     "purpose": "render-to-string 래퍼: builder.render(out_path=None)→sha256 계산→store.put(tenant prefix)→{artifact_url,sha256,bytes,height}. 캐시 HEAD 히트 시 재렌더 생략."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\server\\health.py",
+     "purpose": "/healthz·/readyz(base-xy dry-run+store ping)·/metrics(Prometheus)·/version 라우트."
+    },
+    {
+     "path": "D:\\graph-skill\\tests\\test_dispatch_parity.py",
+     "purpose": "부팅 불변식 테스트: {t['name'] for t in TOOLS} == set(DISPATCH) 강제(ingest_s2p 누락 같은 광고-실행 드리프트 회귀 방지)."
+    },
+    {
+     "path": "D:\\graph-skill\\tests\\test_image_ref_gate.py",
+     "purpose": "image.ref 외부 URL이 #graph-config JSON으로 들어가도 입력게이트가 거부함을 검증(lint 우회 회귀 차단)."
+    },
+    {
+     "path": "D:\\graph-skill\\deploy\\Dockerfile",
+     "purpose": "멀티스테이지: wheel 빌드→slim runtime pip install(dist-info로 정확한 __version__). cad3d 선택 스테이지. ENTRYPOINT graph-skill-serve."
+    }
+   ],
+   "changed_files": [
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\tools.py",
+     "change": "(1) DISPATCH(346-359)에 'ingest_s2p': lambda a: ingest_s2p(a['text']) 추가 — TOOLS(153)/구현(313)은 있으나 누락돼 원격에서 'unknown tool'(mcp_server.py:28)로 실패. (2) render_payload(258-264)의 out_path 강제합성 분기를 서비스에서 우회하도록, out_path=None을 builder로 그대로 전달하는 경로 허용(현재는 Settings.out_dir 합성). (3) render_payload에 settings/ctx 주입 시그니처 확장(요청스코프 격리). (4) RENDER_SCHEMA(78-86) out_path required를 서비스 표면에선 제거하고 return_html/inline 플래그로 대체(원격 클라가 임의 디스크 경로 강제 금지)."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\builder.py",
+     "change": "(1) embed_block(152-164)/_artifact_height(139-149)에 html 문자열 직접 입력 오버로드 추가 — 현재 html_path 파일 재읽기 의존이라 분산환경에서 FileNotFound. (2) lint_file(131-136)은 디스크 경로 의존이므로 서비스는 builder.lint(html)(127, 이미 존재)로 우회. (3) image.ref 입력게이트(server/security)를 normalize(101) 직전에 호출하도록 훅 포인트 노출. assemble(46-84) self-contained 게이트(104-106)는 유지."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\serialize.py",
+     "change": "lint_self_contained(46-55) 강화: #graph-config JSON을 파싱해 image.ref/모든 문자열 값의 외부 스킴(http(s)/protocol-relative/non-inline)을 재귀 검사. 현재 정규식(41-48)은 src/href·@import만 봐 JSON 채널을 통과시킴(P0 갭). 단 신뢰경계는 입력게이트(server/security)에 두고 이건 회귀 감지용 2차."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\settings.py",
+     "change": "Settings.load()(17-22)의 GRAPH_OUT_DIR env + Path.cwd() 프로세스 전역 결정을 요청스코프(TenantContext)에서 out_dir/스토리지 prefix 주입하도록 from_context 생성자 추가. frozen dataclass 유지, '한 디렉터리 공유' 멀티테넌트 격리 문제 해소."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\data\\shell\\template.html",
+     "change": "head(3-16)에 엄격 CSP meta 추가: default-src 'none'; img-src data: blob:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'. 현재 CSP 전무라 image.ref outbound 차단 2차 방어선 부재. 인라인 엔진 실행 위해 script/style 'unsafe-inline' 필요."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "change": "552행 img.src = ...(c.image.ref || '') — mode!=='inline' ref 경로를 클라단에서도 거부/무시(서버 입력게이트가 1차이나 심층방어). review-matrix/engine.js:224 동일 패턴 동반 수정."
+    },
+    {
+     "path": "D:\\graph-skill\\src\\graph_skill\\mcp_server.py",
+     "change": "전송 결합부(_serve 39-44 stdio_server)는 유지하되, _build_server()(11)는 server/mcp_http.py가 재사용하도록 그대로 둠(무수정 재사용이 목표). call_tool(24-34)의 generic error dict를 cad3d ImportError 등에 대해 422류로 분류하는 매핑은 서비스 레이어에서 수행."
+    },
+    {
+     "path": "D:\\graph-skill\\pyproject.toml",
+     "change": "[project.scripts]에 graph-skill-serve = graph_skill.server.app:main 추가. 신규 server extra(또는 dependencies)에 starlette, uvicorn[standard] 추가. optional-dependencies의 scipy(19)·fast-simplification(21)은 코드 import 0건이라 컨테이너 설치에서 제외(또는 정리)."
+    }
+   ],
+   "pros": [
+    "코어 무수정 재사용 극대화: TOOLS/DISPATCH(tools.py:1-3 전송 비의존)와 _build_server()(mcp_server.py:11)를 그대로 쓰고 전송 어댑터(server/mcp_http.py)와 미들웨어만 신설 — 변경 표면 최소.",
+    "REST·MCP가 동일 DISPATCH 경계로 수렴해 인증·레이트리밋·크기가드·image.ref 게이트를 한 곳에 얹으면 양 표면에 동시 적용(코어 단일 SSOT 이점).",
+    "결정적 바이트 계약(serialize sort_keys + newline='\\n')으로 콘텐츠주소(sha256) 캐싱이 안전 — 같은 payload→캐시 히트로 재렌더 생략, engine_version이 hash에 자연 포함.",
+    "render가 순수변환(builder.py:1-6)이라 stateless 다중 워커로 자유 수평확장; MCP도 stateless=True 세션으로 라운드로빈 안전.",
+    "슬림 베이스 이미지(deps 4개)로 112/119 타입 처리, cad3d만 분리 — 콜드스타트/이미지 크기 절감, 죽은 deps(scipy/fast-simplification) 제거.",
+    "P0 보안갭(image.ref SSRF/추적픽셀)을 입력게이트(1차)+CSP(2차)+lint 강화(회귀감지)의 다층으로 닫음 — 단일 게이트 신뢰 회피.",
+    "Streamable HTTP는 mcp 1.27.2(실측) 표준 전송이라 SDK 네이티브(StreamableHTTPSessionManager) 사용, 커스텀 프로토콜 불필요.",
+    "stdio 진입점(graph-skill-mcp) 보존으로 로컬/CI/기존 LLM 통합 무중단."
+   ],
+   "cons": [
+    "코어 시그니처 변경 필요(render_payload에 settings/ctx 주입, out_path 옵셔널화) — 기존 CLI/stdio 호출자와의 하위호환을 위해 기본값/오버로드로 흡수해야 하고 회귀 테스트 부담.",
+    "embed_block/lint_file/_artifact_height의 html_path 파일 재읽기 의존(builder.py:131-164)을 html 문자열 핸들로 바꾸는 인터페이스 변경이 report-write 업로드 사슬(local_path→file_id) 계약과 맞물려 양쪽 조율 필요.",
+    "RENDER_SCHEMA의 open 스키마(tools.py:69-76 의도적) 때문에 게이트웨이 strict 검증을 못 걸어, 크기/복잡도 가드와 동적 검증(validate.check)에 의존 — 방어가 코어 검증 품질에 종속.",
+    "CSP script-src 'unsafe-inline'은 인라인 엔진 실행에 불가피해 XSS 표면을 완전히 닫지는 못함(sandbox=allow-scripts·allow-same-origin 미부여로 완화하나 보고서 iframe 속성 계약 확인 필요).",
+    "cad3d 분리 배포 시 라우팅/ImportError 분류 로직 추가 비용; 단일 이미지로 가면 trimesh/numpy로 이미지가 커짐(트레이드오프).",
+    "오브젝트스토어/CDN/OAuth/레이트리밋 인프라 신규 도입으로 운영 복잡도·비용 증가(현 무상태 로컬 모델 대비).",
+    "embed_mode='srcdoc-fragment' 진짜 fragment 분기가 여전히 미구현(builder.py:82-84)이라 인라인 srcdoc 임베드는 별도 작업으로 남음."
+   ],
+   "effort": "L"
+  }
+ ],
+ "roadmap": "충분한 정보를 모두 확보했습니다. 보안 갭이 review-matrix(engine.js:224)와 flow-core(engine.js:552) **양쪽**에 동일하게 존재함을 확인했습니다(둘 다 `c.image.ref`를 JS 런타임에 img.src로 주입 → 정적 lint 우회). 아티팩트 크기도 확인했습니다(xy 계열 32-69KB, cad3d/three.js 포함 시 750KB). 이제 최종 로드맵을 작성합니다.\n\n---\n\n# graph-skill 웹서비스화 + MCP 활용 실행 로드맵\n\n## 1. 현재 상태 진단\n\ngraph-skill은 **이미 80% 웹서비스 준비가 된 라이브러리**다. 핵심 엔진(`tools.DISPATCH` 단일 디스패치 + `builder.render` → `serialize.safe_js_literal` 바이트 결정적 산출 + `lint_self_contained` 게이트)이 전송 계층과 완전히 분리돼 있고, `mcp_server.py`는 `tools.DISPATCH`를 호출만 하는 36줄짜리 stdio 어댑터다. **있는 것**: stdio MCP 전송, 순수 함수 코어, 외부의존 0·결정적 self-contained HTML 산출, 4층 검증, 그리고 결정적으로 **venv에 MCP 1.27.2의 `streamable_http.py`/`sse.py`/FastMCP + Starlette/Uvicorn/sse_starlette가 이미 설치돼 있음**(원격 전송 인프라가 디스크에 존재). **없는 것**: 원격 전송 마운트(stdio만 노출), 웹 REST 엔드포인트, 아티팩트 서빙(현재 `out_path` 로컬 파일만 반환), 인증·레이트리밋·멀티테넌시.\n\n## 2. 핵심 결정 포인트\n\n| 결정 | 권장안 | 근거 |\n|---|---|---|\n| **원격 MCP 전송** | **Streamable HTTP** (SSE 단독은 deprecated, stdio는 로컬 전용) | SDK에 `streamable_http_manager.py`가 이미 있어 `Server`를 그대로 마운트 가능. `mcp_server.py`의 `_build_server()`가 전송과 무관하게 재사용됨 — 코어 한 줄도 안 바뀜. SSE는 하위호환용 보조로만. |\n| **아티팩트 서빙** | **콘텐츠 주소 스토어**(`out_path` 대신 `sha256(html)`을 키로 저장 → `GET /artifacts/{hash}` 서빙). render-to-string은 API 응답 인라인용으로 병행 | 산출이 이미 **바이트 결정적**이라 hash가 자연 키가 됨 → 동일 입력 자동 캐시·중복제거·CDN 친화. xy 계열 32-69KB는 인라인 OK이나 cad3d/three.js 포함 750KB는 반드시 URL 서빙. 로컬 절대경로 반환은 원격에서 무의미. |\n| **단일 ASGI 앱에 REST+MCP 마운트** | **한 Starlette 앱에 `/mcp`(MCP)와 `/v1/*`(REST)를 함께 마운트** | 두 표면이 동일한 `tools.DISPATCH`·동일 아티팩트 스토어를 공유 → 코드/인증/레이트리밋 미들웨어 1벌. report-write/MCP 클라이언트/일반 HTTP 호출자가 한 배포 단위를 공유. |\n\n## 3. 단계별 작업 (P0 / P1 / P2)\n\n### P0 — 원격으로 동작하는 최소 (MCP HTTP + 기본 REST + 아티팩트 반환)\n\n| 항목 | 건드릴/신규 파일 | Effort |\n|---|---|---|\n| Streamable HTTP MCP 마운트 | **신규** `src/graph_skill/server/app.py` — `mcp_server._build_server()` 재사용, `StreamableHTTPSessionManager`로 `/mcp` 마운트 | S |\n| `_build_server()` 추출 | `src/graph_skill/mcp_server.py` — 이미 분리돼 있어 그대로 import (수정 거의 없음) | XS |\n| 기본 REST 엔드포인트 | **신규** `server/rest.py` — `POST /v1/types`,`/v1/find`,`/v1/schema`,`/v1/validate`,`/v1/render`,`/v1/lint`,`/v1/embed-block`를 `tools.DISPATCH`에 1:1 위임 | S |\n| 아티팩트 반환(인라인+URL) | `src/graph_skill/builder.py` `render()` — `out_path` 없을 때 이미 `html` 반환함. **신규** `server/store.py`에 `put(html)->hash` / `GET /artifacts/{hash}` 추가 | M |\n| 콘텐츠주소 키 | `serialize.py` 재사용(이미 결정적) — store가 `hashlib.sha256(html.encode())` | XS |\n| ASGI 진입점/의존성 | `pyproject.toml` — `[project.optional-dependencies] web = [\"starlette\",\"uvicorn\",\"sse-starlette\"]` 추가(이미 설치돼 있음, 선언만), `[project.scripts] graph-skill-web` | XS |\n\nP0 산출물: `uvicorn graph_skill.server.app:app`으로 원격 MCP(Claude/임의 클라이언트)와 REST가 동시에 뜨고, render가 `{hash, url, height_px, lint}`를 반환.\n\n### P1 — 공개 서비스 필수 (인증·레이트리밋·아티팩트 스토어·보안 갭 차단)\n\n| 항목 | 건드릴/신규 파일 | Effort |\n|---|---|---|\n| **보안 갭 #image.ref 차단** (최우선) | `src/graph_skill/data/engines/review-matrix/engine.js`(L224) **및** `data/engines/flow-core/engine.js`(L552) — 둘 다 `c.image.ref`를 런타임 `img.src`에 주입해 **정적 lint를 우회**. + `src/graph_skill/serialize.py` `lint_self_contained`에 data-URI만 허용/외부 ref 거부 로직, + `recipes/matrix_compare.py`·`flowchart.py` normalize 단계에서 `image.ref`가 `http(s)://`면 reject | M |\n| 인증(API 키/토큰) | **신규** `server/auth.py` — Starlette 미들웨어. MCP는 SDK의 `mcp/server/auth/` 재사용 | M |\n| 레이트리밋 | **신규** `server/limits.py` — IP/키별 토큰버킷, render는 비용가중 | S |\n| 영속 아티팩트 스토어 | `server/store.py` 확장 — 로컬 디스크 → S3/오브젝트 스토어 백엔드, TTL/GC | M |\n| 입력 크기/타임아웃 가드 | `server/rest.py` + **신규** `server/guards.py` — payload 바이트 상한, series 점수·mesh 정점수 상한, render 타임아웃·서브프로세스 격리 | M |\n| 멱등/중복제거 | `server/store.py` — 결정적 hash 덕에 동일 입력은 재렌더 없이 기존 URL 반환 | S |\n\n### P2 — 플랫폼 (CDN·관측성·오토스케일·report-archive iframe 연동)\n\n| 항목 | 건드릴/신규 파일 | Effort |\n|---|---|---|\n| CDN 앞단 | 배포 설정(Cloudflare/CloudFront) + `store.py` `Cache-Control: immutable`(hash 불변) | S |\n| 관측성(메트릭/트레이싱/구조화 로그) | **신규** `server/obs.py` — render 지연·아티팩트 크기·타입별 카운터, OTel | M |\n| 오토스케일 + cad3d 격리 | **신규** `server/render_worker.py` — trimesh/numpy 무거운 cad3d 경로를 별도 워커풀/큐로 분리(아래 리스크 참조), 컨테이너화 | L |\n| report-archive iframe 연동 | `src/graph_skill/builder.py` `embed_block()` 확장 — `local_path` 대신 **서빙 URL/iframe srcdoc** 모드 추가, postMessage 다크모드 동기화는 기존 보일러 재사용 | M |\n| 갤러리/health를 서비스 헬스로 | `build_gallery.py` 재사용 → `/healthz`·신선도 게이트를 런타임 노출 | S |\n\n## 4. 재사용 vs 신규 (이미 80% 준비됨)\n\n| 자산 | 상태 | 비고 |\n|---|---|---|\n| `tools.DISPATCH` 코어(10개 도구) | **그대로 재사용** | 순수 함수, mcp/typer 무의존 — REST·MCP·CLI 3표면이 이미 공유(3-view golden rule) |\n| 엔진 자산(`data/engines/*`, vendor sha256-pin) | **그대로 재사용** | 버전관리·결정적·self-contained. 전송계층과 무관 |\n| 결정성(`serialize.safe_js_literal`, `newline=\"\\n\"`) | **그대로 재사용** | 콘텐츠주소 스토어의 hash 키 기반이 공짜로 생김 |\n| lint 게이트(`lint_self_contained`) | **재사용 + 1곳 보강** | 정적 검사는 유지, image.ref 런타임 주입 경로만 P1에서 메움 |\n| `mcp_server._build_server()` | **그대로 재사용** | stdio→HTTP 전송 교체 시 서버 객체 동일 |\n| MCP HTTP 전송/Starlette/Uvicorn | **이미 venv 설치됨** | 코드 없이 마운트만 하면 됨 — 신규 의존성 0 |\n| **신규로 써야 하는 것** | `server/` 패키지(app/rest/store/auth/limits/guards/obs/render_worker)뿐 | 코어는 손대지 않음 |\n\n## 5. 리스크 / 주의\n\n| 리스크 | 내용 | 완화 |\n|---|---|---|\n| **cad3d(trimesh)·numpy 메모리/CPU** | cad3d-core 산출은 **750KB**(three.js 592KB 인라인 + 메시), 메시 단순화·numpy 연산이 동기 요청을 점유 → 워커 1개가 전 서비스 블로킹 | P2의 `render_worker` 별도 풀/큐, cad3d 경로 타임아웃·메모리 cgroup, lazy import 유지 |\n| **거대 입력** | series 수백만 점·대형 메시 정점이 메모리 폭발(LTTB는 브라우저단, 서버 정규화는 풀데이터 보유) | P1 `guards.py` 입력 바이트·점수 상한, 초과 시 422 |\n| **self-contained 우회 갭** | review-matrix(L224)·flow-core(L552)가 `image.ref`를 **JS 런타임에 외부 URL로** 주입 → 현 정적 lint가 못 잡음. 공개 서비스에서 외부 추적/혼합콘텐츠/SSRF 표면 | P1 최우선: normalize에서 외부 ref reject + lint에 data-URI 화이트리스트 |\n| **NEVER-invent 게이트의 자동화 클라이언트 동작** | `validate_inputs`가 `missing[]`를 주면 \"사용자에게 질문\"이 계약인데, 비대화형 REST/자동 MCP 호출자는 질문할 사람이 없어 **무한 needs_input** 또는 (나쁘게) 추정값 주입 유혹 | REST는 `needs_input`을 명시적 422+`questions[]`로 반환(추정 금지를 서버가 강제), MCP는 `needs_input` 그대로 전달해 호출 LLM이 책임지게 — 게이트를 **절대 서버가 우회하지 않음** |\n| 결정성 회귀 | 멀티 호스트에서 hash 불일치 시 캐시·CDN 무효화 | CI에 기존 골든 바이트 테스트 유지, 배포 전 게이트 |\n\n**한 줄 요약**: 코어는 이미 전송-비의존 순수 함수이고 원격 전송 라이브러리까지 디스크에 깔려 있어, P0는 `server/` 신규 패키지로 `_build_server()`를 Streamable HTTP에 마운트 + REST 위임 + 콘텐츠주소(hash) 아티팩트 서빙이면 충분하다. **유일하게 코어 파일을 건드려야 하는 곳은 P1의 image.ref 보안 갭 2곳**(`review-matrix/engine.js`, `flow-core/engine.js` + `serialize.py`)이다.\n\n관련 파일(절대경로):\n- `D:\\graph-skill\\src\\graph_skill\\mcp_server.py` (재사용할 `_build_server`)\n- `D:\\graph-skill\\src\\graph_skill\\tools.py` (DISPATCH 코어)\n- `D:\\graph-skill\\src\\graph_skill\\builder.py` (render/embed_block)\n- `D:\\graph-skill\\src\\graph_skill\\serialize.py` (결정성·lint 게이트)\n- `D:\\graph-skill\\src\\graph_skill\\data\\engines\\review-matrix\\engine.js` (보안 갭 L224)\n- `D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js` (보안 갭 L552)\n- `D:\\graph-skill\\pyproject.toml` (web extra 선언)"
+}

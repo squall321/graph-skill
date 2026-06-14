@@ -1,0 +1,20 @@
+{
+  "title": "전력반도체 열저항 스택",
+  "power_w": 8.0,
+  "ambient_temp": 40,
+  "tj_max": 150,
+  "nodes": [
+    {
+      "name": "Rjc",
+      "r": 1.5
+    },
+    {
+      "name": "Rcs (TIM)",
+      "r": 0.8
+    },
+    {
+      "name": "Rsa (히트싱크)",
+      "r": 3.2
+    }
+  ]
+}

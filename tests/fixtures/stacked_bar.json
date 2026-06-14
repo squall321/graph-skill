@@ -1,0 +1,13 @@
+{
+  "title": "지역별 분기 매출 구성",
+  "categories": ["Q1", "Q2", "Q3", "Q4"],
+  "series": [
+    {"name": "북미", "values": [40, 52, 61, 70], "color": "#2563eb"},
+    {"name": "유럽", "values": [30, 33, 38, 41], "color": "#f59e0b"},
+    {"name": "아시아", "values": [22, 28, 35, 48], "color": "#16a34a"}
+  ],
+  "axes": {
+    "x": {"label": "분기", "unit": ""},
+    "y": {"label": "매출", "unit": "백만원"}
+  }
+}

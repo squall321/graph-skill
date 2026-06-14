@@ -53,13 +53,13 @@ def grouped() -> list:
 def find(query: str, limit: int = 8) -> list:
     """Rank types by a free-text goal. Scores keyword/use_when/name/category-title overlap."""
     q = (query or "").lower().strip()
-    terms = [t for t in q.replace(",", " ").split() if t]
+    terms = [t for t in q.replace(",", " ").replace("/", " ").split() if t]
     cats = _cat_index()
     scored = []
     for name, m in _tax().get("types", {}).items():
+        kws = [k.lower() for k in (m.get("keywords", []) + m.get("synonyms", []))]
         hay = " ".join([
-            name, m.get("use_when", ""), m.get("data", ""),
-            " ".join(m.get("keywords", [])),
+            name, m.get("use_when", ""), m.get("data", ""), " ".join(kws),
             (cats.get(m.get("category", ""), {}) or {}).get("title", ""),
         ]).lower()
         score = 0
@@ -68,11 +68,14 @@ def find(query: str, limit: int = 8) -> list:
         for t in terms:
             if t in hay:
                 score += 2
-            if any(t in k.lower() for k in m.get("keywords", [])):
-                score += 1
+            for k in kws:
+                if t == k:
+                    score += 2                      # exact keyword hit — strong signal
+                elif len(t) >= 2 and (t in k or k in t):
+                    score += 1                      # bidirectional substring (막대그래프~막대)
         if score:
             scored.append((score, name, m))
-    scored.sort(key=lambda x: (-x[0], x[1]))
+    scored.sort(key=lambda x: (-x[0], x[1]))         # deterministic: score desc, then name asc
     return [{"name": n, "category": m.get("category", ""), "dims": m.get("dims", ""),
              "use_when": m.get("use_when", ""), "data": m.get("data", "")}
             for _s, n, m in scored[:limit]]

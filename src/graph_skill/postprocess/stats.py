@@ -74,15 +74,26 @@ def capability(values: list, usl=None, lsl=None) -> dict:
     return {"mean": mean, "sd": sd, "cp": cp, "cpk": cpk}
 
 
-def control_limits(y: list) -> dict:
+_D2_MR2 = 1.128  # d2 for the moving range of n=2 (consecutive individuals) — I-chart
+
+
+def control_limits(y: list, sigma_method: str = "moving_range") -> dict:
+    """3σ 관리한계. sigma_method='moving_range'(기본): within-변동을 MR̄/d2로 추정 →
+    지속 시프트가 자기 한계를 부풀려 이탈을 숨기는 고전적 함정을 피한다(SPC 표준 I-chart).
+    'overall': 전체 표본 σ(레거시 — 시프트에 한계가 넓어짐)."""
     ys = [float(v) for v in y if v is not None]
     n = len(ys) or 1
     mean = sum(ys) / n
-    var = sum((v - mean) ** 2 for v in ys) / (n - 1) if n > 1 else 0.0
-    sd = var ** 0.5
+    overall_sd = (sum((v - mean) ** 2 for v in ys) / (n - 1)) ** 0.5 if n > 1 else 0.0
+    if sigma_method == "moving_range" and n > 1:
+        mrs = [abs(ys[i] - ys[i - 1]) for i in range(1, n)]
+        sd = (sum(mrs) / len(mrs)) / _D2_MR2 if mrs else 0.0  # within-σ, 시프트에 면역
+    else:
+        sd = overall_sd
     ucl, lcl = mean + 3 * sd, mean - 3 * sd
     viol = [i for i, v in enumerate(y) if v is not None and (v > ucl or v < lcl)]
-    return {"mean": mean, "sd": sd, "ucl": ucl, "lcl": lcl, "violations": viol}
+    return {"mean": mean, "sd": sd, "overall_sd": overall_sd, "ucl": ucl, "lcl": lcl,
+            "violations": viol, "sigma_method": sigma_method}
 
 
 def pearson(a: list, b: list) -> float:

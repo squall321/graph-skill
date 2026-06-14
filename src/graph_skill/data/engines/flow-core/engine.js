@@ -549,7 +549,7 @@
       } else if (c.kind === "image" && c.image) {
         var img = document.createElement("img");
         img.className = "gs-fl-img";
-        img.src = c.image.mode === "inline" ? ("data:" + (c.image.mime || "image/png") + ";base64," + c.image.data) : (c.image.ref || "");
+        img.src = c.image.mode === "inline" ? ("data:" + (c.image.mime || "image/png") + ";base64," + c.image.data) : (/^\s*(?:https?:)?\/\//i.test(c.image.ref || "") ? "" : (c.image.ref || ""));
         img.alt = n.label || "";
         body.appendChild(img);
         openable = function () { self._openImage(img.src, n.label); };

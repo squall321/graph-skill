@@ -95,6 +95,16 @@ def test_s2p_parser_formats():
     assert tool["n_points"] == 1 and "usage" in tool
 
 
+def test_photometry_self_checks():
+    # 면적비: 동일 삼각형=1.0, 절반=0.5
+    tri = [(0, 0), (1, 0), (0, 1)]
+    assert abs(ph.gamut_area_ratio(tri, tri) - 1.0) < 1e-12
+    assert abs(ph.gamut_area_ratio([(0, 0), (0.5, 0), (0, 1)], tri) - 0.5) < 1e-12
+    # 1/3 옥타브 밴드 엣지 (base-2): fc/2^(1/6), fc*2^(1/6)
+    lo, hi = ph.band_edges(1000.0)
+    assert abs(lo - 890.90) < 0.1 and abs(hi - 1122.46) < 0.1
+
+
 def test_gating():
     assert not validate.check("octave-band", {"bands": [[100, 60]]})["ok"]
     assert not validate.check("tornado-chart", {"factors": [{"name": "a", "low": 1, "high": 2},

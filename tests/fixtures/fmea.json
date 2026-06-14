@@ -1,0 +1,38 @@
+{
+  "title": "카메라 모듈 FMEA",
+  "mode": "ap",
+  "rows": [
+    {
+      "item": "AF 액추에이터",
+      "failure_mode": "구동 정지",
+      "effect": "초점 불가",
+      "S": 8,
+      "O": 3,
+      "D": 4
+    },
+    {
+      "item": "이미지 센서",
+      "failure_mode": "핫픽셀",
+      "effect": "화질 저하",
+      "S": 5,
+      "O": 4,
+      "D": 6
+    },
+    {
+      "item": "플렉스 케이블",
+      "failure_mode": "단선",
+      "effect": "무표시",
+      "S": 9,
+      "O": 2,
+      "D": 3
+    },
+    {
+      "item": "렌즈 코팅",
+      "failure_mode": "박리",
+      "effect": "플레어",
+      "S": 4,
+      "O": 5,
+      "D": 7
+    }
+  ]
+}

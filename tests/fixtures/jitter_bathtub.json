@@ -1,0 +1,6 @@
+{
+  "title": "PCIe Gen4 지터 배스터브",
+  "rj_sigma": 0.018,
+  "dj": 0.12,
+  "target_ber": 1e-12
+}

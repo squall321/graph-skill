@@ -8,7 +8,7 @@
 
 | 패밀리 | 렌더 | 대표 타입 | 자동 인터랙션 |
 |---|---|---|---|
-| `xy-core` | Canvas 2D | base-xy 계열 60여 종(+playback/treemap 등 plugin) | 호버/줌/팬/박스줌/범례/내보내기 (아래) |
+| `xy-core` | Canvas 2D | base-xy 계열 73종(+playback/treemap 등 plugin) | 호버/줌/팬/박스줌/범례/내보내기 (아래) |
 | `field-core` | Canvas 2D | contour/heatmap/spectrogram/confusion-matrix | probe·컬러바·줌 |
 | `polar-core` | Canvas 2D | polar/radar/방사패턴/wind-rose | 각도 호버 |
 | `smith-core` | Canvas 2D | smith-chart | 임피던스 호버 |
@@ -127,6 +127,18 @@ xy 계열 기본형:
 1. `graph_render` 로 나온 `html_path` 를 `graph_lint_output` 으로 검증.
 2. `graph_embed_block <html_path>` 로 조각 생성(높이 자동; 필요 시 `--height` 로 override).
 3. 그 조각을 report-write draft 의 `extra_blocks` 에 `html_embed` 로 추가. report-write 가 `local_path`→`file_id` 자동 업로드 → sandbox iframe 으로 렌더.
+
+## Flow D — 웹 / 원격 MCP 서빙 (graph_skill.server, v0.46.0+)
+
+로컬 파일/stdio 가 아니라 **HTTP 로 원격 제공**할 때. 코어(타입선택·검증·렌더·게이트)는 동일하고 전송만 다르다.
+
+- 기동: `pip install -e ".[web]"` → `graph-skill-web` (단일 ASGI: REST + `/mcp` Streamable HTTP).
+- 렌더: `POST /v1/render {graph_type, series/axes/...}` → **콘텐츠주소 아티팩트** `{status, hash, artifact_url, lint}`.
+  배경값 부족 시 **HTTP 422** + `{status:"needs_input", missing[], questions[], answer_template}` — 서버는 절대 추측하지 않는다(Flow B 와 동일 계약, 원격에서도 유지). 자동화 클라이언트는 `answer_template`(채울 스켈레톤)을 채워 재호출.
+- 수신: `GET /artifact_url` → self-contained HTML(immutable 캐시 + CSP).
+- 그 외: `POST /v1/lint|embed {hash}`, `POST /v1/{graph_types_list|graph_find|graph_schema_get|graph_validate_inputs|ingest_csv|ingest_s2p|resample|smooth}`.
+- 원격 MCP 클라이언트는 `/mcp` 로 접속(로컬 stdio `graph-skill-mcp` 도 그대로 유효).
+- 산출이 **바이트결정적**이라 같은 입력은 같은 `hash`(자동 dedupe·CDN 캐시).
 
 ---
 

@@ -24,7 +24,7 @@ def _carrier_series(pairs):
 def _axis(ax, key, dflt_label, dflt_unit):
     a = (ax or {}).get(key) or {}
     return {"label": str(a.get("label", dflt_label)), "unit": str(a.get("unit", dflt_unit)),
-            "scale": a.get("scale", "linear")}
+            "log": a.get("scale", "linear") == "log"}
 
 
 class BubbleTimelineRecipe(Recipe):

@@ -72,3 +72,28 @@ def test_gallery_freshness_gate():
         if ver != cur:
             stale.append(f"{f.name}: {fam}@{ver} != {cur}")
     assert not stale, "STALE gallery artifacts (run build_gallery.py): " + "; ".join(stale[:8])
+
+
+def test_engine_code_version_binding():
+    """Structural freshness gate: each engine's source hash + version must match the committed
+    manifest. Editing an engine's code without bumping ENGINE_VERSION fails here — closing the
+    gap the gallery gate misses (it only compares baked meta, not whether code actually changed).
+    After a legit bump, regenerate via: python tests/update_engine_manifest.py."""
+    manifest = json.loads((Path(__file__).resolve().parent / "engine_manifest.json").read_text(encoding="utf-8"))
+    engines = sorted({catalog.resolve_type(t).engine for t in catalog.known_types()})
+    bad = []
+    for e in engines:
+        m = manifest.get(e)
+        if not m or m["version"] != assets.engine_version(e) or m["code_hash"] != assets.engine_code_hash(e):
+            bad.append(e)
+    assert not bad, ("engine manifest stale — code changed without a version bump, or manifest not "
+                     f"regenerated (run tests/update_engine_manifest.py): {bad}")
+
+
+def test_needs_input_answer_template():
+    """needs_input must carry a machine-fillable skeleton (not just prose 'ask') so an
+    automation/REST client can fill the missing values programmatically and re-call."""
+    from graph_skill import tools
+    r = tools.render_payload("stress-linearization", {"path": [[0, 100], [1, 50], [2, 0]]})
+    assert r["status"] == "needs_input"
+    assert r["answer_template"]["axes"]["y"]["unit"] == "<채울 값>"

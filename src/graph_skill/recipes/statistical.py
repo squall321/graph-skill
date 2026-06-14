@@ -88,6 +88,64 @@ class BarPlotRecipe(Recipe):
         return miss
 
 
+class GroupedBarRecipe(Recipe):
+    """범주별 다계열 막대(side-by-side). 한 계열을 우측축 선으로 둘 수 있어(막대+선 콤보)
+    매출/비용 막대 + 증감률 선 같은 보고서 최빈 차트를 한 그림에 담는다."""
+    type_name = "grouped-bar"
+    _bar_mode = "grouped"
+
+    def normalize(self, payload, resolved):
+        cats = [str(c) for c in (payload.get("categories") or [])]
+        xs = list(range(len(cats)))
+        out, has_right = [], False
+        for i, s in enumerate(payload.get("series") or []):
+            if isinstance(s.get("values"), list):
+                ys = [_num(v) for v in s["values"]]
+            else:
+                ys = [_num(pt[-1] if isinstance(pt, (list, tuple)) else pt) for pt in (s.get("data") or [])]
+            ser = {"name": str(s.get("name", f"계열{i + 1}")), "x": xs, "y": ys,
+                   "style": "line+markers" if s.get("as") == "line" else "bar"}
+            if s.get("color"):
+                ser["color"] = s["color"]
+            if s.get("axis") == "right":
+                ser["axis"] = "right"
+                has_right = True
+            out.append(ser)
+        ax = payload.get("axes") or {}
+        xa = _axis(ax.get("x"), "")
+        xa["categories"] = cats
+        opts = {"axes": {"x": xa, "y": _axis(ax.get("y"))}, "barMode": self._bar_mode}
+        if has_right:
+            opts["axes"]["y2"] = _axis(ax.get("y2") or ax.get("right"))
+        if payload.get("title"):
+            opts["title"] = str(payload["title"])
+        return {"engine": resolved.engine, "assets": {"series": out}, "options": opts}
+
+    def structural_requires(self, payload):
+        miss = []
+        if not (payload.get("categories") or []):
+            miss.append({"field": "categories", "why": "막대 범주가 없음",
+                         "ask": "범주(라벨)들을 주세요: categories:[...]."})
+        sers = payload.get("series") or []
+        if not sers:
+            miss.append({"field": "series", "why": "막대 계열이 없음",
+                         "ask": "계열들을 주세요: series:[{name, values:[...]}, …] (각 계열 길이 = 범주 수)."})
+        ya = (payload.get("axes") or {}).get("y") or {}
+        if not ya.get("label") or "unit" not in ya:
+            miss.append({"field": "axes.y", "why": "막대 값(y)의 의미/단위 미상",
+                         "ask": "막대 값의 label과 unit을 주세요 (axes.y={label,unit}; 무차원이면 unit:'')."})
+        if any(s.get("axis") == "right" for s in sers) and "unit" not in ((payload.get("axes") or {}).get("y2") or {}):
+            miss.append({"field": "axes.y2", "why": "우측 축(콤보 선) 단위 미상",
+                         "ask": "콤보 선을 우측 축에 둘 거면 axes.y2={label,unit}을 주세요."})
+        return miss
+
+
+class StackedBarRecipe(GroupedBarRecipe):
+    """grouped-bar와 같은 입력을 범주별로 누적(parts-of-whole over categories)."""
+    type_name = "stacked-bar"
+    _bar_mode = "stacked"
+
+
 class BoxPlotRecipe(Recipe):
     type_name = "box-plot"
 

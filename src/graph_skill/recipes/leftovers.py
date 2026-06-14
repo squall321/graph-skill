@@ -12,7 +12,7 @@ from .playback import _carrier_series
 def _axis(ax, key, dflt_label, dflt_unit):
     a = (ax or {}).get(key) or {}
     return {"label": str(a.get("label", dflt_label)), "unit": str(a.get("unit", dflt_unit)),
-            "scale": a.get("scale", "linear")}
+            "log": a.get("scale", "linear") == "log"}
 
 
 class StreamGraphRecipe(Recipe):

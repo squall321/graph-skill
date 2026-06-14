@@ -78,10 +78,15 @@ class StressLinearizationRecipe(Recipe):
         return {"engine": resolved.engine, "assets": {"series": series}, "options": options}
 
     def structural_requires(self, payload):
+        miss = []
         if len(payload.get("path") or []) < 3:
-            return [{"field": "path", "why": "두께 경로 응력 분포가 없음",
-                     "ask": "선형화 경로를 주세요: path:[[두께방향 위치, 응력], …] (SCL 시작→끝, 3점 이상)."}]
-        return []
+            miss.append({"field": "path", "why": "두께 경로 응력 분포가 없음",
+                         "ask": "선형화 경로를 주세요: path:[[두께방향 위치, 응력], …] (SCL 시작→끝, 3점 이상)."})
+        # NEVER-invent: 응력 단위를 묵묵히 'MPa'로 채우지 않는다 (ksi/psi 오라벨링 차단)
+        if (((payload.get("axes") or {}).get("y") or {}).get("unit")) is None:
+            miss.append({"field": "axes.y.unit", "why": "응력 단위 미상 (MPa? ksi? psi?)",
+                         "ask": "응력 단위를 axes.y.unit 으로 주세요 (예: 'MPa'). 무차원일 수 없어 추측하지 않습니다."})
+        return miss
 
 
 class HysteresisRecipe(Recipe):
@@ -300,4 +305,42 @@ class CalibrationRecipe(Recipe):
             m = _ax_need(payload, axk, what)
             if m:
                 miss.append(m)
+        return miss
+
+
+class BlandAltmanRecipe(Recipe):
+    """측정-시뮬/장비간 일치도(Bland-Altman) — 차이 vs 평균 산점 + bias·±1.96SD LoA 기준선.
+    correlation-scatter(동일성 y=x)로 대체 불가한 방법비교 표준(측정-CAE 상관 업무)."""
+    type_name = "bland-altman"
+
+    def normalize(self, payload, resolved):
+        ba = _ex.bland_altman(payload.get("method1") or [], payload.get("method2") or [])
+        ax = payload.get("axes") or {}
+        unit = str(((ax.get("y") or ax.get("x") or {}).get("unit", "")))
+        names = payload.get("names") or ["방법1", "방법2"]
+        series = [{"name": "쌍", "x": ba["means"], "y": ba["diffs"], "style": "markers", "color": "#2563eb"}]
+        if ba["means"]:
+            xlo, xhi = min(ba["means"]), max(ba["means"])
+            for lbl, yv, col, dash in (
+                (f"bias={ba['bias']:.4g}", ba["bias"], "#16a34a", [6, 4]),
+                (f"+1.96SD={ba['loa_hi']:.4g}", ba["loa_hi"], "#dc2626", [3, 3]),
+                (f"-1.96SD={ba['loa_lo']:.4g}", ba["loa_lo"], "#dc2626", [3, 3]),
+            ):
+                series.append({"name": lbl, "x": [xlo, xhi], "y": [yv, yv], "color": col, "dash": dash})
+        title = str(payload.get("title") or f"Bland-Altman ({names[0]} vs {names[1]})")
+        options = {"axes": {"x": {"label": f"평균 ({names[0]}, {names[1]})", "unit": unit},
+                            "y": {"label": f"차이 ({names[0]} - {names[1]})", "unit": unit}},
+                   "title": title}
+        return {"engine": resolved.engine, "assets": {"series": series}, "options": options}
+
+    def structural_requires(self, payload):
+        miss = []
+        a, b = payload.get("method1") or [], payload.get("method2") or []
+        if len(a) < 2 or len(b) < 2 or len(a) != len(b):
+            miss.append({"field": "method1", "why": "쌍을 이룬 측정 2조(같은 길이, 2개 이상) 필요",
+                         "ask": "두 방법의 쌍 측정값을 주세요: method1:[...], method2:[...] (같은 대상·순서, 길이 동일)."})
+        ay = (payload.get("axes") or {}).get("y") or (payload.get("axes") or {}).get("x") or {}
+        if "unit" not in ay:
+            miss.append({"field": "axes.y.unit", "why": "측정 단위 미상",
+                         "ask": "측정량의 단위를 axes.y.unit 으로 주세요 (두 방법 공통; 무차원이면 \"\")."})
         return miss

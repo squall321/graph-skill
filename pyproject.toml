@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graph-skill"
-version = "0.45.0"
+version = "0.48.0"
 description = "Generate self-contained interactive HTML graph/visualization artifacts (engine-family based) driven by an LLM skill."
 requires-python = ">=3.11"
 dependencies = [
@@ -19,12 +19,15 @@ dependencies = [
 postprocess = ["numpy>=1.26", "scipy>=1.11"]
 # cad3d-core (batch J+) geometry/mesh ingest → GLB. Lazy-imported; core graph types don't need it.
 cad3d = ["trimesh>=4", "fast-simplification"]
+# Web + remote-MCP serving surface (graph_skill.server). REST /v1/* + /artifacts + /mcp.
+web = ["starlette>=0.37", "uvicorn>=0.30", "sse-starlette>=2.0"]
 # End-to-end render smoke tests.
-test = ["pytest>=8.0", "playwright>=1.44"]
+test = ["pytest>=8.0", "playwright>=1.44", "httpx>=0.27"]
 
 [project.scripts]
 graph-skill = "graph_skill.cli:app"
 graph-skill-mcp = "graph_skill.mcp_server:main"
+graph-skill-web = "graph_skill.server.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -56,6 +56,7 @@ from .force_displacement import ForceDisplacementRecipe
 from .matrix_compare import MatrixRecipe
 from .mte import (
     AllanRecipe,
+    BlandAltmanRecipe,
     CalibrationRecipe,
     FRFCoherenceRecipe,
     HysteresisRecipe,
@@ -73,9 +74,28 @@ from .schedule import (
     WorkPlanRecipe,
 )
 from .relations import ChordRecipe, NetworkRecipe, SankeyRecipe
-from .statistical import BarPlotRecipe, BoxPlotRecipe, ErrorBarRecipe, HistogramRecipe
+from .statistical import (
+    BarPlotRecipe,
+    BoxPlotRecipe,
+    ErrorBarRecipe,
+    GroupedBarRecipe,
+    HistogramRecipe,
+    StackedBarRecipe,
+)
 from .statistical2 import ECDFRecipe, ParetoRecipe, QQRecipe, SPCRecipe
 from .stress_strain import StressStrainRecipe
+from .t1 import (
+    BatteryCycleFadeRecipe,
+    CCCVChargeRecipe,
+    ConductedEmissionRecipe,
+    FMEAWorksheetRecipe,
+    HardnessProfileRecipe,
+    JitterBathtubRecipe,
+    LoopGainMarginRecipe,
+    TDRImpedanceRecipe,
+    ThermalStackRecipe,
+    XbarRChartRecipe,
+)
 from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
@@ -100,6 +120,8 @@ REGISTRY: dict[str, Recipe] = {
     "correlation-scatter": CorrelationScatterRecipe(),
     "histogram": HistogramRecipe(),
     "bar-plot": BarPlotRecipe(),
+    "grouped-bar": GroupedBarRecipe(),
+    "stacked-bar": StackedBarRecipe(),
     "box-plot": BoxPlotRecipe(),
     "error-bar": ErrorBarRecipe(),
     "pareto": ParetoRecipe(),
@@ -194,6 +216,7 @@ REGISTRY: dict[str, Recipe] = {
     "battery-discharge": BatteryDischargeRecipe(),
     "mesh-convergence": MeshConvergenceRecipe(),
     "stress-linearization": StressLinearizationRecipe(),
+    "bland-altman": BlandAltmanRecipe(),
     "hysteresis-loop": HysteresisRecipe(),
     "thermal-response": ThermalResponseRecipe(),
     "nusselt-correlation": NusseltRecipe(),
@@ -207,6 +230,16 @@ REGISTRY: dict[str, Recipe] = {
     "vswr-curve": VSWRRecipe(),
     "dma-curve": DMARecipe(),
     "test-report": TestReportRecipe(),
+    "loop-gain-margin": LoopGainMarginRecipe(),
+    "conducted-emission": ConductedEmissionRecipe(),
+    "tdr-impedance-profile": TDRImpedanceRecipe(),
+    "jitter-bathtub": JitterBathtubRecipe(),
+    "battery-cycle-fade": BatteryCycleFadeRecipe(),
+    "cc-cv-charge-profile": CCCVChargeRecipe(),
+    "thermal-resistance-stack": ThermalStackRecipe(),
+    "hardness-profile": HardnessProfileRecipe(),
+    "xbar-r-chart": XbarRChartRecipe(),
+    "fmea-worksheet": FMEAWorksheetRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

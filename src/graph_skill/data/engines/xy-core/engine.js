@@ -221,6 +221,12 @@
     this._hasRight = this.series.some(function (s) { return s.axis === "right"; });
     this._cats = (this.opts.axes.x && this.opts.axes.x.categories) || null;
     if (this._cats) this.xLog = false;
+    this._barMode = (this.opts.barMode === "stacked") ? "stacked" : "grouped";
+    this._barIdx = [];
+    for (var _bi = 0; _bi < this.series.length; _bi++) {
+      if ((this.series[_bi].style || "") === "bar") this._barIdx.push(_bi);
+    }
+    this._prepStack();
     this._computeFull();
     this.view = this._cloneDom(this.full);
     this._buildLegend();
@@ -250,6 +256,27 @@
     else { var nuy = pxh / ppx, cy = (v.y[0] + v.y[1]) / 2; v.y = [cy - nuy / 2, cy + nuy / 2]; }
   };
 
+  // Stacked bars: precompute each bar series' lower edge (positive/negative stacks separate)
+  // and the overall stack extent so autoscale covers the totals, not individual values.
+  XYCore.prototype._prepStack = function () {
+    this._stackYmin = Infinity; this._stackYmax = -Infinity;
+    if (this._barMode !== "stacked" || (this._barIdx || []).length < 2) return;
+    var pos = {}, neg = {};
+    for (var q = 0; q < this._barIdx.length; q++) {
+      var s = this.series[this._barIdx[q]]; s._stackLo = [];
+      for (var r = 0; r < s.x.length; r++) {
+        var xv = s.x[r], yv = s.y[r];
+        if (yv == null || !isFinite(yv)) { s._stackLo[r] = 0; continue; }
+        var acc = yv >= 0 ? pos : neg, base = acc[xv] || 0, top = base + yv;
+        s._stackLo[r] = base; acc[xv] = top;
+        if (base < this._stackYmin) this._stackYmin = base;
+        if (top < this._stackYmin) this._stackYmin = top;
+        if (base > this._stackYmax) this._stackYmax = base;
+        if (top > this._stackYmax) this._stackYmax = top;
+      }
+    }
+  };
+
   XYCore.prototype._computeFull = function () {
     var xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity, any = false;
     var y2min = Infinity, y2max = -Infinity, any2 = false;
@@ -269,6 +296,10 @@
       }
     }
     if (this._hasBar) { if (ymin > 0) ymin = 0; if (ymax < 0) ymax = 0; }
+    if (this._barMode === "stacked" && isFinite(this._stackYmin)) {
+      if (this._stackYmin < ymin) ymin = this._stackYmin;
+      if (this._stackYmax > ymax) ymax = this._stackYmax;
+    }
     var anyX = isFinite(xmin);
     if (!any && !anyX) {
       this.full = { x: [this.xLog ? 1 : 0, this.xLog ? 10 : 1], y: [this.yLog ? 1 : 0, this.yLog ? 10 : 1] };
@@ -445,6 +476,12 @@
       if (!this.visible[hi] || hs._internal) continue;
       for (var hj = 0; hj < hs.y.length; hj++) { var hv = hs.y[hj]; if (hv != null && isFinite(hv)) return true; }
     }
+    // plugins that carry their own data (no visible series) — waterfall/stream/box/violin
+    var pc = this.opts.pluginConfig || {};
+    if ((pc.waterfall && (pc.waterfall.bars || []).length) ||
+        (pc.streamgraph && (pc.streamgraph.bands || []).length) ||
+        (pc["box-plot"] && (pc["box-plot"].groups || []).length) ||
+        (pc.violin && (pc.violin.groups || []).length)) return true;
     return false;
   };
   XYCore.prototype._viewObject = function (plot, sx, sy, tok) {
@@ -625,12 +662,27 @@
       for (k = 1; k < s.x.length; k++) { var g = Math.abs(s.x[k] - s.x[k - 1]); if (g > 0 && g < gap) gap = g; }
       if (!isFinite(gap)) gap = 1;
     }
-    var hw = gap * 0.4, y0 = sy.to(0);
+    var bars = this._barIdx || [], nb = bars.length || 1;
+    var idx = bars.indexOf(this.series.indexOf(s)); if (idx < 0) idx = 0;
+    var stacked = this._barMode === "stacked" && nb > 1;
+    var slot = gap * 0.8, y0 = sy.to(0);
     ctx.fillStyle = col;
     for (var i = 0; i < s.x.length; i++) {
       var yv = s.y[i]; if (yv == null || !isFinite(yv)) continue;
-      var xa = sx.to(s.x[i] - hw), xb = sx.to(s.x[i] + hw), yy = sy.to(yv);
-      ctx.fillRect(Math.min(xa, xb), Math.min(y0, yy), Math.abs(xb - xa), Math.abs(yy - y0));
+      var cx = s.x[i], left, bw, ya, yb;
+      if (stacked) {
+        left = cx - slot / 2; bw = slot;
+        var lo = (s._stackLo && s._stackLo[i]) || 0;
+        ya = sy.to(lo); yb = sy.to(lo + yv);
+      } else if (nb > 1) {              // grouped: side-by-side sub-slots
+        bw = slot / nb; left = cx - slot / 2 + idx * bw;
+        ya = y0; yb = sy.to(yv);
+      } else {                          // single bar series — unchanged centered full-width
+        bw = gap * 0.8; left = cx - gap * 0.4;
+        ya = y0; yb = sy.to(yv);
+      }
+      var xa = sx.to(left), xb = sx.to(left + bw);
+      ctx.fillRect(Math.min(xa, xb), Math.min(ya, yb), Math.abs(xb - xa), Math.abs(yb - ya));
     }
   };
 

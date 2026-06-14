@@ -98,6 +98,11 @@ class MultitrackRecipe(Recipe):
         if any(not (c.get("data")) for c in chs):
             return [{"field": "channels[].data", "why": "채널 데이터 누락",
                      "ask": "각 채널에 data=[[time, value], ...] 를 주세요."}]
+        # NEVER-invent: 채널 측정단위를 묵묵히 ""로 두지 않는다 (무차원이면 명시)
+        no_unit = [str(c.get("name", f"ch{i + 1}")) for i, c in enumerate(chs) if c.get("unit") is None]
+        if no_unit:
+            return [{"field": "channels[].unit", "why": f"채널 단위 미상: {', '.join(no_unit)}",
+                     "ask": "각 채널의 unit을 주세요 (무차원이면 unit=\"\" 로 명시). 묵묵히 빈 단위로 두지 않습니다."}]
         return []
 
 

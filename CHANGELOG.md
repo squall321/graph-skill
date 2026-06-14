@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.48.0 (2026-06-14) — T1 표준 보고 그래프 10종 (P2 완결)
+- **T1 정형 그래프 10종 신설** — 전부 기존 엔진/플러그인 재사용(threshold-lines·region-shading·
+  named-markers·waterfall), 판정(교차 보간·마진·룩업)이 붙는 정형 그림:
+  `loop-gain-margin`(PM/GM 자동) · `conducted-emission`(QP/AVG 이중한계, CISPR32) ·
+  `tdr-impedance-profile`(회랑 일탈) · `jitter-bathtub`(dual-Dirac BER, erfc) ·
+  `battery-cycle-fade`(EOL 교차) · `cc-cv-charge-profile`(전환점 음영) ·
+  `thermal-resistance-stack`(ΔT=P·R 사다리, Tj margin) · `hardness-profile`(CHD 교점) ·
+  `xbar-r-chart`(A2/D3/D4 2단 패널) · `fmea-worksheet`(RPN/AIAG-VDA AP 색배지).
+- `postprocess/domain_t1.py` 신설(안정도 마진·dual-Dirac·열저항 스택·X̄-R 상수·RPN/AP) — 전부 self-check.
+- **엔진 픽스**: `_hasAnyData`가 플러그인 데이터(waterfall/stream/box/violin)를 세도록 — 캐리어만 있는
+  차트의 '표시할 데이터 없음' 오워터마크 제거(기존 waterfall-chart도 개선). xy-core 1.8.4.
+- 규모: **122 → 132 타입**. 검증: pytest 433 · node 21 · Chromium 132/132 클린.
+- P2 미구현 T1 10종 **전부 완료** — 잔여는 웹 인프라(S3/CDN/OAuth/cad3d 워커격리)뿐.
+
+## 0.47.0 (2026-06-14) — 개선 로드맵 P0/P1 + P2 일부
+- **서버 P0 경화**(신규 server 코드 자체 결함 수정): async 핸들러가 동기 render를
+  `run_in_threadpool`로 오프로드(이벤트루프 블로킹 제거) · ArtifactStore LRU 상한
+  (`GRAPH_STORE_MAX_ITEMS`, OOM 차단) · 스트리밍 body-size 강제(chunked 우회 차단) ·
+  토큰버킷 eviction(키회전 DoS 차단) · API key 상수시간 비교(`hmac`). 동시성/eviction/
+  스트리밍 가드 테스트 추가.
+- **정확성 게이트(NEVER-invent)**: stress-linearization·multitrack-stack 단위 게이트 ·
+  SRS Nyquist/half_sine 경계 가드 · SPC 관리한계 within-σ(MR̄/d2, 시프트 은폐 제거) ·
+  self-check 3종(linear_fit·gamut·band_edges) · **신선도 바인딩 게이트**(엔진 코드해시↔
+  ENGINE_VERSION 매니페스트 — '코드 변경 후 버전 미범프'를 구조적으로 거부).
+- **신규 타입 3종**: `grouped-bar`/`stacked-bar`(xy-core 엔진에 grouped 오프셋·stacked
+  baseline+autoscale 추가, 막대+선 콤보 우측축 지원) · `bland-altman`(측정-CAE 일치도,
+  차이-평균 + bias·±1.96SD LoA). types_find 랭킹 강화(synonyms·양방향 부분일치).
+- **DX**: top-level export(`from graph_skill import types_find, render_payload`) ·
+  needs_input `answer_template`(자동화 클라이언트 기계가독) · SKILL.md Flow D(웹/MCP 서빙) ·
+  embed_stored `local_path` 모드(웹 산출물→report-write html_embed 브릿지).
+- 규모: 122 타입 / 8 엔진. 검증: pytest 430+ · node 21 · Chromium 122/122 클린.
+- 잔여(P2): T1 미구현 10종(loop-gain-margin·tdr·jitter-bathtub·battery-cycle 등) ·
+  웹 인프라(S3/CDN/OAuth/cad3d 워커격리) — docs/_analysis_status.md 참조.
+
+## 0.46.0 (2026-06-14) — 웹/원격 MCP 서빙
+- **`graph_skill.server`** 신규 패키지 — 단일 ASGI 앱(`graph-skill-web`)으로 세 표면을 한 배포에:
+  REST `/v1/*`(render/lint/embed + 순수도구 passthrough) · `/artifacts/<sha256>`(self-contained
+  HTML 서빙, immutable 캐시 + CSP) · `/mcp`(원격 MCP, **Streamable HTTP**; stdio MCP는 그대로 유지).
+  코어(`tools.DISPATCH`)·엔진 자산·결정성·self-contained 게이트는 무수정 재사용.
+- **콘텐츠주소 아티팩트 스토어** — 산출이 바이트결정적이라 `sha256(html)`이 자연 캐시키(동일 입력 dedupe·
+  CDN 친화). 무상태 `render_to_store`(디스크 안 씀)로 멀티테넌트 안전, 경로 traversal 가드.
+- **보안 미들웨어**(env-gated, pure ASGI) — API key 인증 / 본문크기 / 토큰버킷 레이트리밋. `needs_input`
+  게이트는 422로 명시 반환(서버가 NEVER-invent를 절대 우회 안 함).
+- **점검 후속 수정**: `ingest_s2p` DISPATCH 누락 수정(+ TOOLS↔DISPATCH 정합 가드 테스트); `image.ref`
+  외부 URL self-contained 우회 갭 차단 — lint를 #graph-config 데이터 채널까지 확장 + review-matrix/
+  flow-core 엔진 런타임에서 외부 ref blank(방어 2중). `scale:"log"` 죽은 키→`log:true`(stream/overview/
+  playback 5종 로그축 복구). 엔진 버전 범프(xy 1.8.2·cad3d 0.6.1·flow 0.6.2·review-matrix 0.7.1).
+- 검증: pytest 409 · node 21/21 · Chromium 119/119 클린.
+
 ## 0.45.0 (2026-06-12)
 - 확장 7종: cie-chromaticity(공식 CIE 018:2019 궤적 내장) · octave-band(IEC 61260) ·
   tornado-chart · motor-tn-curve · vswr-curve(S11→VSWR) · dma-curve(Tg 자동) ·
@@ -22,7 +71,7 @@
   taxonomy 19카테고리, 일정/계획 5종(gantt·timeline·calendar-heatmap·task-table·work-plan)
 
 ## 0.2.0 ~ 0.39.0 (요약)
-- 엔진 패밀리 9개 구축(field/polar/smith/review-matrix/flow/gauge/cad3d + linked-view 버스)
+- 엔진 패밀리 8개 구축(xy/field/polar/smith/review-matrix/flow/gauge/cad3d + linked-view 플러그인 버스)
 - 그래프 타입 1 → 96 (공학 2D·신뢰성·제어·신호·3D WebGL·표·관계흐름·계층·KPI·재생 애니)
 - 검증 4층 체계: 결정성/lint + node 헤드리스 + 실 Chromium 스모크 + 인터랙션 픽셀 검증
 

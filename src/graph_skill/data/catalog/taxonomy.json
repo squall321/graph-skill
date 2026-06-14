@@ -206,6 +206,93 @@
         "R2"
       ]
     },
+    "bland-altman": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "method1 + method2 (paired) + axes.y.unit",
+      "use_when": "두 측정/방법 일치도(차이-평균 + bias·±1.96SD LoA); 측정-CAE 비교",
+      "keywords": [
+        "bland",
+        "altman",
+        "agreement",
+        "일치도",
+        "방법비교",
+        "method comparison",
+        "LoA",
+        "bias",
+        "측정"
+      ]
+    },
+    "loop-gain-margin": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "freq + gain_db + phase_deg",
+      "use_when": "개루프 안정도(PM/GM 자동 판정) — 전원/제어 합부",
+      "keywords": ["loop gain", "stability", "phase margin", "gain margin", "안정도", "위상여유", "이득여유", "PM", "GM", "보드"]
+    },
+    "conducted-emission": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "spectrum + qp/avg limits",
+      "use_when": "전도성 방출(QP/AVG 이중 한계) 성적서",
+      "keywords": ["conducted", "emission", "EMI", "CISPR", "전도", "방출", "QP", "AVG", "dBuV"]
+    },
+    "tdr-impedance-profile": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "profile[distance,Z] + z0 + tol",
+      "use_when": "TDR 임피던스 회랑 일탈 판정(SI 성적서)",
+      "keywords": ["TDR", "impedance", "임피던스", "프로파일", "회랑", "SI", "특성임피던스", "ohm"]
+    },
+    "jitter-bathtub": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "ui + ber_left/right 또는 rj/dj",
+      "use_when": "지터 배스터브(BER vs UI) 컴플라이언스",
+      "keywords": ["jitter", "bathtub", "BER", "지터", "eye", "dual-dirac", "SerDes", "UI"]
+    },
+    "battery-cycle-fade": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "cycles[cycle,retention%] + eol",
+      "use_when": "배터리 사이클 수명 열화(EOL 80% 자동)",
+      "keywords": ["battery", "cycle", "fade", "수명", "열화", "EOL", "용량유지율", "사이클"]
+    },
+    "cc-cv-charge-profile": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "time + current + voltage (+v_set)",
+      "use_when": "CC-CV 충전 프로파일(전환점·구간 음영)",
+      "keywords": ["CC-CV", "charge", "충전", "전환", "리튬", "배터리", "전류전압"]
+    },
+    "thermal-resistance-stack": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "power + nodes[r] + ambient",
+      "use_when": "열저항 분해 사다리(θja=θjc+θcs+θsa, Tj margin)",
+      "keywords": ["thermal", "resistance", "열저항", "stack", "사다리", "Tj", "냉각", "junction", "waterfall"]
+    },
+    "hardness-profile": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "depth[mm,HV] + limit",
+      "use_when": "경도 프로파일(CHD/용접부 횡단 한계 교점)",
+      "keywords": ["hardness", "경도", "CHD", "열처리", "HV", "용접", "프로파일", "case depth"]
+    },
+    "xbar-r-chart": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "subgroups[[v…]…] + axes.y",
+      "use_when": "변수형 관리도(X̄-R 쌍 패널, A2/D3/D4)",
+      "keywords": ["xbar", "x-bar", "R chart", "관리도", "변수형", "서브그룹", "SPC", "control chart"]
+    },
+    "fmea-worksheet": {
+      "category": "process-quality",
+      "dims": "table",
+      "data": "rows[{S,O,D}] + mode",
+      "use_when": "FMEA 워크시트(RPN/AIAG-VDA AP 자동판정)",
+      "keywords": ["FMEA", "RPN", "action priority", "고장모드", "위험", "S O D", "AIAG", "워크시트"]
+    },
     "error-bar": {
       "category": "comparison",
       "dims": "2D",
@@ -552,6 +639,36 @@
         "bar",
         "범주",
         "막대"
+      ]
+    },
+    "grouped-bar": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "categories + series:[{name,values}] + axes.y",
+      "use_when": "범주별 다계열 막대 나란히 비교(매출 vs 비용); 콤보로 막대+선",
+      "keywords": [
+        "grouped",
+        "group bar",
+        "다계열",
+        "막대",
+        "콤보",
+        "막대+선",
+        "비교",
+        "clustered"
+      ]
+    },
+    "stacked-bar": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "categories + series:[{name,values}] + axes.y",
+      "use_when": "범주별 구성요소 누적 막대(parts-of-whole over categories)",
+      "keywords": [
+        "stacked",
+        "누적막대",
+        "구성비",
+        "막대",
+        "stack",
+        "parts of whole"
       ]
     },
     "pareto": {

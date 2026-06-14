@@ -15,7 +15,8 @@ OUT = Path(__file__).resolve().parent.parent / "graph-out"
 TYPES = {"mesh-convergence": "meshconv", "stress-linearization": "stresslin",
          "hysteresis-loop": "hysteresis", "thermal-response": "thermalresp",
          "nusselt-correlation": "nusselt", "frf-coherence": "frf",
-         "allan-deviation": "allan", "calibration-curve": "calibration"}
+         "allan-deviation": "allan", "calibration-curve": "calibration",
+         "bland-altman": "bland_altman"}
 
 
 def _load(n):
@@ -72,6 +73,35 @@ def test_allan_white_noise_slope():
     taus, sig = ex.allan_deviation(s, 100)
     sl = (math.log10(sig[8]) - math.log10(sig[0])) / (math.log10(taus[8]) - math.log10(taus[0]))
     assert -0.65 < sl < -0.35                           # 이론 -1/2
+
+
+def test_bland_altman_stats_and_lines():
+    # 자체 검증: diffs [1,2,3] → bias 2, sd 1, LoA 3.96/0.04
+    r = ex.bland_altman([2, 4, 6], [1, 2, 3])
+    assert abs(r["bias"] - 2) < 1e-12 and abs(r["sd"] - 1) < 1e-12
+    assert abs(r["loa_hi"] - 3.96) < 1e-9 and abs(r["loa_lo"] - 0.04) < 1e-9
+    assert ex.bland_altman([1], [1]) is None
+    # 레시피: 산점 + bias/+LoA/−LoA 3 기준선
+    out = REGISTRY["bland-altman"].normalize(_load("bland_altman"), catalog.resolve_type("bland-altman"))
+    ser = out["assets"]["series"]
+    assert ser[0]["style"] == "markers"
+    assert sum(1 for s in ser if "bias" in s["name"] or "1.96SD" in s["name"]) == 3
+    assert out["options"]["axes"]["y"]["unit"] == "mm"
+
+
+def test_bland_altman_gate():
+    # 단위 누락 / 비대칭 쌍 → needs_input (NEVER-invent)
+    assert not validate.check("bland-altman", {"method1": [1, 2], "method2": [1, 2]})["ok"]            # no unit
+    assert not validate.check("bland-altman", {"method1": [1, 2, 3], "method2": [1, 2],
+                                               "axes": {"y": {"unit": "mm"}}})["ok"]                   # mismatched length
+
+
+def test_linear_fit_self_check():
+    # y = 3x + 2 (정확) → slope 3, intercept 2, r²=1; 영-분산 입력은 None
+    lf = ex.linear_fit([0, 1, 2, 3], [2, 5, 8, 11])
+    assert abs(lf["slope"] - 3.0) < 1e-12 and abs(lf["intercept"] - 2.0) < 1e-12
+    assert abs(lf["r2"] - 1.0) < 1e-12
+    assert ex.linear_fit([1, 1, 1], [2, 3, 4]) is None
 
 
 def test_frf_right_axis_and_peaks():

@@ -23,7 +23,7 @@ jobs:
       - name: Install package + test deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[postprocess,cad3d,test]"
+          pip install -e ".[postprocess,cad3d,web,test]"
           python -m playwright install --with-deps chromium
 
       - name: Build gallery (feeds the freshness gate + smoke)

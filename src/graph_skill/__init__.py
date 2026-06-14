@@ -15,4 +15,19 @@ try:  # single source of truth — never hardcode __version__
 except PackageNotFoundError:  # running from source without install
     __version__ = "0.1.0+src"
 
-__all__ = ["__version__"]
+# Top-level re-export of the tool functions so callers can do
+# ``from graph_skill import types_find, render_payload`` instead of digging into
+# ``graph_skill.tools.X``. Lazy (PEP 562 __getattr__) to avoid an import cycle at load time.
+_TOOL_FNS = (
+    "types_list", "types_find", "schema_get", "validate_inputs", "render", "render_payload",
+    "lint_output", "embed_block", "ingest_csv", "ingest_s2p", "resample", "smooth",
+)
+
+__all__ = ["__version__", *_TOOL_FNS]
+
+
+def __getattr__(name: str):
+    if name in _TOOL_FNS:
+        from . import tools
+        return getattr(tools, name)
+    raise AttributeError(f"module 'graph_skill' has no attribute '{name}'")

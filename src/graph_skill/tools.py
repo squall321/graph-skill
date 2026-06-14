@@ -189,6 +189,26 @@ def _safe_name(name: str) -> str:
     return s or "graph"
 
 
+def _answer_template(missing: list) -> dict:
+    """Build a nested skeleton from missing[].field dot-paths so an automation client can
+    fill values programmatically (not just parse the human-prose 'ask'). e.g. fields
+    'axes.y.unit' + 'categories' -> {'axes': {'y': {'unit': '<채울 값>'}}, 'categories': '<채울 값>'}."""
+    tmpl: dict = {}
+    for m in missing or []:
+        parts = [p for p in str(m.get("field", "")).replace("[]", "").split(".") if p]
+        if not parts:
+            continue
+        d = tmpl
+        for p in parts[:-1]:
+            nxt = d.get(p)
+            if not isinstance(nxt, dict):
+                nxt = {}
+                d[p] = nxt
+            d = nxt
+        d.setdefault(parts[-1], "<채울 값>")
+    return tmpl
+
+
 # --- tool implementations -------------------------------------------------------
 
 def types_list() -> dict:
@@ -230,6 +250,7 @@ def validate_inputs(graph_type: str, payload: dict) -> dict:
         res["rule"] = prompt.PREAMBLE
         # fall back to the catalog hint — _INPUT_HINTS only covers the early families
         res["hint"] = prompt.hint_for(graph_type) or catalog.get_schema(graph_type).get("hint", "")
+        res["answer_template"] = _answer_template(res.get("missing"))
     return res
 
 
@@ -273,6 +294,7 @@ def render_payload(graph_type: str, payload: dict, out_path: str | None = None,
             "graph_type": graph_type,
             "missing": e.missing,
             "questions": [m["ask"] for m in e.missing],
+            "answer_template": _answer_template(e.missing),
             "rule": prompt.PREAMBLE,
         }
 
@@ -354,6 +376,7 @@ DISPATCH = {
     "graph_lint_output": lambda a: lint_output(a["html_path"]),
     "graph_embed_block": lambda a: embed_block(a["html_path"], a.get("height_px"), a.get("caption")),
     "ingest_csv": lambda a: ingest_csv(a["text"], a.get("delimiter"), a.get("header", True), a.get("units_row", False)),
+    "ingest_s2p": lambda a: ingest_s2p(a["text"]),
     "resample": lambda a: resample(a["series"], a.get("n"), a.get("dt")),
     "smooth": lambda a: smooth(a["series"], a.get("method", "savgol"), a.get("window", 7), a.get("polyorder", 2)),
 }

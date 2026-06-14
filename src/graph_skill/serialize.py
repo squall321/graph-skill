@@ -42,14 +42,48 @@ _EXTERNAL_URL = re.compile(r'(?:src|href)\s*=\s*["\'](?:https?:)?//', re.IGNOREC
 _IMPORT_URL = re.compile(r'@import\s+url\(\s*["\']?\s*https?:', re.IGNORECASE)
 _HTML_ROOT = re.compile(r"(?im)^\s*<html\b")
 
+# Data-channel external refs: the #graph-config JSON can carry image.ref/src/url/href
+# values that an engine injects as a runtime <img src> — invisible to the markup-only
+# regexes above (this was a real self-contained gate bypass). Parse the config block and
+# flag external URLs under resource-bearing keys. data: URIs and internal ids never match.
+_CFG_BLOCK = re.compile(r'<script id="graph-config" type="application/json">(.*?)</script>', re.S)
+_EXTERNAL_VALUE = re.compile(r'^\s*(?:https?:)?//', re.IGNORECASE)
+_RESOURCE_KEYS = frozenset({"ref", "src", "href", "url"})
+
+
+def _walk_external(obj: Any, key: str | None = None) -> int:
+    if isinstance(obj, dict):
+        return sum(_walk_external(v, k) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sum(_walk_external(v, key) for v in obj)
+    if isinstance(obj, str) and key in _RESOURCE_KEYS and _EXTERNAL_VALUE.match(obj):
+        return 1
+    return 0
+
+
+def _external_data_refs(html: str) -> int:
+    total = 0
+    for m in _CFG_BLOCK.finditer(html):
+        try:
+            total += _walk_external(json.loads(m.group(1)))
+        except (ValueError, TypeError):
+            continue
+    return total
+
 
 def lint_self_contained(html: str) -> dict:
-    """Static gate: the artifact must reference zero external resources and have one root."""
-    external = _EXTERNAL_URL.findall(html) + _IMPORT_URL.findall(html)
+    """Static gate: the artifact must reference zero external resources and have one root.
+    Covers both the markup (src/href/@import) and the #graph-config data channel
+    (image.ref/src/url the engine would turn into a runtime fetch)."""
+    markup = _EXTERNAL_URL.findall(html) + _IMPORT_URL.findall(html)
+    data_refs = _external_data_refs(html)
+    external = len(markup) + data_refs
     roots = _HTML_ROOT.findall(html)
     return {
-        "ok": (len(external) == 0) and (len(roots) == 1),
-        "external_urls": len(external),
-        "self_contained": len(external) == 0,
+        "ok": (external == 0) and (len(roots) == 1),
+        "external_urls": external,
+        "external_markup": len(markup),
+        "external_data_refs": data_refs,
+        "self_contained": external == 0,
         "single_root": len(roots) == 1,
     }

@@ -1,0 +1,632 @@
+{
+ "audits": [
+  {
+   "dimension": "카탈로그/택소노미 정합성 (graph-skill)",
+   "summary": "119타입 SSOT(types.json)와 분류(taxonomy.json)는 완전히 정합한다 — 고아/중복/빈힌트/잘못된엔진명 0건, coverage() 게이트 통과(missing/dangling/bad_category 모두 빈 배열, 미사용 카테고리 0), 검사한 모든 힌트 입력키가 실제 레시피 normalize가 읽는 payload 키와 일치. 실제 불일치(defect) 없음. 아래는 점검 사실의 증거와 1건의 정보성 관찰뿐.",
+   "findings": [
+    {
+     "severity": "info",
+     "title": "types.json 119타입: engine/hint/extends/title 무결 (고아·중복·빈힌트·잘못된엔진명 0건)",
+     "file": "d:/graph-skill/src/graph_skill/data/catalog/types.json",
+     "evidence": "전수 파싱 결과: TOTAL TYPES=119; MISSING engine key=[]; MISSING/empty hint=[]; DANGLING extends target=[]; DUPLICATE titles={}. 엔진 분포 xy-core 73 / field-core 12 / review-matrix 12 / cad3d-core 7 / flow-core 5 / gauge-core 5 / polar-core 4 / smith-core 1 — 모든 엔진명이 정의된 엔진 패밀리에 속함. extends 타깃(base-xy, contour-plot, heatmap-grid, review-matrix, design-state-compare, cad-3d-viewer, force-displacement, polar-plot, dual-axis 등)은 전부 types.json 내 실재 키. 예: \"mac-matrix-heatmap\"(L454) extends \"heatmap-grid\"(L1051) 존재, \"single-state-checklist\"(L820) extends \"design-state-compare\"(L807) 존재.",
+     "recommendation": "조치 불필요. 현 상태 유지. (신규 타입 추가 시 동일한 전수검증 1줄 스크립트를 CI에 두면 회귀 방지.)"
+    },
+    {
+     "severity": "info",
+     "title": "coverage() 게이트 통과 — 119타입 전부 분류, 19카테고리 전부 사용, bad_category 0",
+     "file": "d:/graph-skill/src/graph_skill/taxonomy.py:81",
+     "evidence": "taxonomy.py coverage() 로직(L86-89: missing=known-tax_types, dangling=tax_types-known, bad_category=category not in valid_cats)을 catalog known_types와 taxonomy.json에 직접 실행한 결과: missing=[], dangling=[], bad_category=[], 빈 category 0, 선언했으나 미사용 카테고리=[]. 카테고리별 분류 수: trend 13, signal-frequency 12, comparison 10, reliability 8, control-dynamics 8, distribution 7, geometry-3d 7, table 7, doe 6, mechanics 6, field-2d 5, planning 5, kpi-status 5, polar 4, process-quality 4, relations 4, ranking 3, hierarchy 3, playback 2 = 합 119. categories()는 taxonomy.json의 19개 id를 모두 반환(L19-24).",
+     "recommendation": "조치 불필요. coverage().ok=True. grouped()의 '_uncategorized' 폴백(L47-49)은 발동하지 않음(미분류 0)."
+    },
+    {
+     "severity": "info",
+     "title": "힌트 입력키 = 레시피 normalize payload키 교차검증 일치 (9개 레시피 파일 샘플)",
+     "file": "d:/graph-skill/src/graph_skill/recipes/ext.py:62",
+     "evidence": "샘플 교차검증 결과 모두 일치: (1) octave-band 힌트 'bands:[[fc,level]] 또는 spectrum:[[Hz,dB]] + level_unit' ↔ ext.py:66-80 payload.get('bands')/('spectrum')/('level_unit'); (2) vswr-curve 힌트 'vswr 또는 s11_db + limit + f_unit' ↔ ext.py:178-198 payload.get('vswr')/('s11_db')/('limit')/('f_unit'); (3) dma-curve 힌트 'temp+e_storage+e_unit(+e_loss,tan_delta)' ↔ ext.py:215-231; (4) srs-spectrum 힌트 'accel + params.fs/q/per_octave/ref_half_sine' ↔ ecae.py:40-49; (5) emi-spectrum 힌트 'spectrum + limit[{f0,f1,level}] 또는 preset:cispr32_b_3m' ↔ ecae.py:75-83 (_EMI_PRESETS 키 'cispr32_b_3m','cispr32_a_3m' 일치 ecae.py:12-15); (6) rainflow 힌트 'signal + params.mean_bins/range_bins + load{label,unit}' ↔ field2d.py:132-166; (7) wind-rose 힌트 'directions 또는 dir_labels + bins[{label,counts,color}]' ↔ wave3.py:62-81; (8) correlation-scatter 힌트 'options.identity=false' ↔ correlation_scatter.py:21 opts.get('identity') is False; (9) process-capability 힌트 'params.USL/LSL/target' ↔ batch_h.py:36 params.get('USL'/'LSL'/'target'); (10) transient 힌트 'limits:[{value,label}]' ↔ engineering2d.py:136 payload.get('limits'). post 후크 3종(units.eng_stress_strain, spectral.fft_onesided, spectral.fft_filter) 모두 해당 모듈에 함수 실재 확인.",
+     "recommendation": "조치 불필요. 검사 범위(약 10개 타입, 5개 엔진 패밀리)에서 힌트-노멀라이즈 드리프트 없음."
+    },
+    {
+     "severity": "info",
+     "title": "119타입 전부 레시피 등록 + extends 체인 런타임 해결 가능 (구조 무결성)",
+     "file": "d:/graph-skill/src/graph_skill/recipes/__init__.py",
+     "evidence": "REGISTRY와 catalog known_types 대조: catalog 119, registered 119, '레시피 없는 타입'=[], '타입 없는 레시피'=[]. catalog.resolve_type()을 119타입 전수 호출 시 예외/빈엔진 0건(extends 사이클·no-engine 게이트 catalog.py:49/96 모두 미발동). requires 필드는 params.A0(1), params.L0(1), params.fs(5)뿐이며 전부 params.* 스칼라 — 해당 레시피들이 실제로 읽음(예: srs ecae.py:41 params['fs'], stress-strain post units.eng_stress_strain).",
+     "recommendation": "조치 불필요. 단 이 구조 불변식(레시피 커버리지·extends 해결성)은 현재 런타임/테스트에서만 검증됨 — types.json만 보고는 보이지 않으므로, 신규 타입 PR 시 resolve_type 전수 + REGISTRY 대조를 게이트로 유지 권장."
+    }
+   ]
+  },
+  {
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)",
+   "summary": "대부분의 레시피는 structural_requires로 단위/배경값 게이트를 잘 구현하고 carrier series도 x/y 배열로 통일돼 과거 playback 버그는 해소됨. 그러나 (1) stream-graph·playback 계열의 _axis 헬퍼가 엔진이 안 읽는 scale:\"log\" 키를 그대로 내보내 사용자 로그축 요청이 묵묵히 무시되는 과거 SRS 버그 패턴이 잔존하고, (2) stress-linearization·goodman-haigh 두 레시피가 응력 단위를 게이트 없이 'MPa'로 묵묵히 채워 NEVER-invent 계약을 위반한다(같은 코드베이스의 형제 레시피들은 동일 단위를 게이트함).",
+   "findings": [
+    {
+     "severity": "high",
+     "title": "stress-linearization: 응력 단위를 게이트 없이 'MPa'로 묵묵히 채움 (NEVER-invent 위반)",
+     "file": "d:/graph-skill/src/graph_skill/recipes/mte.py:75",
+     "evidence": "normalize: `s_unit = str(((payload.get(\"axes\") or {}).get(\"y\") or {}).get(\"unit\", \"MPa\"))` (line 75), x도 `payload.get(\"x_unit\", \"mm\")` (line 76). 그러나 structural_requires(line 80-84)는 path 길이만 검사하고 axes.y.unit을 게이트하지 않음. 실증: 단위 없는 응력 path 입력 시 validate.check('stress-linearization', {...}) -> ok=True, missing=[]; normalize -> y axis = {'label':'응력','unit':'MPa'}. catalog: require_axes=False, requires=[]. 형제 HysteresisRecipe(line 113-116)는 _ax_need로 x/y 단위를 게이트하는데 이 레시피만 누락.",
+     "recommendation": "structural_requires에 axes.y.unit 게이트 추가(형제 _ax_need 헬퍼 재사용). 사용자가 ksi/psi로 준 응력을 MPa로 라벨링하는 사일런트 오류를 막아야 함."
+    },
+    {
+     "severity": "high",
+     "title": "goodman-haigh: 평균/교번응력 단위를 게이트 없이 'MPa'로 묵묵히 채움 (NEVER-invent 위반)",
+     "file": "d:/graph-skill/src/graph_skill/recipes/wave4.py:123",
+     "evidence": "normalize: `unit = str((payload.get(\"axes\") or {}).get(\"unit\", \"MPa\"))` (line 123) 후 x/y 축 양쪽에 적용(line 125-126). structural_requires(line 131-135)는 Su/Se 존재만 검사하고 단위는 게이트하지 않음. 실증: validate.check('goodman-haigh', {'Su':100,'Se':40,...}) -> ok=True; normalize -> x axis = {'label':'Mean stress σm','unit':'MPa','log':False}. catalog: require_axes=False, requires=[]. ask 텍스트에 'MPa' 힌트만 있고 강제는 없음.",
+     "recommendation": "structural_requires에 axes.unit(또는 axes.x/y.unit) 게이트를 추가. Su/Se는 받으면서 그 단위를 묻지 않아 비-MPa 입력이 MPa로 오기됨."
+    },
+    {
+     "severity": "high",
+     "title": "stream-graph: 엔진이 안 읽는 scale:\"log\" 키 방출 — 사용자 로그축 요청이 묵묵히 무시됨 (과거 SRS 버그 패턴)",
+     "file": "d:/graph-skill/src/graph_skill/recipes/leftovers.py:15",
+     "evidence": "_axis 헬퍼: `\"scale\": a.get(\"scale\", \"linear\")` (line 15) — log: 키가 아니라 scale: 키를 방출. StreamGraphRecipe.normalize가 이를 options.axes로 그대로 전달(line 50). 엔진은 log만 읽음: xy-core/engine.js:155 `this.xLog = !!this.opts.axes.x.log;`, plugins/domain-toggle.js:30 `core.xLog = !!(d.axes.x && d.axes.x.log)`. scale→log 변환 레이어 없음(builder.py:59가 norm['options']를 그대로 직렬화). 실증: scale:'log' 입력 시 stream-graph가 {'label':'freq','unit':'Hz','scale':'log'} 방출(log 키 없음) → 엔진 무시. 비교: base-xy는 log:true로 올바르게 변환(base_xy.py:105 `\"log\": a.get(\"scale\",\"linear\")==\"log\"`). stream-graph engine=xy-core 확인됨.",
+     "recommendation": "leftovers.py _axis를 base_xy.py처럼 `\"log\": a.get(\"scale\",\"linear\")==\"log\"`로 교체. 동일 결함이 OverviewDetail(leftovers.py:80, 같은 _axis 사용)에도 전파됨."
+    },
+    {
+     "severity": "medium",
+     "title": "playback 계열(bubble-timeline/animated-trajectory): _axis가 scale:\"log\" 키 방출 — 로그축 무시",
+     "file": "d:/graph-skill/src/graph_skill/recipes/playback.py:27",
+     "evidence": "_axis 헬퍼: `\"scale\": a.get(\"scale\", \"linear\")` (line 27). BubbleTimelineRecipe(line 64)·AnimatedTrajectoryRecipe(line 112)가 이 헬퍼로 axes를 만들어 options에 넣음. 세 타입 모두 catalog engine=xy-core(bubble-timeline/animated-trajectory/bar-chart-race) → 엔진은 axes.x.log만 읽으므로(engine.js:155) scale:'log'는 dead key. 시간축은 보통 선형이라 노출 빈도는 낮지만, leftovers와 동일한 변환 누락 버그.",
+     "recommendation": "playback.py _axis도 log: 불리언 키로 교체해 leftovers/base_xy와 일관화. carrier series 자체(x/y 배열, line 18-22)는 올바름 — 키만 수정하면 됨."
+    },
+    {
+     "severity": "low",
+     "title": "multitrack-stack: 채널별 측정 단위(y)를 게이트 없이 빈 문자열로 묵묵히 채움",
+     "file": "d:/graph-skill/src/graph_skill/recipes/wave5.py:80",
+     "evidence": "cell(): y축 `\"unit\": str(ch.get(\"unit\", \"\"))` (line 80), x축 시간단위는 `xm.get(\"unit\", \"s\")` (line 76)로 묵묵히 's' 가정. structural_requires(line 93-101)는 채널 수·data 존재만 검사하고 채널 unit/축 단위를 게이트하지 않음. 시간축 's'는 멀티트랙 정체성상 합리적 기본값이나, 채널 측정량 단위가 빈 채로 통과됨.",
+     "recommendation": "각 채널의 unit 또는 최소 1개 채널 unit 존재를 게이트하면 NEVER-invent 일관성이 올라감. ask에 이미 'channels:[{name, unit, data...}]'로 unit을 안내하고 있어 강제만 추가하면 됨. (시간축 's' 기본은 허용 가능.)"
+    },
+    {
+     "severity": "info",
+     "title": "fft-spectrum: 진폭(y) 단위를 게이트 없이 빈 문자열로 둠 (params.fs만 게이트)",
+     "file": "d:/graph-skill/src/graph_skill/recipes/fft_spectrum.py:35",
+     "evidence": "`yunit = str(ty.get(\"unit\", \"\"))` (line 35) 후 주파수/시간 양 도메인 y축에 사용(line 37,39). FFTSpectrumRecipe는 structural_requires 미정의(time/freq 단위 게이트 없음). catalog: require_axes=False, requires=['params.fs']만 존재 → fs는 게이트되나 진폭 단위는 빈 채 통과. 다만 fft는 입력 신호 단위를 그대로 전파하는 성격이라 빈 단위가 곧 '미지'를 의미하므로 응력 단위 추측만큼 위험하진 않음(맥락 차이).",
+     "recommendation": "엄격히 하려면 axes.y.unit 존재를 권고 수준으로 안내. 응력 케이스(high)와 달리 물리 정체성이 고정되지 않아 강제 게이트는 선택사항."
+    },
+    {
+     "severity": "info",
+     "title": "carrier series는 전 레시피에서 x/y 배열로 통일 — 과거 playback data:[[x,y]] 버그 미재발",
+     "file": "d:/graph-skill/src/graph_skill/recipes/playback.py:18",
+     "evidence": "_carrier_series(line 18-22)가 주석 'Engine setData reads s.x/s.y arrays'와 함께 `{\"x\":[p[0]...], \"y\":[p[1]...]}`로 변환. 전 carrier(_carrier/_gantt/_tl/_ch/_range/_wf/_v/_pz/_tm/_pc/_tn)가 모두 x/y 배열(grep 확인). assets로 가는 series 중 data:[[x,y]] 형태는 diagnostics.py:37 단 1건이나 이는 graph_ref.payload(중첩 base-xy 재정규화 대상)라 정상. normalize 반환은 전부 {engine, assets, options} 일관(grep 및 base.py:16 계약 확인).",
+     "recommendation": "회귀 방지를 위해 leftovers/playback _axis의 scale→log 키 수정 시 carrier x/y 패턴은 그대로 유지. 별도 조치 불필요."
+    }
+   ]
+  },
+  {
+   "dimension": "엔진 버전 신선도 (Engine version freshness)",
+   "summary": "cad3d-core / xy-core / flow-core 세 엔진의 engine.js가 0.45.0(2026-06-12) P2 백로그 편집으로 수정됐으나 각자의 ENGINE_VERSION 사이드카 파일(0.6.0 / 1.8.1 / 0.6.0)은 그 편집에서 범프되지 않았다. 갤러리는 편집 후 재생성되어 메타가 (미범프된) 현재 버전과 일치하므로 test_gallery_freshness_gate는 통과한다 — 즉 신선도 게이트는 '코드 변경 후 버전 미범프'를 구조적으로 잡지 못한다. 나머지 5개 엔진(polar/field/smith/review-matrix/gauge)은 정합.",
+   "findings": [
+    {
+     "severity": "high",
+     "title": "cad3d-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 0.6.0 미범프",
+     "file": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js",
+     "evidence": "engine.js mtime = 2026-06-12 04:34:04, ENGINE_VERSION mtime = 2026-06-10 23:06:49 (내용 '0.6.0'). CHANGELOG.md:3-9 '## 0.45.0 (2026-06-12) ... P2 잔여: 3D 컨투어 unlit 정점색(변형/모드는 음영 유지)' — cad3d-core 대상 편집이 0.45.0(06-12) 차수에 포함됨. 그러나 ENGINE_VERSION 파일은 06-12 편집 세션에서 갱신되지 않았고 여전히 0.6.0. 갤러리 cad-3d-viewer.html / mesh-result-3d.html / mode-shape-3d.html 모두 'cad3d-core@0.6.0'으로 구움.",
+     "recommendation": "docs/SKILL-PLAN.md:833 '[카탈로그/버전] ENGINE_VERSION bump 판단(훅 변경=major)' 규약에 따라 cad3d-core ENGINE_VERSION을 0.6.0 → 0.6.1(또는 훅/렌더 변경 정도에 따라 그 이상)로 범프하고 build_gallery.py로 cad3d 산출물을 재생성하라."
+    },
+    {
+     "severity": "high",
+     "title": "xy-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 1.8.1 미범프",
+     "file": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+     "evidence": "engine.js mtime = 2026-06-12 04:34:04, ENGINE_VERSION mtime = 2026-06-11 07:11:05 (내용 '1.8.1'). CHANGELOG.md:9 'P2 잔여: ... xy 제목 말줄임(컨트롤바 겹침 해소)' — xy-core 대상 편집이 0.45.0(06-12)에 포함. engine.js는 06-12 04:34에 수정됐으나 ENGINE_VERSION은 그 이전(06-11 07:11)이 마지막이며 1.8.1 그대로. 갤러리 base-xy.html은 'xy-core@1.8.1'로 구움(약 60개 xy 계열 타입 동일).",
+     "recommendation": "xy-core ENGINE_VERSION을 1.8.1 → 1.8.2로 범프 후 build_gallery.py 재생성. xy-core는 base-xy 등 다수 타입의 기반이라 메타 라벨이 가장 광범위하게 영향받음."
+    },
+    {
+     "severity": "high",
+     "title": "flow-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 0.6.0 미범프",
+     "file": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+     "evidence": "engine.js mtime = 2026-06-12 04:34:04, ENGINE_VERSION mtime = 2026-06-10 23:06:49 (내용 '0.6.0'). CHANGELOG.md:10 'P2 잔여: ... 네트워크 반발력 그리드 근사(n>150)' — network(flow-core) 대상. flow-core/engine.js는 06-12 04:34 수정됐으나 ENGINE_VERSION은 06-10이 마지막이며 0.6.0 유지. 갤러리 flowchart.html / sankey-diagram.html / network-graph.html 모두 'flow-core@0.6.0'.",
+     "recommendation": "flow-core ENGINE_VERSION을 0.6.0 → 0.6.1로 범프 후 build_gallery.py 재생성."
+    },
+    {
+     "severity": "medium",
+     "title": "신선도 게이트가 '코드 변경 후 버전 미범프' 케이스를 구조적으로 탐지하지 못함",
+     "file": "D:\\graph-skill\\tests\\test_ux_p2.py:56",
+     "evidence": "test_gallery_freshness_gate는 갤러리 메타 '<fam>@<ver>'를 assets.engine_version(fam)와만 비교한다(test_ux_p2.py:67-73). 버전이 미범프(0.6.0/1.8.1 고정)되고 갤러리가 06-12 07:21에 재생성되어 메타도 동일 버전을 박았으므로 ver == cur → 게이트 통과. 즉 'ENGINE_VERSION을 올렸는데 갤러리 미재생성'만 잡고, 'engine.js를 고쳤는데 ENGINE_VERSION을 안 올림'은 못 잡는다. 또한 engine.js/ENGINE_VERSION 어디에도 인라인 버전 상수가 없어(grep ENGINE_VERSION/VERSION in *.js → no match) 코드↔버전 정합은 mtime 외 신호가 없다.",
+     "recommendation": "엔진 자산 변경 시 버전 범프를 강제하려면 별도 게이트가 필요하다: 예) ENGINE_VERSION mtime >= engine.js/engine.css mtime 검사, 또는 pre-commit에서 engine.js diff 시 ENGINE_VERSION 동시 변경 요구, 또는 engine.js 내용 해시를 ENGINE_VERSION 옆에 고정하고 불일치 시 실패."
+    }
+   ]
+  },
+  {
+   "dimension": "테스트 커버리지 갭 (graph-skill — 119 타입 / node 21 / postprocess 자체검증)",
+   "summary": "119개 타입은 전부 build_gallery.py MAP에 fixture와 매핑되어 있고 playwright_smoke.py가 갤러리 전체를 헤드리스 Chromium에서 부팅·검증하므로 \"렌더 미커버 타입\"은 0건이다. 단, node_*.mjs 21개는 전 타입을 부팅하지 않고 약 50개 타입/특정 엔진(주로 xy-core·field-core·polar-core·일부 flow/cad3d/smith)만 커버하며 review-matrix·gauge-core·flow-core·playback·schedule 계열 다수 타입은 node 레벨 검증이 없다(이들은 playwright/pytest로만 커버). postprocess 자체 수치검증은 srs/experiment/photometry/touchstone 대부분 있으나 experiment.linear_fit, photometry.gamut_area_ratio, photometry.band_edges 3개 함수는 전용 수치 self-check가 없다(렌더 경로로만 간접 실행).",
+   "findings": [
+    {
+     "severity": "info",
+     "title": "119개 타입 전부 fixture+렌더 커버됨 (미커버 타입 0건)",
+     "file": "d:\\graph-skill\\build_gallery.py:23-143",
+     "evidence": "build_gallery.py MAP 항목 수 = 119, types.json 타입 수 = 119, 차집합(types NOT in gallery MAP) = [] (검증 스크립트 출력). 각 MAP 항목은 (type, fixture)로 fixtures/*.json을 로드해 builder.render()로 렌더하고 lint['ok']를 강제한다. playwright_smoke.py는 graph-out/gallery/*.html 전부를 headless Chromium에서 goto→__graph 부팅·canvas 그려짐(maxLen>1500)·콘솔/페이지 에러 0을 확인한다. test_ux_p2.py:56 test_gallery_freshness_gate가 엔진 버전 스테일을 CI 실패로 막는다.",
+     "recommendation": "현 상태 유지. '렌더/검증되지 않는 타입'은 없음 — 단 fixture 파일은 113개로 119<MAP인데, 이는 field.json(contour/heatmap/scalar/mcae 4타입 공유), pattern.json(polar/rf 공유), design_state.json(review-matrix/design-state/single-state 공유) 등 한 fixture를 여러 타입이 재사용하기 때문이며 누락이 아니다."
+    },
+    {
+     "severity": "low",
+     "title": "node_*.mjs는 전 타입을 부팅하지 않음 — review-matrix/gauge-core/flow-core/playback/schedule 계열은 node 미검증",
+     "file": "d:\\graph-skill\\tests\\node_phaseH.mjs, node_wave1.mjs, node_wave2.mjs, node_wave3.mjs (+17)",
+     "evidence": "21개 node 테스트가 참조하는 HTML 산출물을 전부 추출한 결과 약 50개 타입만 커버: phase1~8(stress_strain·correlation·force_displacement·design_state·field·fft·filter·bar·box·errbar·histogram·bode·dual·pattern·radar), phaseF(ecdf·pareto·qq·spc), phaseG(cfd_line·convergence·interaction·main_effects·nonlinear_ld·sn_curve·transient), phaseH(campbell·capability·km·mac·paris·rainflow·vquiver·weibull), wave1(pdf-kde·ridgeline·scatter-matrix·spectrogram), wave2(area·stacked-area·violin·waterfall), wave3(nichols·parallel-coordinates·wind-rose), cad3d(cad-3d-viewer), smith(smith-chart), controls(base_xy·nyquist·rootlocus), diagnostics(residual), parcoord_brush(parallel-coordinates). gauge-core 5타입(gauge·radial-progress·bullet-chart·stat-card·spec-margin-chart), flow-core 5타입(flowchart·sankey-diagram·network-graph·chord-diagram·sunburst), playback 3타입(bubble-timeline·animated-trajectory·bar-chart-race), schedule 5타입(gantt·milestone-timeline·calendar-heatmap·task-table·work-plan), review-matrix 표 다수(kpi-scorecard·decision-matrix·multitrack-stack 등), EC/MTE/EXT 신규 30여 타입(srs·emi·zth·pdn·tempcycle·derating·battery·meshconv·stresslin·hysteresis·thermalresp·nusselt·frf·allan·calibration·cie·octave·tornado·motortn·vswr·dma·test-report)은 node_*.mjs가 읽는 \"*.html\" 목록에 없음.",
+     "recommendation": "node 스텁은 canvas/DOM 상호작용(컨트롤·브러시·LTTB 등) 회귀 검증 용도라 의도적으로 일부만 커버하는 설계로 보이며, 이들 타입은 playwright_smoke.py(실브라우저 부팅)와 pytest(test_ecae/test_mte/test_ext/test_gauges/test_schedule/test_relations/test_playback 등)로 커버된다. 진짜 갭은 아니므로 추가 node 테스트는 선택사항. 다만 '전 타입 node 부팅'이라는 기대가 있다면 사실과 다름을 명확히 할 것."
+    },
+    {
+     "severity": "low",
+     "title": "experiment.linear_fit — 전용 수치 self-check 없음 (calibration-curve 렌더로만 간접 실행)",
+     "file": "d:\\graph-skill\\src\\graph_skill\\postprocess\\experiment.py:147",
+     "evidence": "tests 전체에서 'linear_fit' 문자열 0건(grep 결과 없음). test_mte.py가 ex.richardson/stress_linearize/loop_energy/thermal_rc_fit/power_fit/allan_deviation는 각각 known-value로 수치 검증하지만 linear_fit(slope/intercept/R²/residual 반환, calibration-curve가 사용)은 기울기/절편/R² 복원 단위테스트가 없다. test_mte.py:32의 calibration-curve render+lint 통과와 :98 gating만으로 간접 실행될 뿐 수치 정확성 단언이 없음.",
+     "recommendation": "y=a+bx 합성데이터로 ex.linear_fit(x,y)의 slope/intercept/r2/resid를 기댓값과 대조하는 단위테스트를 test_mte.py에 추가(예: y=3x+2 → slope≈3, intercept≈2, r2≈1)."
+    },
+    {
+     "severity": "low",
+     "title": "photometry.gamut_area_ratio · photometry.band_edges — 전용 수치 self-check 없음",
+     "file": "d:\\graph-skill\\src\\graph_skill\\postprocess\\photometry.py:96,110",
+     "evidence": "tests 전체에서 'gamut_area_ratio', 'band_edges' 문자열 0건(grep 결과 없음). test_ext.py는 ph.spectral_locus(CIE 앵커 520/700/480nm)와 ph.spectrum_to_third_octave(+3dB 에너지합)만 직접 수치 검증한다. gamut_area_ratio(삼각형 면적비 — cie-chromaticity의 '면적비' 제목 산출에 사용)와 band_edges(1/3옥타브 상하한 fc/2^(1/6)·fc·2^(1/6))는 cie/octave 렌더 경로로만 간접 실행되고 자체 수치 단언이 없다. test_ext.py:42는 제목에 '면적비' 문자열 존재만 확인할 뿐 면적비 값 정확성은 검증하지 않음.",
+     "recommendation": "gamut_area_ratio: 동일 삼각형 비=1.0, 절반 스케일=0.25 등 닫힌형 케이스 단언 추가. band_edges: band_edges(1000) → (≈891.0, ≈1122.5) 같은 기지값 대조 추가(test_ext.py)."
+    },
+    {
+     "severity": "info",
+     "title": "srs/touchstone postprocess는 자체 수치검증 완비 — 갭 아님",
+     "file": "d:\\graph-skill\\tests\\test_ecae.py:34, d:\\graph-skill\\tests\\test_ext.py:83",
+     "evidence": "srs: test_ecae.py:34 test_srs_physics가 _srs.half_sine(1500g/0.5ms)→_srs.srs_maximax의 저주파 rolloff(<300)·maximax 증폭(1200<max<3000)을 물리 기반으로 검증. touchstone: test_ext.py:83 test_s2p_parser_formats가 ts.parse_s2p의 DB/RI/MA 3포맷 + VSWR(-9.54dB→2.0) + z0(50/75) + 복소 변환을 단언하고, to_tool_payload는 tools.ingest_s2p(test_ext.py:94)로 커버(tools.py:315가 to_tool_payload 호출). 즉 질문에서 지목한 srs·touchstone은 자체 수치검증이 존재함.",
+     "recommendation": "조치 불필요. 질문의 'srs/touchstone 미검증' 가설은 사실이 아님을 기록."
+    }
+   ]
+  },
+  {
+   "dimension": "문서 드리프트 (README / CHANGELOG / SKILL.md / docs vs 실제 코드)",
+   "summary": "타입수(119)·카테고리(19)는 정확하나, \"9 엔진 패밀리\"와 \"396+ tests\", xy-core \"80+/60여 종\" 같은 핵심 수치가 실제(8 엔진 / 381 tests / 73 xy-core 타입)와 어긋난다. docs 로드맵의 \"완료\" 항목(P2 잔여 3건, unlit 정점색, 네트워크 그리드 근사, xy 제목 말줄임)은 샘플 점검 결과 실제 구현이 확인되어 일치한다. 즉 드리프트는 \"규모 수치\" 영역에 집중되어 있다.",
+   "findings": [
+    {
+     "severity": "high",
+     "title": "\"9 엔진 패밀리\" 수치 오류 — 실제 엔진 패밀리는 8개",
+     "file": "D:/graph-skill/README.md:13",
+     "evidence": "README:13 \"119 그래프 타입 / 9 엔진 패밀리 / 19 분류 카테고리\". 동일 주장이 CHANGELOG.md:25(\"엔진 패밀리 9개 구축(field/polar/smith/review-matrix/flow/gauge/cad3d + linked-view 버스)\") 및 SKILL.md:7(\"9개 패밀리 / 119+ 타입\")에도 반복. 그러나 실제로는 data/engines 디렉터리에 정확히 8개만 존재: cad3d-core, field-core, flow-core, gauge-core, polar-core, review-matrix, smith-core, xy-core. 각각 ENGINE_VERSION이 baked됨(xy-core 1.8.1, review-matrix 0.7.0, flow-core 0.6.0, cad3d-core 0.6.0, field-core 0.4.0, gauge/polar/smith-core 0.3.0). catalog 119타입을 resolve_type으로 전수 분해해도 distinct engine = 8 (xy-core 73 / field-core 12 / review-matrix 12 / cad3d-core 7 / flow-core 5 / gauge-core 5 / polar-core 4 / smith-core 1). 9번째로 세는 \"linked-view\"는 엔진 패밀리가 아니라 xy-core 위에 얹힌 플러그인 버스다 — SKILL.md:19 표 자신도 \"(linked) | plugin 버스\"로 분류하고, 해당 plugin(brushlink.js/xsync.js/xfollow.js/xbrush.js)들은 data/engines/xy-core/plugins/ 아래에 있다(독립 engines 디렉터리 없음).",
+     "recommendation": "README:13 / CHANGELOG:25 / SKILL.md:7 의 \"9 엔진 패밀리\"를 \"8 엔진 패밀리(+ linked-view 플러그인 버스)\"로 정정. linked-view를 굳이 강조하려면 엔진 카운트에서 분리해 표기."
+    },
+    {
+     "severity": "high",
+     "title": "\"396+ tests\" 과대 표기 — 실제 pytest는 381 passed (1 skipped)",
+     "file": "D:/graph-skill/README.md:54",
+     "evidence": "README:54 \"pytest tests/ -q            # 396+ tests (수치 검증·게이트·결정성·실브라우저 시각)\". 실제 실행 결과: `python -m pytest tests/ -q` → \"381 passed, 1 skipped in 10.72s\" (collect-only도 \"381 tests collected\"). 396은 실제 수집/통과 수보다 15건 많다.",
+     "recommendation": "README:54 의 \"396+ tests\"를 실제 수(\"381 passed\")로 정정하거나, node .mjs/실브라우저 스모크까지 합산한 수치임을 명시. 단순 pytest 수치로 읽히므로 현재는 오해 소지."
+    },
+    {
+     "severity": "medium",
+     "title": "xy-core 타입수 표기 불일치 — README \"80+\" / SKILL.md \"60여 종\" vs 실제 73",
+     "file": "D:/graph-skill/README.md:16",
+     "evidence": "README:16 \"xy-core(Canvas 2D, 80+ 타입·플러그인 25종)\". SKILL.md:11 \"base-xy 계열 60여 종(+playback/treemap 등 plugin)\". 실제 catalog를 resolve해 engine별 집계하면 xy-core = 73 타입. 즉 README는 과대(80+), SKILL.md는 과소(60여)로 서로 어긋나고 둘 다 실제값(73)과 다르다. 플러그인은 data/engines/xy-core/plugins/*.js = 26개(README의 \"25종\"은 1 차이).",
+     "recommendation": "두 문서의 xy-core 타입수를 실제 73으로 통일. 플러그인 25→26 정정(경미)."
+    },
+    {
+     "severity": "low",
+     "title": "PUBLISH-INSIGHTS 백로그가 이미 해결된 항목(mesh-result-3d unlit 정점색)을 미해결로 표기",
+     "file": "D:/graph-skill/docs/PUBLISH-INSIGHTS.md:42",
+     "evidence": "PUBLISH-INSIGHTS.md:42 백로그에 \"mesh-result-3d 정점색이 조명에 묻혀 어두움 — ... unlit(or emissive=vertexColor) 재질 옵션 검토(시각 영향 커서 별도 차수)\"로 미해결처럼 남아있다. 그러나 CHANGELOG.md:9는 이를 0.45.0에서 해결(\"3D 컨투어 unlit 정점색(변형/모드는 음영 유지)\")로 기록했고, 실제 cad3d-core/engine.js:107-110 에 구현되어 있음: \"// CAE 컨투어 관례: 정점색 결과는 unlit(조명 무관 원색) — m.lit=true로 음영 복원 가능\" → contour는 MeshBasicMaterial(vertexColors), 그 외 MeshStandardMaterial. 즉 백로그 항목은 이미 출시됨. (단 이 문서는 0.42.1 시점 스냅샷이라 시점차에 의한 staleness 성격.)",
+     "recommendation": "PUBLISH-INSIGHTS.md 는 시점 스냅샷이므로 헤더에 \"0.42.1 시점\" 명시가 이미 있다. 혼동을 줄이려면 해당 백로그 줄에 \"(0.45.0 해결됨)\" 주석을 달거나 CHANGELOG로의 cross-link 추가."
+    },
+    {
+     "severity": "info",
+     "title": "docs 로드맵 \"완료\" 주장 샘플 점검 — 실제 구현 확인됨 (드리프트 아님)",
+     "file": "D:/graph-skill/docs/UX-ROADMAP.md:3",
+     "evidence": "UX-ROADMAP.md:3 \"P0 12 + P1 11 + P2 7 — 로드맵 30건 전체 구현·검증 완료 (0.42.0)\". CHANGELOG.md:10 0.45.0 \"P2 잔여\" 3건을 샘플 검증: (1) \"3D 컨투어 unlit 정점색\" → cad3d-core/engine.js:107-110 구현 확인. (2) \"네트워크 반발력 그리드 근사(n>150)\" → flow-core/engine.js:279-289 \"if (nodes.length <= 150) ... else grid-bucket far-field approximation (O(n·k))\" 구현 확인. (3) \"xy 제목 말줄임(컨트롤바 겹침 해소)\" → xy-core/engine.js:429-435 컨트롤바 폭(cbW) 차감 후 measureText 기반 말줄임 루프 구현 확인. 카테고리수도 taxonomy.grouped() = 19로 문서(19)와 정확히 일치. 따라서 로드맵/CHANGELOG의 구현 완료 주장은 샘플 범위에서 실제와 일치 — 수치 외 내용 드리프트는 발견되지 않음.",
+     "recommendation": "조치 불필요. 위 high/medium 수치 항목만 정정하면 문서 정확성이 회복됨."
+    }
+   ]
+  },
+  {
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)",
+   "summary": "빌드 결정성(동일 입력→동일 바이트)·시크릿 위생은 견고하나, 셀프컨테인드 게이트(lint_self_contained)에 실재하는 우회 구멍이 1건 있다. image 셀의 외부 URL(image.ref=https://...)이 JSON config 채널로 산출 HTML에 들어가 런타임에 img.src로 외부 fetch되지만, 정적 정규식 게이트가 src=/href= 속성만 검사하므로 external_urls=0/ok=True로 통과한다(review-matrix·flow-core 양쪽, 실증 확인). 그 외 dict/set 순서 의존·float 포맷·하드코딩 시크릿 위반은 발견되지 않았다.",
+   "findings": [
+    {
+     "severity": "high",
+     "title": "셀프컨테인드 게이트 우회: image.ref 외부 URL이 config 채널로 들어가 lint를 통과 (실증)",
+     "file": "src/graph_skill/serialize.py:41-55, src/graph_skill/data/engines/review-matrix/engine.js:224, src/graph_skill/data/engines/flow-core/engine.js:552, src/graph_skill/recipes/matrix_compare.py:10,80-84",
+     "evidence": "게이트 정규식은 정적 HTML 속성만 본다: _EXTERNAL_URL = re.compile(r'(?:src|href)\\s*=\\s*[\"\\'](?:https?:)?//'). 엔진 JS는 런타임에 외부 ref를 가져온다: img.src = c.image.mode === \"inline\" ? (\"data:\"+...) : (c.image.ref || \"\") (review-matrix engine.js:224, flow-core engine.js:552). matrix_compare._cell은 image를 검증 없이 통과시킨다(_CELL_KEYS에 'image' 포함, line 81-83 'for k in _CELL_KEYS: if k in c: out[k]=c[k]'). 실제 빌드 실증: single-state-checklist에 {'kind':'image','image':{'mode':'ref','ref':'https://evil.example.com/track.png'}} 페이로드로 render → 결과 LINT {'ok': True, 'external_urls': 0, 'self_contained': True} 인데 HTML 본문에는 'tems\":[{\"cells\":{\"s1\":{\"image\":{\"mode\":\"ref\",\"ref\":\"https://evil.example.com/track.png\"}...' 가 그대로 존재. 즉 외부 URL 0 계약이 깨지지만 게이트는 통과. flowchart도 동일(recipes/flowchart.py:12 _PASS_CONTENT에 'image' 포함, 검증 없이 통과).",
+     "recommendation": "게이트를 데이터 채널까지 확장: (1) lint_self_contained에 #graph-config JSON을 파싱해 image.ref(및 link/href 류) 값에 http(s)://·protocol-relative // 가 있으면 위반으로 카운트하거나, 정규식에 \"ref\":\"https?://... / \"data\":... 외 URL 패턴을 추가. (2) 또는 빌드 시점에 matrix_compare/flowchart 레시피에서 image.mode != 'inline' 이면서 ref가 http(s)/외부 스킴이면 거부(MissingFieldsError)하고 인라인 data: base64만 허용. 게이트가 산출물의 모든 외부 참조 경로(정적+동적)를 덮어야 '외부 URL 0' 계약이 실효성을 가진다."
+    },
+    {
+     "severity": "low",
+     "title": "gantt/timeline 플러그인의 client-side TODAY 마커가 런타임 시계 의존 (의도된 동작이나 런타임 비결정성)",
+     "file": "src/graph_skill/data/engines/xy-core/plugins/gantt.js:13,117-119, src/graph_skill/data/engines/xy-core/plugins/timeline.js:10,57-58",
+     "evidence": "function todayEpochDay() { var d = new Date(); return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / dayMs()); } 가 onDrawOutside에서 호출됨. 주석이 명시: '// today line (client-side: shows the date the report is VIEWED)'. c.today !== false 로 게이트되고, 레시피가 미리 계산한 데이터가 아니라 브라우저 현재시각에 따라 그려지는 위치가 달라진다.",
+     "recommendation": "빌드 바이트 결정성에는 영향 없음(빌드 시 new Date() 미호출 — 2회 렌더 sha 동일 실증함). 다만 '결정적 시각 산출물'이 필요한 게시/회귀 스냅샷이라면 today 마커를 끄거나(today:false), 레시피가 today를 epoch-day 상수로 주입해 런타임 new Date()를 제거하는 옵션을 권장. 현재는 의도된 viewer-time 표시이므로 위반보다는 주의 사항."
+    },
+    {
+     "severity": "low",
+     "title": "NaN/Inf 직렬화는 fail-closed지만 상류 sanitize 누락 시 빌드가 ValueError로 중단 (자인된 gap)",
+     "file": "src/graph_skill/serialize.py:34, src/graph_skill/postprocess/reliability.py:27, src/graph_skill/postprocess/gaugerr.py:44, src/graph_skill/postprocess/treemap.py:36",
+     "evidence": "safe_js_literal: json.dumps(..., allow_nan=False)  # 주석: 'NaN/Inf must be replaced with null upstream (gap)'. 일부 후처리가 비유한값을 생성: reliability.py:27 eta = ... else float(\"nan\"); gaugerr.py:44 ndc = ... else float(\"inf\"); treemap.py:36 return float(\"inf\"). 이 값이 config(assets/options)에 도달하면 json.dumps가 예외를 던져 빌드가 막힌다(결정성은 유지 — 같은 입력은 항상 같은 실패).",
+     "recommendation": "비결정성 위반은 아님(결정적으로 실패). 다만 강건성·UX 차원에서 직렬화 직전 config를 순회해 NaN/±Inf를 null로 치환하는 sanitize 단계를 추가하면 자인된 gap이 닫힌다. statistical.py:96(math.inf,-math.inf), stress_strain.py:55(float('-inf'))는 min/max 누산기 시드로 확인됨 — 산출물에 새지 않으므로 무해."
+    },
+    {
+     "severity": "info",
+     "title": "결정성: dict/set 순서 의존 없음 — 점검한 모든 set은 멤버십 전용이거나 sorted, dict 반복은 입력순서 보존",
+     "file": "src/graph_skill/recipes/relations.py:13-21, src/graph_skill/recipes/leftovers.py:24-33, src/graph_skill/recipes/schedule.py:183-193, src/graph_skill/recipes/testreport.py:30, src/graph_skill/serialize.py:29-35, src/graph_skill/builder.py:50-52,120, src/graph_skill/catalog.py:79-86",
+     "evidence": "relations.py: seen=set(have)는 'v not in seen' 멤버십 검사에만 쓰이고 출력은 links 리스트 순서로 append. leftovers.py: xset=set() 뒤 xs=sorted(xset). schedule.py: seen_m set은 멤버십 전용, 출력은 range() 루프. testreport.py:30: payload.get('info').items() 반복(파이썬 3.7+ 삽입순서 보존 → 동일 입력 동일 출력). serialize.safe_js_literal: json.dumps(sort_keys=True, separators=(',',':')). builder.assemble: engines/pairs를 sorted()로 정렬해 번들. builder.render: write_text(newline='\\n')로 CRLF 변환 차단. catalog.resolve_type: reversed(chain) 부모→자식 결정적 누산. 2회 렌더 바이트 동일(sha 일치) 실증.",
+     "recommendation": "조치 불필요. 빌드 결정성 계약(same input → same bytes)은 코드·실증 모두에서 충족됨."
+    },
+    {
+     "severity": "info",
+     "title": "보안: 하드코딩 시크릿/토큰/비밀번호 없음 — 토큰은 gitignore된 런타임 파일에서 로드",
+     "file": "tests/verify_publish.py:16,30, src/graph_skill/settings.py:1, .gitignore:7,13",
+     "evidence": "verify_publish.py:16 TOKEN = (ROOT/'graph-out'/'publish'/'_tok.txt').read_text(...).strip() — 하드코딩이 아니라 외부 파일 로드. .gitignore에 'graph-out/'와 'graph-out/publish/_tok.txt' 양쪽 등재, git ls-files에 _tok 트랙된 파일 없음, 디스크에도 _tok.txt 부재. settings.py:1 '# Runtime settings — no network, no tokens'. 코드/픽스처/문서 전수 grep(password|api_key|secret|bearer|sk-|ghp_|AKIA…)에서 venv 제외 시 실 시크릿 매치 0 (히트는 모두 CSS 'design tokens', 그래프 타입명 'eye-mask', 코드 substring 마커 'token').",
+     "recommendation": "조치 불필요. 시크릿 위생 양호."
+    },
+    {
+     "severity": "info",
+     "title": "보안: 엔진/레시피에 CDN·외부 스크립트/스타일 참조 없음 — three.js는 인라인 vendor, http URL은 주석·SVG 네임스페이스뿐",
+     "file": "src/graph_skill/data/vendor/manifest.json, src/graph_skill/data/engines/flow-core/engine.js:13,877, src/graph_skill/data/shell/template.html",
+     "evidence": "src=/href=//, cdn., unpkg/jsdelivr/cdnjs/googleapis 전수 grep: 데이터 트리에서 매치 0 (manifest.json의 'source: unpkg three@0.128.0'는 빌드 출처 메타데이터일 뿐 런타임 참조 아님). 검출된 http(s) URL은 (a) vendor/GLTFLoader.js의 스펙 링크 주석, (b) flow-core engine.js:13 SVGNS='http://www.w3.org/2000/svg' 및 :877 setAttribute('xmlns', ...) — W3C 네임스페이스 식별자(네트워크 fetch 아님)로, 게이트 정규식이 xmlns=를 매치하지 않아 올바르게 비위반 처리됨. template.html은 {{ENGINE_JS}}/{{CSS}}/{{VENDOR}}를 전부 인라인 <script>/<style>로 임베드.",
+     "recommendation": "조치 불필요. CDN/외부 리소스 0 계약 충족(단, 위 high 항목의 데이터 채널 우회는 별개로 처리 필요)."
+    }
+   ]
+  },
+  {
+   "dimension": "수치 후처리 정확성 (graph-skill/postprocess)",
+   "summary": "도메인 수치 함수들은 인용된 표준/공식과 대체로 정확히 일치한다 — SRS Smallwood 계수(Irvine/Smallwood 발표형과 비트단위 동일, DC gain=1.0), Richardson/GCI(Celik 2008 정확), CIE 1931 locus(실제 공식표, 앵커 <5e-4 오차), VSWR(-9.5424dB→2.0 정확, import-time self-check 존재), 옥타브 +3.0103dB, Allan -1/2 기울기, marching tetrahedra(구 표면적 0.3% 오차) 모두 검증 통과. 테스트 앵커들은 형식이 아니라 실제 수학값을 잠근다. 다만 (1) SRS/half_sine의 저샘플레이트 경계에서 조용한 실패 2건, (2) 사다리꼴 적분 기반 bending 응력의 정확도 한계, (3) gamut '면적비'를 커버리지로 오해할 소지가 발견됨.",
+   "findings": [
+    {
+     "severity": "low",
+     "title": "SRS: Nyquist가 fn_lo보다 낮으면 비단조·초과-Nyquist 주파수 그리드를 조용히 반환",
+     "file": "src/graph_skill/postprocess/srs.py:15-18",
+     "evidence": "fn_hi=min(fn_hi, fs/2.0) 후 n_oct=log2(fn_hi/fn_lo). fs=15(Nyquist 7.5) < fn_lo=10이면 n_oct=-0.415(음수), npts=max(2, round(neg)+1)=2가 되어 fns=[10.0, 7.5]를 생성. fns[0]=10Hz가 Nyquist 7.5Hz를 초과(에일리어싱)하고 그리드가 내림차순(비단조). SDOF 필터를 Nyquist 위에서 평가하므로 물리적으로 무의미한 값을 에러 없이 반환. 게이팅(test_ecae gating)은 accel 샘플 개수만 검사하고 이 경우를 막지 못함.",
+     "recommendation": "fn_lo >= fs/2.0이면 None 반환 또는 ValueError. 최소한 fns를 fn_lo<fn_hi(=fs/2) 조건으로 필터링하고, n_oct<=0이면 빈/단일점 처리하여 Nyquist 초과 주파수가 그리드에 들어가지 않게 한다."
+    },
+    {
+     "severity": "low",
+     "title": "half_sine: 펄스가 언더샘플되면 진폭이 조용히 0으로 붕괴",
+     "file": "src/graph_skill/postprocess/srs.py:53,57",
+     "evidence": "n_pulse=max(2,int(round(duration_ms*1e-3*fs))). half_sine(1500, 0.001, 1000)처럼 duration_ms*fs가 작아 round가 0이 되면 n_pulse=2로 강제됨. 이때 sig=[peak*sin(pi*0/1), peak*sin(pi*1/1)]=[sin0, sin(pi)]=[0, ~1.8e-13]. 실측 peak=1.84e-13으로 1500g 펄스가 사실상 0 신호가 됨. 경고 없이 빈 펄스를 만들어 후속 SRS가 0 스펙트럼을 산출.",
+     "recommendation": "duration_ms*1e-3*fs < ~ (예: 4) 이면 ValueError로 '샘플레이트가 펄스 폭에 비해 너무 낮음'을 알린다. 또는 n_pulse 하한을 최소 해상도(예: 8~10)로 올리고 그에 못 미치면 거부."
+    },
+    {
+     "severity": "info",
+     "title": "stress_linearize: bending 모멘트를 사다리꼴 적분해 선형장에서도 정확히 복원 못함",
+     "file": "src/graph_skill/postprocess/experiment.py:55-56",
+     "evidence": "mom=trapz([sig*(xm-xi)…])는 sig가 선형이면 피적분함수가 2차식이라 사다리꼴 규칙이 정확하지 않음. σ(x)=200-30x, t=4의 이론 bending=60.0인데 코드는 60.019(0.03% 오차) 반환. 테스트(test_mte.py:48)는 tol<0.05로 이 오차를 통과시킴. ASME 선형화는 본래 정확 적분을 기대(σm+σb=경로끝값)하는데 sm+sb=200.019≠200.0.",
+     "recommendation": "수치 오차는 작아 실무상 무해하나, 표준 ASME식과의 정합을 원하면 1차 모멘트를 해석적/심프슨 적분하거나, 균일 그리드 가정 시 닫힌형 membrane=(Σσ_i 가중)·… 사용. 최소한 docstring에 '사다리꼴 → 2차 피적분 시 미소 오차' 명시."
+    },
+    {
+     "severity": "info",
+     "title": "gamut_area_ratio: 단순 삼각형 면적비를 '커버리지/면적비 %'로 표기 — >100% 및 비-중첩 왜곡",
+     "file": "src/graph_skill/postprocess/photometry.py:96-101, src/graph_skill/recipes/ext.py:46-47",
+     "evidence": "gamut_area_ratio=area(measured)/area(ref)로 교집합이 아닌 면적비. DCI-P3/sRGB=135.7%, BT2020/sRGB=189.1% 산출됨. 영역이 다른 곳을 덮어도 면적만 같으면 100%로 보고하고, 넓지만 어긋난 색역이 100% 초과를 보고 → 'coverage'로 오해 가능. recipe 타이틀은 '면적비 X% vs <ref>'로 노출. docstring은 '커버리지 % 근사용, 단순 면적비'라 한계를 솔직히 명시하긴 함.",
+     "recommendation": "진짜 커버리지가 필요하면 측정삼각형∩기준삼각형 면적/기준면적(Sutherland-Hodgman 클리핑)으로 계산. 현 함수 유지 시 라벨을 '상대 면적비(커버리지 아님)'로 명확히 하여 >100% 값의 의미 오해 방지."
+    }
+   ]
+  }
+ ],
+ "confirmed": [
+  {
+   "severity": "high",
+   "title": "stress-linearization: 응력 단위를 게이트 없이 'MPa'로 묵묵히 채움 (NEVER-invent 위반)",
+   "file": "d:/graph-skill/src/graph_skill/recipes/mte.py:75",
+   "evidence": "normalize: `s_unit = str(((payload.get(\"axes\") or {}).get(\"y\") or {}).get(\"unit\", \"MPa\"))` (line 75), x도 `payload.get(\"x_unit\", \"mm\")` (line 76). 그러나 structural_requires(line 80-84)는 path 길이만 검사하고 axes.y.unit을 게이트하지 않음. 실증: 단위 없는 응력 path 입력 시 validate.check('stress-linearization', {...}) -> ok=True, missing=[]; normalize -> y axis = {'label':'응력','unit':'MPa'}. catalog: require_axes=False, requires=[]. 형제 HysteresisRecipe(line 113-116)는 _ax_need로 x/y 단위를 게이트하는데 이 레시피만 누락.",
+   "recommendation": "structural_requires에 axes.y.unit 게이트 추가(형제 _ax_need 헬퍼 재사용). 사용자가 ksi/psi로 준 응력을 MPa로 라벨링하는 사일런트 오류를 막아야 함.",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)",
+   "verdict": {
+    "title": "stress-linearization: 응력 단위를 게이트 없이 'MPa'로 묵묵히 채움 (NEVER-invent 위반)",
+    "real": true,
+    "corrected_severity": "medium",
+    "note": "코드를 직접 읽고 실증으로 재확인 — 진짜 문제. mte.py:75 `s_unit = str(((payload.get(\"axes\") or {}).get(\"y\") or {}).get(\"unit\", \"MPa\"))`, :76 `x_unit` 기본 \"mm\" 확인. structural_requires(:80-84)는 path 길이(<3)만 검사하고 axes.y.unit을 게이트하지 않음. catalog(types.json:1530-1542)는 require_axes=false, requires=[] 확인. 실증 재현: validate.check('stress-linearization', {'path':[[0,100],[0.5,80],[1.0,60]]}) -> ok=True, missing=[]; normalize -> y={'label':'응력','unit':'MPa'}, x 단위 'mm'. 형제 비교 실증: hysteresis-loop -> missing=['axes.x','axes.y'], mesh-convergence -> missing=['axes.y'] (둘 다 _ax_need로 게이트). 이 레시피만 누락 = 실제 비대칭. 중요: stress_linearize(experiment.py:40-58)는 단위 변환을 전혀 하지 않고 사용자 sigma를 선형 연산만 함 -> 입력 단위는 진짜 미상. 형제 stress-strain은 'MPa' 하드코딩이지만 σ=F/A0=N/mm²=MPa로 단위가 계산상 도출되므로 정당함 -- 본 레시피와는 본질적으로 다름(오탐 아님 확정). prompt.py:9-23 PREAMBLE이 \"NEVER invent axis units... 추측값은 confidently-wrong artifact\"를 핵심 불변식으로 명시하므로 의도된 동작/테스트 stub 아님. 권고(structural_requires에 _ax_need(payload,'y',...) 추가)는 타당. 심각도 조정 근거(high->medium): (1) 데이터 값은 그대로 통과하고 라벨만 오기재되는 provenance 버그이지 A0 오류 같은 계산 손상 아님, (2) x_unit/axes.y.unit이 사용자 오버라이드 가능, (3) 사용자가 단위를 생략하고 동시에 비-MPa(ksi/psi) 단위를 쓸 때만 실제 발현. 단, 엔지니어링 응력 플롯에서 단위 오기재는 실질적 오해를 유발하므로 low보다는 높음 -> medium."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "stream-graph: 엔진이 안 읽는 scale:\"log\" 키 방출 — 사용자 로그축 요청이 묵묵히 무시됨 (과거 SRS 버그 패턴)",
+   "file": "d:/graph-skill/src/graph_skill/recipes/leftovers.py:15",
+   "evidence": "_axis 헬퍼: `\"scale\": a.get(\"scale\", \"linear\")` (line 15) — log: 키가 아니라 scale: 키를 방출. StreamGraphRecipe.normalize가 이를 options.axes로 그대로 전달(line 50). 엔진은 log만 읽음: xy-core/engine.js:155 `this.xLog = !!this.opts.axes.x.log;`, plugins/domain-toggle.js:30 `core.xLog = !!(d.axes.x && d.axes.x.log)`. scale→log 변환 레이어 없음(builder.py:59가 norm['options']를 그대로 직렬화). 실증: scale:'log' 입력 시 stream-graph가 {'label':'freq','unit':'Hz','scale':'log'} 방출(log 키 없음) → 엔진 무시. 비교: base-xy는 log:true로 올바르게 변환(base_xy.py:105 `\"log\": a.get(\"scale\",\"linear\")==\"log\"`). stream-graph engine=xy-core 확인됨.",
+   "recommendation": "leftovers.py _axis를 base_xy.py처럼 `\"log\": a.get(\"scale\",\"linear\")==\"log\"`로 교체. 동일 결함이 OverviewDetail(leftovers.py:80, 같은 _axis 사용)에도 전파됨.",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)",
+   "verdict": {
+    "title": "stream-graph: 엔진이 안 읽는 scale:\"log\" 키 방출 — 로그축 요청 묵묵히 무시 (overview-detail 전파 주장은 오탐)",
+    "real": true,
+    "corrected_severity": "medium",
+    "note": "stream-graph 부분은 실재 버그로 확인. leftovers.py:12-15 _axis가 log 키가 아닌 scale 키를 방출({label,unit,scale}). leftovers.py:50이 이를 recipe의 options.axes로 직접 넣고 line 49-57이 그대로 반환 → builder.py:60이 norm['options']를 serialize.safe_js_literal(line 68)로 변환 없이 직렬화. 엔진은 log만 읽음(engine.js:155 this.xLog=!!opts.axes.x.log; DEFAULTS line24 log:false). log 키 부재 시 axes.x.log=undefined → xLog=false, 사용자 scale:\"log\" 묵묵히 무시. streamgraph.js가 view.scaleX로 x를 실제 소비하므로 x 로그축은 의미 있음. base_xy.py:105는 올바르게 변환. stream-graph engine=xy-core(types.json:1263) 확인. 권고 수정(leftovers _axis를 base_xy처럼)은 타당.\\n\\n다만 감사의 핵심 부수 주장 'OverviewDetail에도 전파됨'은 오탐(반박됨). overview-detail의 엔진은 review-matrix(types.json:1319)이고, _axis 출력(scale 키 포함)은 중첩 base-xy 셀의 payload.axes로 전달됨(leftovers.py:84-85). matrix_compare.py:76이 graphconfig.graph_config('base-xy',...)를 호출하고 graphconfig.py:28이 BaseXYRecipe.normalize를 재실행 → base_xy.py:99-106 _axis가 scale→log를 올바르게 변환. 따라서 leak된 scale 키는 폐기되고 정상 log 키가 엔진에 도달함. overview-detail은 로그축을 정상 처리하므로 동일 결함 아님.\\n\\n심각도: 실 버그지만 좁은 범위(stream-graph 한정, 사용자가 명시적으로 scale:\"log\" 줄 때만; centered 기준선 위 stacked 밴드에서 y 로그는 수학적으로도 모호). 크래시/데이터 손상 없음. 전파 주장이 틀려 영향 범위가 과장됨. high가 아닌 medium으로 하향."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "cad3d-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 0.6.0 미범프",
+   "file": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\cad3d-core\\engine.js",
+   "evidence": "engine.js mtime = 2026-06-12 04:34:04, ENGINE_VERSION mtime = 2026-06-10 23:06:49 (내용 '0.6.0'). CHANGELOG.md:3-9 '## 0.45.0 (2026-06-12) ... P2 잔여: 3D 컨투어 unlit 정점색(변형/모드는 음영 유지)' — cad3d-core 대상 편집이 0.45.0(06-12) 차수에 포함됨. 그러나 ENGINE_VERSION 파일은 06-12 편집 세션에서 갱신되지 않았고 여전히 0.6.0. 갤러리 cad-3d-viewer.html / mesh-result-3d.html / mode-shape-3d.html 모두 'cad3d-core@0.6.0'으로 구움.",
+   "recommendation": "docs/SKILL-PLAN.md:833 '[카탈로그/버전] ENGINE_VERSION bump 판단(훅 변경=major)' 규약에 따라 cad3d-core ENGINE_VERSION을 0.6.0 → 0.6.1(또는 훅/렌더 변경 정도에 따라 그 이상)로 범프하고 build_gallery.py로 cad3d 산출물을 재생성하라.",
+   "dimension": "엔진 버전 신선도 (Engine version freshness)",
+   "verdict": {
+    "title": "cad3d-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 0.6.0 미범프",
+    "real": true,
+    "corrected_severity": "low",
+    "note": "코드/git/산출물을 직접 재확인한 결과 실제 문제로 확정. (1) 함수적 변경 실재: git show 041478d(0.45.0, 2026-06-12)는 cad3d-core/engine.js _buildRaw의 머티리얼 로직을 항상-MeshStandardMaterial(음영)에서 조건부 MeshBasicMaterial(unlit 정점색, m.lit!==true일 때)로 바꿈. engine.js:107-111에 현존하는 실 렌더 동작 변경. (2) 미범프 확정: 해당 0.45.0 커밋은 cad3d-core에서 engine.js(7줄)만 건드렸고 ENGINE_VERSION은 미수정 — ENGINE_VERSION 마지막 변경은 0.42.0(948bb1b)이고 HEAD 내용은 여전히 0.6.0. mtime도 일치(engine.js 06-12 04:34 > ENGINE_VERSION 06-10 23:06). (3) 규약 실재: SKILL-PLAN.md:833 'ENGINE_VERSION bump 판단(훅 변경=major)', CHANGELOG.md:30-31 '모든 산출물에 ENGINE_VERSION을 구워 넣는다' 보증. (4) 산출물 검증: graph-out/gallery의 cad-3d-viewer/mesh-result-3d/mode-shape-3d.html 3종 모두 새 MeshBasicMaterial 코드(각 7회)를 포함하면서 engine_version 0.6.0을 광고 — 신/구 동작-버전 불일치. 정정: 실제 구워진 문자열은 graph-config JSON의 \"engine_version\":\"0.6.0\"이며 'cad3d-core@0.6.0' 표기는 부정확(builder.py:62,74). 심각도 하향: 런타임 정상 동작하는 의도된 변경이며 결함은 버전 식별자 미증가로 인한 프로비넌스/버전 위생 위반뿐 — 기능 파손 없음. 권고(0.6.1 범프 + build_gallery.py 재생성)는 타당하나 영향이 낮아 low."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "xy-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 1.8.1 미범프",
+   "file": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\xy-core\\engine.js",
+   "evidence": "engine.js mtime = 2026-06-12 04:34:04, ENGINE_VERSION mtime = 2026-06-11 07:11:05 (내용 '1.8.1'). CHANGELOG.md:9 'P2 잔여: ... xy 제목 말줄임(컨트롤바 겹침 해소)' — xy-core 대상 편집이 0.45.0(06-12)에 포함. engine.js는 06-12 04:34에 수정됐으나 ENGINE_VERSION은 그 이전(06-11 07:11)이 마지막이며 1.8.1 그대로. 갤러리 base-xy.html은 'xy-core@1.8.1'로 구움(약 60개 xy 계열 타입 동일).",
+   "recommendation": "xy-core ENGINE_VERSION을 1.8.1 → 1.8.2로 범프 후 build_gallery.py 재생성. xy-core는 base-xy 등 다수 타입의 기반이라 메타 라벨이 가장 광범위하게 영향받음.",
+   "dimension": "엔진 버전 신선도 (Engine version freshness)",
+   "verdict": {
+    "title": "xy-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 1.8.1 미범프",
+    "real": true,
+    "corrected_severity": "low",
+    "note": "git 이력으로 직접 확인. 0.45.0 커밋(041478d, Jun 12)이 engine.js를 수정했고, `git show 041478d -- .../engine.js` 디프가 정확히 render()의 제목 말줄임(컨트롤바 겹침 해소) 코드 추가(L425~437, tcx/cbW/tAvail로 measureText 기반 …말줄임)임 — CHANGELOG.md의 P2 항목 'xy 제목 말줄임' 및 커밋 메시지 'xy title ellipsis vs controlbar'와 일치하는 실제 동작 변경. ENGINE_VERSION은 git상 마지막 변경이 3df74c6(0.42.1)이며 현재도 '1.8.1' 그대로 — 0.45.0 커밋에서 engine.js는 건드렸으나 ENGINE_VERSION은 미포함. 버전 범프 규약은 실재함: build_gallery.py 헤더가 'ENGINE_VERSION 범프 시 갤러리 재생성 필수'를 명시하고, tests/test_ux_p2.py::test_gallery_freshness_gate가 베이크된 <meta graph-engine content=fam@ver>와 현재 ENGINE_VERSION을 대조. 다만 핵심 정정: 갤러리는 이미 빌드돼 있고(graph-out/gallery/*.html 120개, git 미추적), base-xy.html은 'xy-core@1.8.1'로 구워졌는데 이는 미범프된 현재 버전(1.8.1)과 '일치'하므로 freshness gate는 통과한다. 즉 gate는 '버전 범프 후 미재생성'만 잡고 '엔진 변경 후 미범프'는 못 잡는 실제 사각지대 — 발견의 근거가 맞다. 그러나 영향은 순수 메타데이터/추적성(provenance·캐시버스팅 라벨)에 국한되며 렌더 동작/정확성에는 무영향(말줄임 수정 자체는 코드에 반영돼 정상). 따라서 진짜 문제이나 심각도는 과장 — high가 아니라 low. 권고(1.8.1→1.8.2 범프 후 build_gallery.py 재생성)는 타당."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "flow-core: engine.js가 0.45.0 P2 편집으로 수정됐으나 ENGINE_VERSION 0.6.0 미범프",
+   "file": "D:\\graph-skill\\src\\graph_skill\\data\\engines\\flow-core\\engine.js",
+   "evidence": "engine.js mtime = 2026-06-12 04:34:04, ENGINE_VERSION mtime = 2026-06-10 23:06:49 (내용 '0.6.0'). CHANGELOG.md:10 'P2 잔여: ... 네트워크 반발력 그리드 근사(n>150)' — network(flow-core) 대상. flow-core/engine.js는 06-12 04:34 수정됐으나 ENGINE_VERSION은 06-10이 마지막이며 0.6.0 유지. 갤러리 flowchart.html / sankey-diagram.html / network-graph.html 모두 'flow-core@0.6.0'.",
+   "recommendation": "flow-core ENGINE_VERSION을 0.6.0 → 0.6.1로 범프 후 build_gallery.py 재생성.",
+   "dimension": "엔진 버전 신선도 (Engine version freshness)",
+   "verdict": {
+    "title": "flow-core: engine.js가 0.45.0에서 grid-bucket 반발력 근사(n>150)로 수정됐으나 ENGINE_VERSION 0.6.0 미범프",
+    "real": true,
+    "corrected_severity": "low",
+    "note": "코드 직접 재확인 결과 실제 문제로 판정. (1) flow-core/engine.js:279-317에 \"grid-bucket far-field approximation (O(n·k))\" 블록(nodes.length>150 분기)이 실재하며, 이는 CHANGELOG.md:10의 P2 잔여 항목 '네트워크 반발력 그리드 근사(n>150)'와 정확히 일치 — n>150 네트워크의 물리 시뮬레이션 동작을 바꾸는 실질적 변경. (2) git 확인: engine.js는 커밋 041478d(0.45.0)에서 +42줄로 이 블록이 추가됨(커밋 diff 주석 \"grid-bucket repulsion for networks >150\"). 반면 ENGINE_VERSION/flow-core는 커밋 948bb1b(0.42.0)이 마지막이며 여전히 '0.6.0'. 워킹트리 clean이라 미커밋 진행중 작업 아님 — 확정된 릴리스 상태. (3) mtime도 주장과 일치(engine.js 06-12 04:34, ENGINE_VERSION 06-10 23:06). (4) 신선도 게이트(tests/test_ux_p2.py:56 test_gallery_freshness_gate)는 임베드 meta 버전 vs 현재 ENGINE_VERSION 비교만 함 — 둘 다 0.6.0이라 통과. 게다가 갤러리는 이미 재빌드되어 신규 grid 코드가 network-graph.html:452에 baked 됨에도 meta는 flow-core@0.6.0(line 8) 그대로. 즉 이 게이트는 '버전 범프 후 재빌드 누락'만 잡고 '코드 변경 후 버전 미범프'는 구조적으로 못 잡음 — 오탐 방어 로직이 아님. (5) 프로젝트 정책(CHANGELOG.md:30-31) \"Engine assets carry a separate ENGINE_VERSION baked into every artifact\"가 에셋 변경 시 범프를 전제. 따라서 권고(0.6.0→0.6.1 범프 + build_gallery.py 재생성) 타당. 단 런타임 오류/정확성/보안 결함 아님 — 버전 추적/provenance 위생 문제(아티팩트가 변경 전후를 구분 못함)라 심각도 low로 판정(원 권고에 심각도 명시 없었으나 과장 방지 차원에서 low로 고정)."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "\"9 엔진 패밀리\" 수치 오류 — 실제 엔진 패밀리는 8개",
+   "file": "D:/graph-skill/README.md:13",
+   "evidence": "README:13 \"119 그래프 타입 / 9 엔진 패밀리 / 19 분류 카테고리\". 동일 주장이 CHANGELOG.md:25(\"엔진 패밀리 9개 구축(field/polar/smith/review-matrix/flow/gauge/cad3d + linked-view 버스)\") 및 SKILL.md:7(\"9개 패밀리 / 119+ 타입\")에도 반복. 그러나 실제로는 data/engines 디렉터리에 정확히 8개만 존재: cad3d-core, field-core, flow-core, gauge-core, polar-core, review-matrix, smith-core, xy-core. 각각 ENGINE_VERSION이 baked됨(xy-core 1.8.1, review-matrix 0.7.0, flow-core 0.6.0, cad3d-core 0.6.0, field-core 0.4.0, gauge/polar/smith-core 0.3.0). catalog 119타입을 resolve_type으로 전수 분해해도 distinct engine = 8 (xy-core 73 / field-core 12 / review-matrix 12 / cad3d-core 7 / flow-core 5 / gauge-core 5 / polar-core 4 / smith-core 1). 9번째로 세는 \"linked-view\"는 엔진 패밀리가 아니라 xy-core 위에 얹힌 플러그인 버스다 — SKILL.md:19 표 자신도 \"(linked) | plugin 버스\"로 분류하고, 해당 plugin(brushlink.js/xsync.js/xfollow.js/xbrush.js)들은 data/engines/xy-core/plugins/ 아래에 있다(독립 engines 디렉터리 없음).",
+   "recommendation": "README:13 / CHANGELOG:25 / SKILL.md:7 의 \"9 엔진 패밀리\"를 \"8 엔진 패밀리(+ linked-view 플러그인 버스)\"로 정정. linked-view를 굳이 강조하려면 엔진 카운트에서 분리해 표기.",
+   "dimension": "문서 드리프트 (README / CHANGELOG / SKILL.md / docs vs 실제 코드)",
+   "verdict": {
+    "title": "\"9 엔진 패밀리\" 수치 오류 — 실제 엔진 패밀리는 8개",
+    "real": true,
+    "corrected_severity": "low",
+    "note": "검증 확인. 단, 파일 경로는 finding이 쓴 data/engines가 아니라 src/graph_skill/data/engines/ 임(경미한 부정확). 핵심 주장은 모두 사실: (1) 엔진 디렉터리는 정확히 8개 — cad3d-core/field-core/flow-core/gauge-core/polar-core/review-matrix/smith-core/xy-core. (2) linked-view는 엔진이 아니라 xy-core 플러그인 버스 — brushlink.js/xbrush.js/xfollow.js/xsync.js 4개가 모두 src/graph_skill/data/engines/xy-core/plugins/ 아래 있고 독립 engines 디렉터리 없음. (3) 문서 자기모순: SKILL.md:19 표가 스스로 '(linked) | plugin 버스'로 분류하고 CHANGELOG.md:25도 'linked-view 버스'(7개 명명 엔진 + 버스)라 적으면서, 헤드라인 3곳(README:13, CHANGELOG:25, SKILL.md:7)은 모두 '9 엔진 패밀리'라 주장. (4) catalog distinct engine 전수 분해 결과 정확히 8개이며 finding이 제시한 분포와 완전 일치(xy-core 73 / field-core 12 / review-matrix 12 / cad3d-core 7 / flow-core 5 / gauge-core 5 / polar-core 4 / smith-core 1 = 119). linked-view는 catalog engine 필드에 전혀 등장하지 않음. 권고(8 엔진 패밀리 + linked-view 플러그인 버스로 정정)는 타당. 심각도는 low가 적절 — 런타임/기능 영향 0의 문서 카운트 오류이며 어떤 동작도 깨지지 않음. 단 finding의 부수 근거였던 'ENGINE_VERSION이 각 엔진에 baked'는 내 grep으로 확인 못 함(빈 결과) — 핵심 결론과 무관한 incidental detail."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "\"396+ tests\" 과대 표기 — 실제 pytest는 381 passed (1 skipped)",
+   "file": "D:/graph-skill/README.md:54",
+   "evidence": "README:54 \"pytest tests/ -q            # 396+ tests (수치 검증·게이트·결정성·실브라우저 시각)\". 실제 실행 결과: `python -m pytest tests/ -q` → \"381 passed, 1 skipped in 10.72s\" (collect-only도 \"381 tests collected\"). 396은 실제 수집/통과 수보다 15건 많다.",
+   "recommendation": "README:54 의 \"396+ tests\"를 실제 수(\"381 passed\")로 정정하거나, node .mjs/실브라우저 스모크까지 합산한 수치임을 명시. 단순 pytest 수치로 읽히므로 현재는 오해 소지.",
+   "dimension": "문서 드리프트 (README / CHANGELOG / SKILL.md / docs vs 실제 코드)",
+   "verdict": {
+    "title": "\"396+ tests\" 과대 표기 — 실제 pytest는 381 passed (1 skipped)",
+    "real": true,
+    "corrected_severity": "info",
+    "note": "직접 재확인 완료. README.md:54는 정확히 `pytest tests/ -q            # 396+ tests (...)`로, 리터럴 pytest 명령에 붙은 주석이다. 실제 `python -m pytest tests/ -q` 실행 결과는 \"381 passed, 1 skipped\", `--collect-only`도 \"381 tests collected\" — 396은 15건 더 많다. 인접 라인(55 node *.mjs, 56 playwright_smoke \"119/119\")이 별도 명령/별도 카운트로 나열돼 있어 396이 pytest+node+브라우저 합산이라는 근거도 없다. 따라서 pytest 단일 수치로 읽히는 stale/inflated 문서 표기가 맞다. 단, 코드 동작/정확성/보안 영향 없는 순수 문서 부정확이라 info가 적정(원 심각도 과장 아님). 권고대로 381로 정정하거나 합산 수치임을 명시 필요."
+   }
+  },
+  {
+   "severity": "high",
+   "title": "셀프컨테인드 게이트 우회: image.ref 외부 URL이 config 채널로 들어가 lint를 통과 (실증)",
+   "file": "src/graph_skill/serialize.py:41-55, src/graph_skill/data/engines/review-matrix/engine.js:224, src/graph_skill/data/engines/flow-core/engine.js:552, src/graph_skill/recipes/matrix_compare.py:10,80-84",
+   "evidence": "게이트 정규식은 정적 HTML 속성만 본다: _EXTERNAL_URL = re.compile(r'(?:src|href)\\s*=\\s*[\"\\'](?:https?:)?//'). 엔진 JS는 런타임에 외부 ref를 가져온다: img.src = c.image.mode === \"inline\" ? (\"data:\"+...) : (c.image.ref || \"\") (review-matrix engine.js:224, flow-core engine.js:552). matrix_compare._cell은 image를 검증 없이 통과시킨다(_CELL_KEYS에 'image' 포함, line 81-83 'for k in _CELL_KEYS: if k in c: out[k]=c[k]'). 실제 빌드 실증: single-state-checklist에 {'kind':'image','image':{'mode':'ref','ref':'https://evil.example.com/track.png'}} 페이로드로 render → 결과 LINT {'ok': True, 'external_urls': 0, 'self_contained': True} 인데 HTML 본문에는 'tems\":[{\"cells\":{\"s1\":{\"image\":{\"mode\":\"ref\",\"ref\":\"https://evil.example.com/track.png\"}...' 가 그대로 존재. 즉 외부 URL 0 계약이 깨지지만 게이트는 통과. flowchart도 동일(recipes/flowchart.py:12 _PASS_CONTENT에 'image' 포함, 검증 없이 통과).",
+   "recommendation": "게이트를 데이터 채널까지 확장: (1) lint_self_contained에 #graph-config JSON을 파싱해 image.ref(및 link/href 류) 값에 http(s)://·protocol-relative // 가 있으면 위반으로 카운트하거나, 정규식에 \"ref\":\"https?://... / \"data\":... 외 URL 패턴을 추가. (2) 또는 빌드 시점에 matrix_compare/flowchart 레시피에서 image.mode != 'inline' 이면서 ref가 http(s)/외부 스킴이면 거부(MissingFieldsError)하고 인라인 data: base64만 허용. 게이트가 산출물의 모든 외부 참조 경로(정적+동적)를 덮어야 '외부 URL 0' 계약이 실효성을 가진다.",
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)",
+   "verdict": {
+    "title": "셀프컨테인드 게이트 우회: image.ref 외부 URL이 config 채널로 들어가 lint를 통과 (실증)",
+    "real": true,
+    "corrected_severity": "medium",
+    "note": "코드 직접 재확인 + PoC 2건 재현으로 진짜 문제임을 확정. (1) serialize.py:41 _EXTERNAL_URL은 src=/href= HTML 속성 문법만 매칭하며 _IMPORT_URL과 함께 정적 마크업만 본다. lint_self_contained는 이 정규식 결과로만 self_contained/external_urls를 산정. (2) builder.py:68에서 config 전체(assets.items[].cells[].image 포함)를 safe_js_literal로 직렬화해 <script id=\"graph-config\" type=\"application/json\">에 임베드 — safe_js_literal은 <,>,&,백틱만 이스케이프하고 URL 문자열은 손대지 않음. (3) matrix_compare.py:80-84(_CELL_KEYS에 'image' 포함)와 flowchart.py:12,62-65(_PASS_CONTENT에 'image' 포함)가 image를 검증 없이 통과. validate.py·graphconfig.py에는 image/ref/http 관련 검사 전무(grep 0건). (4) 엔진 JS가 런타임에 img.src = c.image.mode==='inline' ? data: : (c.image.ref||'') 로 외부 ref를 실제 fetch함(review-matrix engine.js:224, flow-core engine.js:552 모두 확인). PoC: single-state-checklist에 image.ref=https://evil.example.com/track.png → render OK, LINT {ok:True, external_urls:0, self_contained:True} 인데 HTML 본문에 해당 URL 그대로 존재(재현 성공). flowchart도 http://attacker.test/beacon.gif로 동일 재현. 의도된 동작 아님: SKILL.md:44/136은 graph_lint_output을 '외부 URL 0' 게시 게이트로 명시('외부 URL 발견 등 ok:false면 게시하지 마라'), RESULT-VIZ-STANDARD.md:84는 이미지를 base64 인라인으로 욱여넣어야 게시된다고 규정(외부 ref 비허용 의도), 85는 data: URI가 통과하도록 게이트를 설계했다고 명시 — 즉 저자가 게이트 커버리지를 의식했으나 JSON-config image.ref 채널을 누락. 따라서 문서화된 핵심 불변식('외부 의존 0 self-contained')의 실증된 게이트 우회로 real=true. 심각도는 RCE/자격증명 유출이 아니고 페이로드(LLM/사용자 공급 image.ref)에 외부 URL이 들어가 아티팩트가 열릴 때 추적픽셀·임의 외부 fetch가 발생하는 프라이버시/오프라인 보장 무력화 + 게이트의 거짓 self_contained:True라는 무결성 결함 — high까지는 과장, medium이 적정. 권고안(lint에 #graph-config JSON 파싱하여 image.ref/link.href의 http(s)·protocol-relative // 위반 카운트, 또는 빌드시 mode!='inline'+외부 스킴 ref 거부)도 타당."
+   }
+  }
+ ],
+ "rejected": [
+  {
+   "severity": "high",
+   "title": "goodman-haigh: 평균/교번응력 단위를 게이트 없이 'MPa'로 묵묵히 채움 (NEVER-invent 위반)",
+   "file": "d:/graph-skill/src/graph_skill/recipes/wave4.py:123",
+   "evidence": "normalize: `unit = str((payload.get(\"axes\") or {}).get(\"unit\", \"MPa\"))` (line 123) 후 x/y 축 양쪽에 적용(line 125-126). structural_requires(line 131-135)는 Su/Se 존재만 검사하고 단위는 게이트하지 않음. 실증: validate.check('goodman-haigh', {'Su':100,'Se':40,...}) -> ok=True; normalize -> x axis = {'label':'Mean stress σm','unit':'MPa','log':False}. catalog: require_axes=False, requires=[]. ask 텍스트에 'MPa' 힌트만 있고 강제는 없음.",
+   "recommendation": "structural_requires에 axes.unit(또는 axes.x/y.unit) 게이트를 추가. Su/Se는 받으면서 그 단위를 묻지 않아 비-MPa 입력이 MPa로 오기됨.",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)",
+   "verdict": {
+    "title": "goodman-haigh: 평균/교번응력 단위를 게이트 없이 'MPa'로 묵묵히 채움 (NEVER-invent 위반)",
+    "real": false,
+    "corrected_severity": "low",
+    "note": "코드를 직접 재확인한 결과 NEVER-invent 위반 주장은 과장/오탐이다. 근거: (1) validate.py 의 \"NEVER invent\" 규칙은 docstring상 명시적으로 곡선 계산에 필요한 '물리 파라미터'(A0/L0, Su/Se, fs 등)를 지칭하며, axis 라벨 단위 같은 표시용 메타가 아니다. Goodman의 structural_requires(wave4.py:131-135)는 Su/Se를 정확히 게이트하므로 물리 파라미터는 invent하지 않는다. test_gating(test_wave4.py:64)도 Su/Se 누락 시 ok=False를 검증한다. (2) line 123의 'MPa'는 invent가 아니라 '오버라이드 가능한 라벨 디폴트'다 — payload.axes.unit을 먼저 읽고 없을 때만 MPa를 쓴다. (3) 동일 코드베이스의 자매 레시피 stress_strain.py:33은 stress 축에 '\"unit\":\"MPa\"'를 게이트도 오버라이드 경로도 전혀 없이 하드코딩한다(Goodman보다 더 강한 디폴트). 즉 'stress 레시피는 MPa를 정설 단위로 가정'하는 것이 코드베이스의 의도된 일관된 관례이며, 두 레시피 모두 require_axes=False(축이 derived)로 설계됨. (4) MPa 디폴트는 카탈로그 hint(Su·Se[MPa])와 ask 텍스트(line 134, \"...주세요 (MPa)\")에서 사용자에게 명시적으로 신호된다. (5) 권고대로 axes.unit을 게이트하면 stress-strain과 비일관해지고, 값 자체(예 Su=100)는 정확히 플롯되며 라벨만 영향받고 그마저 axes.unit으로 오버라이드 가능하므로 실질적 오기 위험이 낮다. 따라서 critical이 아니라 기껏해야 사소한 라벨-일관성 nit(low). 의도된·테스트된 동작이므로 real=false."
+   }
+  }
+ ],
+ "lowMed": [
+  {
+   "severity": "info",
+   "title": "types.json 119타입: engine/hint/extends/title 무결 (고아·중복·빈힌트·잘못된엔진명 0건)",
+   "file": "d:/graph-skill/src/graph_skill/data/catalog/types.json",
+   "evidence": "전수 파싱 결과: TOTAL TYPES=119; MISSING engine key=[]; MISSING/empty hint=[]; DANGLING extends target=[]; DUPLICATE titles={}. 엔진 분포 xy-core 73 / field-core 12 / review-matrix 12 / cad3d-core 7 / flow-core 5 / gauge-core 5 / polar-core 4 / smith-core 1 — 모든 엔진명이 정의된 엔진 패밀리에 속함. extends 타깃(base-xy, contour-plot, heatmap-grid, review-matrix, design-state-compare, cad-3d-viewer, force-displacement, polar-plot, dual-axis 등)은 전부 types.json 내 실재 키. 예: \"mac-matrix-heatmap\"(L454) extends \"heatmap-grid\"(L1051) 존재, \"single-state-checklist\"(L820) extends \"design-state-compare\"(L807) 존재.",
+   "recommendation": "조치 불필요. 현 상태 유지. (신규 타입 추가 시 동일한 전수검증 1줄 스크립트를 CI에 두면 회귀 방지.)",
+   "dimension": "카탈로그/택소노미 정합성 (graph-skill)"
+  },
+  {
+   "severity": "info",
+   "title": "coverage() 게이트 통과 — 119타입 전부 분류, 19카테고리 전부 사용, bad_category 0",
+   "file": "d:/graph-skill/src/graph_skill/taxonomy.py:81",
+   "evidence": "taxonomy.py coverage() 로직(L86-89: missing=known-tax_types, dangling=tax_types-known, bad_category=category not in valid_cats)을 catalog known_types와 taxonomy.json에 직접 실행한 결과: missing=[], dangling=[], bad_category=[], 빈 category 0, 선언했으나 미사용 카테고리=[]. 카테고리별 분류 수: trend 13, signal-frequency 12, comparison 10, reliability 8, control-dynamics 8, distribution 7, geometry-3d 7, table 7, doe 6, mechanics 6, field-2d 5, planning 5, kpi-status 5, polar 4, process-quality 4, relations 4, ranking 3, hierarchy 3, playback 2 = 합 119. categories()는 taxonomy.json의 19개 id를 모두 반환(L19-24).",
+   "recommendation": "조치 불필요. coverage().ok=True. grouped()의 '_uncategorized' 폴백(L47-49)은 발동하지 않음(미분류 0).",
+   "dimension": "카탈로그/택소노미 정합성 (graph-skill)"
+  },
+  {
+   "severity": "info",
+   "title": "힌트 입력키 = 레시피 normalize payload키 교차검증 일치 (9개 레시피 파일 샘플)",
+   "file": "d:/graph-skill/src/graph_skill/recipes/ext.py:62",
+   "evidence": "샘플 교차검증 결과 모두 일치: (1) octave-band 힌트 'bands:[[fc,level]] 또는 spectrum:[[Hz,dB]] + level_unit' ↔ ext.py:66-80 payload.get('bands')/('spectrum')/('level_unit'); (2) vswr-curve 힌트 'vswr 또는 s11_db + limit + f_unit' ↔ ext.py:178-198 payload.get('vswr')/('s11_db')/('limit')/('f_unit'); (3) dma-curve 힌트 'temp+e_storage+e_unit(+e_loss,tan_delta)' ↔ ext.py:215-231; (4) srs-spectrum 힌트 'accel + params.fs/q/per_octave/ref_half_sine' ↔ ecae.py:40-49; (5) emi-spectrum 힌트 'spectrum + limit[{f0,f1,level}] 또는 preset:cispr32_b_3m' ↔ ecae.py:75-83 (_EMI_PRESETS 키 'cispr32_b_3m','cispr32_a_3m' 일치 ecae.py:12-15); (6) rainflow 힌트 'signal + params.mean_bins/range_bins + load{label,unit}' ↔ field2d.py:132-166; (7) wind-rose 힌트 'directions 또는 dir_labels + bins[{label,counts,color}]' ↔ wave3.py:62-81; (8) correlation-scatter 힌트 'options.identity=false' ↔ correlation_scatter.py:21 opts.get('identity') is False; (9) process-capability 힌트 'params.USL/LSL/target' ↔ batch_h.py:36 params.get('USL'/'LSL'/'target'); (10) transient 힌트 'limits:[{value,label}]' ↔ engineering2d.py:136 payload.get('limits'). post 후크 3종(units.eng_stress_strain, spectral.fft_onesided, spectral.fft_filter) 모두 해당 모듈에 함수 실재 확인.",
+   "recommendation": "조치 불필요. 검사 범위(약 10개 타입, 5개 엔진 패밀리)에서 힌트-노멀라이즈 드리프트 없음.",
+   "dimension": "카탈로그/택소노미 정합성 (graph-skill)"
+  },
+  {
+   "severity": "info",
+   "title": "119타입 전부 레시피 등록 + extends 체인 런타임 해결 가능 (구조 무결성)",
+   "file": "d:/graph-skill/src/graph_skill/recipes/__init__.py",
+   "evidence": "REGISTRY와 catalog known_types 대조: catalog 119, registered 119, '레시피 없는 타입'=[], '타입 없는 레시피'=[]. catalog.resolve_type()을 119타입 전수 호출 시 예외/빈엔진 0건(extends 사이클·no-engine 게이트 catalog.py:49/96 모두 미발동). requires 필드는 params.A0(1), params.L0(1), params.fs(5)뿐이며 전부 params.* 스칼라 — 해당 레시피들이 실제로 읽음(예: srs ecae.py:41 params['fs'], stress-strain post units.eng_stress_strain).",
+   "recommendation": "조치 불필요. 단 이 구조 불변식(레시피 커버리지·extends 해결성)은 현재 런타임/테스트에서만 검증됨 — types.json만 보고는 보이지 않으므로, 신규 타입 PR 시 resolve_type 전수 + REGISTRY 대조를 게이트로 유지 권장.",
+   "dimension": "카탈로그/택소노미 정합성 (graph-skill)"
+  },
+  {
+   "severity": "medium",
+   "title": "playback 계열(bubble-timeline/animated-trajectory): _axis가 scale:\"log\" 키 방출 — 로그축 무시",
+   "file": "d:/graph-skill/src/graph_skill/recipes/playback.py:27",
+   "evidence": "_axis 헬퍼: `\"scale\": a.get(\"scale\", \"linear\")` (line 27). BubbleTimelineRecipe(line 64)·AnimatedTrajectoryRecipe(line 112)가 이 헬퍼로 axes를 만들어 options에 넣음. 세 타입 모두 catalog engine=xy-core(bubble-timeline/animated-trajectory/bar-chart-race) → 엔진은 axes.x.log만 읽으므로(engine.js:155) scale:'log'는 dead key. 시간축은 보통 선형이라 노출 빈도는 낮지만, leftovers와 동일한 변환 누락 버그.",
+   "recommendation": "playback.py _axis도 log: 불리언 키로 교체해 leftovers/base_xy와 일관화. carrier series 자체(x/y 배열, line 18-22)는 올바름 — 키만 수정하면 됨.",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)"
+  },
+  {
+   "severity": "low",
+   "title": "multitrack-stack: 채널별 측정 단위(y)를 게이트 없이 빈 문자열로 묵묵히 채움",
+   "file": "d:/graph-skill/src/graph_skill/recipes/wave5.py:80",
+   "evidence": "cell(): y축 `\"unit\": str(ch.get(\"unit\", \"\"))` (line 80), x축 시간단위는 `xm.get(\"unit\", \"s\")` (line 76)로 묵묵히 's' 가정. structural_requires(line 93-101)는 채널 수·data 존재만 검사하고 채널 unit/축 단위를 게이트하지 않음. 시간축 's'는 멀티트랙 정체성상 합리적 기본값이나, 채널 측정량 단위가 빈 채로 통과됨.",
+   "recommendation": "각 채널의 unit 또는 최소 1개 채널 unit 존재를 게이트하면 NEVER-invent 일관성이 올라감. ask에 이미 'channels:[{name, unit, data...}]'로 unit을 안내하고 있어 강제만 추가하면 됨. (시간축 's' 기본은 허용 가능.)",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)"
+  },
+  {
+   "severity": "info",
+   "title": "fft-spectrum: 진폭(y) 단위를 게이트 없이 빈 문자열로 둠 (params.fs만 게이트)",
+   "file": "d:/graph-skill/src/graph_skill/recipes/fft_spectrum.py:35",
+   "evidence": "`yunit = str(ty.get(\"unit\", \"\"))` (line 35) 후 주파수/시간 양 도메인 y축에 사용(line 37,39). FFTSpectrumRecipe는 structural_requires 미정의(time/freq 단위 게이트 없음). catalog: require_axes=False, requires=['params.fs']만 존재 → fs는 게이트되나 진폭 단위는 빈 채 통과. 다만 fft는 입력 신호 단위를 그대로 전파하는 성격이라 빈 단위가 곧 '미지'를 의미하므로 응력 단위 추측만큼 위험하진 않음(맥락 차이).",
+   "recommendation": "엄격히 하려면 axes.y.unit 존재를 권고 수준으로 안내. 응력 케이스(high)와 달리 물리 정체성이 고정되지 않아 강제 게이트는 선택사항.",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)"
+  },
+  {
+   "severity": "info",
+   "title": "carrier series는 전 레시피에서 x/y 배열로 통일 — 과거 playback data:[[x,y]] 버그 미재발",
+   "file": "d:/graph-skill/src/graph_skill/recipes/playback.py:18",
+   "evidence": "_carrier_series(line 18-22)가 주석 'Engine setData reads s.x/s.y arrays'와 함께 `{\"x\":[p[0]...], \"y\":[p[1]...]}`로 변환. 전 carrier(_carrier/_gantt/_tl/_ch/_range/_wf/_v/_pz/_tm/_pc/_tn)가 모두 x/y 배열(grep 확인). assets로 가는 series 중 data:[[x,y]] 형태는 diagnostics.py:37 단 1건이나 이는 graph_ref.payload(중첩 base-xy 재정규화 대상)라 정상. normalize 반환은 전부 {engine, assets, options} 일관(grep 및 base.py:16 계약 확인).",
+   "recommendation": "회귀 방지를 위해 leftovers/playback _axis의 scale→log 키 수정 시 carrier x/y 패턴은 그대로 유지. 별도 조치 불필요.",
+   "dimension": "레시피 게이트 준수 (NEVER-invent 계약 · normalize 일관성 · axes log 키)"
+  },
+  {
+   "severity": "medium",
+   "title": "신선도 게이트가 '코드 변경 후 버전 미범프' 케이스를 구조적으로 탐지하지 못함",
+   "file": "D:\\graph-skill\\tests\\test_ux_p2.py:56",
+   "evidence": "test_gallery_freshness_gate는 갤러리 메타 '<fam>@<ver>'를 assets.engine_version(fam)와만 비교한다(test_ux_p2.py:67-73). 버전이 미범프(0.6.0/1.8.1 고정)되고 갤러리가 06-12 07:21에 재생성되어 메타도 동일 버전을 박았으므로 ver == cur → 게이트 통과. 즉 'ENGINE_VERSION을 올렸는데 갤러리 미재생성'만 잡고, 'engine.js를 고쳤는데 ENGINE_VERSION을 안 올림'은 못 잡는다. 또한 engine.js/ENGINE_VERSION 어디에도 인라인 버전 상수가 없어(grep ENGINE_VERSION/VERSION in *.js → no match) 코드↔버전 정합은 mtime 외 신호가 없다.",
+   "recommendation": "엔진 자산 변경 시 버전 범프를 강제하려면 별도 게이트가 필요하다: 예) ENGINE_VERSION mtime >= engine.js/engine.css mtime 검사, 또는 pre-commit에서 engine.js diff 시 ENGINE_VERSION 동시 변경 요구, 또는 engine.js 내용 해시를 ENGINE_VERSION 옆에 고정하고 불일치 시 실패.",
+   "dimension": "엔진 버전 신선도 (Engine version freshness)"
+  },
+  {
+   "severity": "info",
+   "title": "119개 타입 전부 fixture+렌더 커버됨 (미커버 타입 0건)",
+   "file": "d:\\graph-skill\\build_gallery.py:23-143",
+   "evidence": "build_gallery.py MAP 항목 수 = 119, types.json 타입 수 = 119, 차집합(types NOT in gallery MAP) = [] (검증 스크립트 출력). 각 MAP 항목은 (type, fixture)로 fixtures/*.json을 로드해 builder.render()로 렌더하고 lint['ok']를 강제한다. playwright_smoke.py는 graph-out/gallery/*.html 전부를 headless Chromium에서 goto→__graph 부팅·canvas 그려짐(maxLen>1500)·콘솔/페이지 에러 0을 확인한다. test_ux_p2.py:56 test_gallery_freshness_gate가 엔진 버전 스테일을 CI 실패로 막는다.",
+   "recommendation": "현 상태 유지. '렌더/검증되지 않는 타입'은 없음 — 단 fixture 파일은 113개로 119<MAP인데, 이는 field.json(contour/heatmap/scalar/mcae 4타입 공유), pattern.json(polar/rf 공유), design_state.json(review-matrix/design-state/single-state 공유) 등 한 fixture를 여러 타입이 재사용하기 때문이며 누락이 아니다.",
+   "dimension": "테스트 커버리지 갭 (graph-skill — 119 타입 / node 21 / postprocess 자체검증)"
+  },
+  {
+   "severity": "low",
+   "title": "node_*.mjs는 전 타입을 부팅하지 않음 — review-matrix/gauge-core/flow-core/playback/schedule 계열은 node 미검증",
+   "file": "d:\\graph-skill\\tests\\node_phaseH.mjs, node_wave1.mjs, node_wave2.mjs, node_wave3.mjs (+17)",
+   "evidence": "21개 node 테스트가 참조하는 HTML 산출물을 전부 추출한 결과 약 50개 타입만 커버: phase1~8(stress_strain·correlation·force_displacement·design_state·field·fft·filter·bar·box·errbar·histogram·bode·dual·pattern·radar), phaseF(ecdf·pareto·qq·spc), phaseG(cfd_line·convergence·interaction·main_effects·nonlinear_ld·sn_curve·transient), phaseH(campbell·capability·km·mac·paris·rainflow·vquiver·weibull), wave1(pdf-kde·ridgeline·scatter-matrix·spectrogram), wave2(area·stacked-area·violin·waterfall), wave3(nichols·parallel-coordinates·wind-rose), cad3d(cad-3d-viewer), smith(smith-chart), controls(base_xy·nyquist·rootlocus), diagnostics(residual), parcoord_brush(parallel-coordinates). gauge-core 5타입(gauge·radial-progress·bullet-chart·stat-card·spec-margin-chart), flow-core 5타입(flowchart·sankey-diagram·network-graph·chord-diagram·sunburst), playback 3타입(bubble-timeline·animated-trajectory·bar-chart-race), schedule 5타입(gantt·milestone-timeline·calendar-heatmap·task-table·work-plan), review-matrix 표 다수(kpi-scorecard·decision-matrix·multitrack-stack 등), EC/MTE/EXT 신규 30여 타입(srs·emi·zth·pdn·tempcycle·derating·battery·meshconv·stresslin·hysteresis·thermalresp·nusselt·frf·allan·calibration·cie·octave·tornado·motortn·vswr·dma·test-report)은 node_*.mjs가 읽는 \"*.html\" 목록에 없음.",
+   "recommendation": "node 스텁은 canvas/DOM 상호작용(컨트롤·브러시·LTTB 등) 회귀 검증 용도라 의도적으로 일부만 커버하는 설계로 보이며, 이들 타입은 playwright_smoke.py(실브라우저 부팅)와 pytest(test_ecae/test_mte/test_ext/test_gauges/test_schedule/test_relations/test_playback 등)로 커버된다. 진짜 갭은 아니므로 추가 node 테스트는 선택사항. 다만 '전 타입 node 부팅'이라는 기대가 있다면 사실과 다름을 명확히 할 것.",
+   "dimension": "테스트 커버리지 갭 (graph-skill — 119 타입 / node 21 / postprocess 자체검증)"
+  },
+  {
+   "severity": "low",
+   "title": "experiment.linear_fit — 전용 수치 self-check 없음 (calibration-curve 렌더로만 간접 실행)",
+   "file": "d:\\graph-skill\\src\\graph_skill\\postprocess\\experiment.py:147",
+   "evidence": "tests 전체에서 'linear_fit' 문자열 0건(grep 결과 없음). test_mte.py가 ex.richardson/stress_linearize/loop_energy/thermal_rc_fit/power_fit/allan_deviation는 각각 known-value로 수치 검증하지만 linear_fit(slope/intercept/R²/residual 반환, calibration-curve가 사용)은 기울기/절편/R² 복원 단위테스트가 없다. test_mte.py:32의 calibration-curve render+lint 통과와 :98 gating만으로 간접 실행될 뿐 수치 정확성 단언이 없음.",
+   "recommendation": "y=a+bx 합성데이터로 ex.linear_fit(x,y)의 slope/intercept/r2/resid를 기댓값과 대조하는 단위테스트를 test_mte.py에 추가(예: y=3x+2 → slope≈3, intercept≈2, r2≈1).",
+   "dimension": "테스트 커버리지 갭 (graph-skill — 119 타입 / node 21 / postprocess 자체검증)"
+  },
+  {
+   "severity": "low",
+   "title": "photometry.gamut_area_ratio · photometry.band_edges — 전용 수치 self-check 없음",
+   "file": "d:\\graph-skill\\src\\graph_skill\\postprocess\\photometry.py:96,110",
+   "evidence": "tests 전체에서 'gamut_area_ratio', 'band_edges' 문자열 0건(grep 결과 없음). test_ext.py는 ph.spectral_locus(CIE 앵커 520/700/480nm)와 ph.spectrum_to_third_octave(+3dB 에너지합)만 직접 수치 검증한다. gamut_area_ratio(삼각형 면적비 — cie-chromaticity의 '면적비' 제목 산출에 사용)와 band_edges(1/3옥타브 상하한 fc/2^(1/6)·fc·2^(1/6))는 cie/octave 렌더 경로로만 간접 실행되고 자체 수치 단언이 없다. test_ext.py:42는 제목에 '면적비' 문자열 존재만 확인할 뿐 면적비 값 정확성은 검증하지 않음.",
+   "recommendation": "gamut_area_ratio: 동일 삼각형 비=1.0, 절반 스케일=0.25 등 닫힌형 케이스 단언 추가. band_edges: band_edges(1000) → (≈891.0, ≈1122.5) 같은 기지값 대조 추가(test_ext.py).",
+   "dimension": "테스트 커버리지 갭 (graph-skill — 119 타입 / node 21 / postprocess 자체검증)"
+  },
+  {
+   "severity": "info",
+   "title": "srs/touchstone postprocess는 자체 수치검증 완비 — 갭 아님",
+   "file": "d:\\graph-skill\\tests\\test_ecae.py:34, d:\\graph-skill\\tests\\test_ext.py:83",
+   "evidence": "srs: test_ecae.py:34 test_srs_physics가 _srs.half_sine(1500g/0.5ms)→_srs.srs_maximax의 저주파 rolloff(<300)·maximax 증폭(1200<max<3000)을 물리 기반으로 검증. touchstone: test_ext.py:83 test_s2p_parser_formats가 ts.parse_s2p의 DB/RI/MA 3포맷 + VSWR(-9.54dB→2.0) + z0(50/75) + 복소 변환을 단언하고, to_tool_payload는 tools.ingest_s2p(test_ext.py:94)로 커버(tools.py:315가 to_tool_payload 호출). 즉 질문에서 지목한 srs·touchstone은 자체 수치검증이 존재함.",
+   "recommendation": "조치 불필요. 질문의 'srs/touchstone 미검증' 가설은 사실이 아님을 기록.",
+   "dimension": "테스트 커버리지 갭 (graph-skill — 119 타입 / node 21 / postprocess 자체검증)"
+  },
+  {
+   "severity": "medium",
+   "title": "xy-core 타입수 표기 불일치 — README \"80+\" / SKILL.md \"60여 종\" vs 실제 73",
+   "file": "D:/graph-skill/README.md:16",
+   "evidence": "README:16 \"xy-core(Canvas 2D, 80+ 타입·플러그인 25종)\". SKILL.md:11 \"base-xy 계열 60여 종(+playback/treemap 등 plugin)\". 실제 catalog를 resolve해 engine별 집계하면 xy-core = 73 타입. 즉 README는 과대(80+), SKILL.md는 과소(60여)로 서로 어긋나고 둘 다 실제값(73)과 다르다. 플러그인은 data/engines/xy-core/plugins/*.js = 26개(README의 \"25종\"은 1 차이).",
+   "recommendation": "두 문서의 xy-core 타입수를 실제 73으로 통일. 플러그인 25→26 정정(경미).",
+   "dimension": "문서 드리프트 (README / CHANGELOG / SKILL.md / docs vs 실제 코드)"
+  },
+  {
+   "severity": "low",
+   "title": "PUBLISH-INSIGHTS 백로그가 이미 해결된 항목(mesh-result-3d unlit 정점색)을 미해결로 표기",
+   "file": "D:/graph-skill/docs/PUBLISH-INSIGHTS.md:42",
+   "evidence": "PUBLISH-INSIGHTS.md:42 백로그에 \"mesh-result-3d 정점색이 조명에 묻혀 어두움 — ... unlit(or emissive=vertexColor) 재질 옵션 검토(시각 영향 커서 별도 차수)\"로 미해결처럼 남아있다. 그러나 CHANGELOG.md:9는 이를 0.45.0에서 해결(\"3D 컨투어 unlit 정점색(변형/모드는 음영 유지)\")로 기록했고, 실제 cad3d-core/engine.js:107-110 에 구현되어 있음: \"// CAE 컨투어 관례: 정점색 결과는 unlit(조명 무관 원색) — m.lit=true로 음영 복원 가능\" → contour는 MeshBasicMaterial(vertexColors), 그 외 MeshStandardMaterial. 즉 백로그 항목은 이미 출시됨. (단 이 문서는 0.42.1 시점 스냅샷이라 시점차에 의한 staleness 성격.)",
+   "recommendation": "PUBLISH-INSIGHTS.md 는 시점 스냅샷이므로 헤더에 \"0.42.1 시점\" 명시가 이미 있다. 혼동을 줄이려면 해당 백로그 줄에 \"(0.45.0 해결됨)\" 주석을 달거나 CHANGELOG로의 cross-link 추가.",
+   "dimension": "문서 드리프트 (README / CHANGELOG / SKILL.md / docs vs 실제 코드)"
+  },
+  {
+   "severity": "info",
+   "title": "docs 로드맵 \"완료\" 주장 샘플 점검 — 실제 구현 확인됨 (드리프트 아님)",
+   "file": "D:/graph-skill/docs/UX-ROADMAP.md:3",
+   "evidence": "UX-ROADMAP.md:3 \"P0 12 + P1 11 + P2 7 — 로드맵 30건 전체 구현·검증 완료 (0.42.0)\". CHANGELOG.md:10 0.45.0 \"P2 잔여\" 3건을 샘플 검증: (1) \"3D 컨투어 unlit 정점색\" → cad3d-core/engine.js:107-110 구현 확인. (2) \"네트워크 반발력 그리드 근사(n>150)\" → flow-core/engine.js:279-289 \"if (nodes.length <= 150) ... else grid-bucket far-field approximation (O(n·k))\" 구현 확인. (3) \"xy 제목 말줄임(컨트롤바 겹침 해소)\" → xy-core/engine.js:429-435 컨트롤바 폭(cbW) 차감 후 measureText 기반 말줄임 루프 구현 확인. 카테고리수도 taxonomy.grouped() = 19로 문서(19)와 정확히 일치. 따라서 로드맵/CHANGELOG의 구현 완료 주장은 샘플 범위에서 실제와 일치 — 수치 외 내용 드리프트는 발견되지 않음.",
+   "recommendation": "조치 불필요. 위 high/medium 수치 항목만 정정하면 문서 정확성이 회복됨.",
+   "dimension": "문서 드리프트 (README / CHANGELOG / SKILL.md / docs vs 실제 코드)"
+  },
+  {
+   "severity": "low",
+   "title": "gantt/timeline 플러그인의 client-side TODAY 마커가 런타임 시계 의존 (의도된 동작이나 런타임 비결정성)",
+   "file": "src/graph_skill/data/engines/xy-core/plugins/gantt.js:13,117-119, src/graph_skill/data/engines/xy-core/plugins/timeline.js:10,57-58",
+   "evidence": "function todayEpochDay() { var d = new Date(); return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / dayMs()); } 가 onDrawOutside에서 호출됨. 주석이 명시: '// today line (client-side: shows the date the report is VIEWED)'. c.today !== false 로 게이트되고, 레시피가 미리 계산한 데이터가 아니라 브라우저 현재시각에 따라 그려지는 위치가 달라진다.",
+   "recommendation": "빌드 바이트 결정성에는 영향 없음(빌드 시 new Date() 미호출 — 2회 렌더 sha 동일 실증함). 다만 '결정적 시각 산출물'이 필요한 게시/회귀 스냅샷이라면 today 마커를 끄거나(today:false), 레시피가 today를 epoch-day 상수로 주입해 런타임 new Date()를 제거하는 옵션을 권장. 현재는 의도된 viewer-time 표시이므로 위반보다는 주의 사항.",
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)"
+  },
+  {
+   "severity": "low",
+   "title": "NaN/Inf 직렬화는 fail-closed지만 상류 sanitize 누락 시 빌드가 ValueError로 중단 (자인된 gap)",
+   "file": "src/graph_skill/serialize.py:34, src/graph_skill/postprocess/reliability.py:27, src/graph_skill/postprocess/gaugerr.py:44, src/graph_skill/postprocess/treemap.py:36",
+   "evidence": "safe_js_literal: json.dumps(..., allow_nan=False)  # 주석: 'NaN/Inf must be replaced with null upstream (gap)'. 일부 후처리가 비유한값을 생성: reliability.py:27 eta = ... else float(\"nan\"); gaugerr.py:44 ndc = ... else float(\"inf\"); treemap.py:36 return float(\"inf\"). 이 값이 config(assets/options)에 도달하면 json.dumps가 예외를 던져 빌드가 막힌다(결정성은 유지 — 같은 입력은 항상 같은 실패).",
+   "recommendation": "비결정성 위반은 아님(결정적으로 실패). 다만 강건성·UX 차원에서 직렬화 직전 config를 순회해 NaN/±Inf를 null로 치환하는 sanitize 단계를 추가하면 자인된 gap이 닫힌다. statistical.py:96(math.inf,-math.inf), stress_strain.py:55(float('-inf'))는 min/max 누산기 시드로 확인됨 — 산출물에 새지 않으므로 무해.",
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)"
+  },
+  {
+   "severity": "info",
+   "title": "결정성: dict/set 순서 의존 없음 — 점검한 모든 set은 멤버십 전용이거나 sorted, dict 반복은 입력순서 보존",
+   "file": "src/graph_skill/recipes/relations.py:13-21, src/graph_skill/recipes/leftovers.py:24-33, src/graph_skill/recipes/schedule.py:183-193, src/graph_skill/recipes/testreport.py:30, src/graph_skill/serialize.py:29-35, src/graph_skill/builder.py:50-52,120, src/graph_skill/catalog.py:79-86",
+   "evidence": "relations.py: seen=set(have)는 'v not in seen' 멤버십 검사에만 쓰이고 출력은 links 리스트 순서로 append. leftovers.py: xset=set() 뒤 xs=sorted(xset). schedule.py: seen_m set은 멤버십 전용, 출력은 range() 루프. testreport.py:30: payload.get('info').items() 반복(파이썬 3.7+ 삽입순서 보존 → 동일 입력 동일 출력). serialize.safe_js_literal: json.dumps(sort_keys=True, separators=(',',':')). builder.assemble: engines/pairs를 sorted()로 정렬해 번들. builder.render: write_text(newline='\\n')로 CRLF 변환 차단. catalog.resolve_type: reversed(chain) 부모→자식 결정적 누산. 2회 렌더 바이트 동일(sha 일치) 실증.",
+   "recommendation": "조치 불필요. 빌드 결정성 계약(same input → same bytes)은 코드·실증 모두에서 충족됨.",
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)"
+  },
+  {
+   "severity": "info",
+   "title": "보안: 하드코딩 시크릿/토큰/비밀번호 없음 — 토큰은 gitignore된 런타임 파일에서 로드",
+   "file": "tests/verify_publish.py:16,30, src/graph_skill/settings.py:1, .gitignore:7,13",
+   "evidence": "verify_publish.py:16 TOKEN = (ROOT/'graph-out'/'publish'/'_tok.txt').read_text(...).strip() — 하드코딩이 아니라 외부 파일 로드. .gitignore에 'graph-out/'와 'graph-out/publish/_tok.txt' 양쪽 등재, git ls-files에 _tok 트랙된 파일 없음, 디스크에도 _tok.txt 부재. settings.py:1 '# Runtime settings — no network, no tokens'. 코드/픽스처/문서 전수 grep(password|api_key|secret|bearer|sk-|ghp_|AKIA…)에서 venv 제외 시 실 시크릿 매치 0 (히트는 모두 CSS 'design tokens', 그래프 타입명 'eye-mask', 코드 substring 마커 'token').",
+   "recommendation": "조치 불필요. 시크릿 위생 양호.",
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)"
+  },
+  {
+   "severity": "info",
+   "title": "보안: 엔진/레시피에 CDN·외부 스크립트/스타일 참조 없음 — three.js는 인라인 vendor, http URL은 주석·SVG 네임스페이스뿐",
+   "file": "src/graph_skill/data/vendor/manifest.json, src/graph_skill/data/engines/flow-core/engine.js:13,877, src/graph_skill/data/shell/template.html",
+   "evidence": "src=/href=//, cdn., unpkg/jsdelivr/cdnjs/googleapis 전수 grep: 데이터 트리에서 매치 0 (manifest.json의 'source: unpkg three@0.128.0'는 빌드 출처 메타데이터일 뿐 런타임 참조 아님). 검출된 http(s) URL은 (a) vendor/GLTFLoader.js의 스펙 링크 주석, (b) flow-core engine.js:13 SVGNS='http://www.w3.org/2000/svg' 및 :877 setAttribute('xmlns', ...) — W3C 네임스페이스 식별자(네트워크 fetch 아님)로, 게이트 정규식이 xmlns=를 매치하지 않아 올바르게 비위반 처리됨. template.html은 {{ENGINE_JS}}/{{CSS}}/{{VENDOR}}를 전부 인라인 <script>/<style>로 임베드.",
+   "recommendation": "조치 불필요. CDN/외부 리소스 0 계약 충족(단, 위 high 항목의 데이터 채널 우회는 별개로 처리 필요).",
+   "dimension": "결정성·보안·셀프컨테인드 계약 (Determinism / Security / Self-contained contract)"
+  },
+  {
+   "severity": "low",
+   "title": "SRS: Nyquist가 fn_lo보다 낮으면 비단조·초과-Nyquist 주파수 그리드를 조용히 반환",
+   "file": "src/graph_skill/postprocess/srs.py:15-18",
+   "evidence": "fn_hi=min(fn_hi, fs/2.0) 후 n_oct=log2(fn_hi/fn_lo). fs=15(Nyquist 7.5) < fn_lo=10이면 n_oct=-0.415(음수), npts=max(2, round(neg)+1)=2가 되어 fns=[10.0, 7.5]를 생성. fns[0]=10Hz가 Nyquist 7.5Hz를 초과(에일리어싱)하고 그리드가 내림차순(비단조). SDOF 필터를 Nyquist 위에서 평가하므로 물리적으로 무의미한 값을 에러 없이 반환. 게이팅(test_ecae gating)은 accel 샘플 개수만 검사하고 이 경우를 막지 못함.",
+   "recommendation": "fn_lo >= fs/2.0이면 None 반환 또는 ValueError. 최소한 fns를 fn_lo<fn_hi(=fs/2) 조건으로 필터링하고, n_oct<=0이면 빈/단일점 처리하여 Nyquist 초과 주파수가 그리드에 들어가지 않게 한다.",
+   "dimension": "수치 후처리 정확성 (graph-skill/postprocess)"
+  },
+  {
+   "severity": "low",
+   "title": "half_sine: 펄스가 언더샘플되면 진폭이 조용히 0으로 붕괴",
+   "file": "src/graph_skill/postprocess/srs.py:53,57",
+   "evidence": "n_pulse=max(2,int(round(duration_ms*1e-3*fs))). half_sine(1500, 0.001, 1000)처럼 duration_ms*fs가 작아 round가 0이 되면 n_pulse=2로 강제됨. 이때 sig=[peak*sin(pi*0/1), peak*sin(pi*1/1)]=[sin0, sin(pi)]=[0, ~1.8e-13]. 실측 peak=1.84e-13으로 1500g 펄스가 사실상 0 신호가 됨. 경고 없이 빈 펄스를 만들어 후속 SRS가 0 스펙트럼을 산출.",
+   "recommendation": "duration_ms*1e-3*fs < ~ (예: 4) 이면 ValueError로 '샘플레이트가 펄스 폭에 비해 너무 낮음'을 알린다. 또는 n_pulse 하한을 최소 해상도(예: 8~10)로 올리고 그에 못 미치면 거부.",
+   "dimension": "수치 후처리 정확성 (graph-skill/postprocess)"
+  },
+  {
+   "severity": "info",
+   "title": "stress_linearize: bending 모멘트를 사다리꼴 적분해 선형장에서도 정확히 복원 못함",
+   "file": "src/graph_skill/postprocess/experiment.py:55-56",
+   "evidence": "mom=trapz([sig*(xm-xi)…])는 sig가 선형이면 피적분함수가 2차식이라 사다리꼴 규칙이 정확하지 않음. σ(x)=200-30x, t=4의 이론 bending=60.0인데 코드는 60.019(0.03% 오차) 반환. 테스트(test_mte.py:48)는 tol<0.05로 이 오차를 통과시킴. ASME 선형화는 본래 정확 적분을 기대(σm+σb=경로끝값)하는데 sm+sb=200.019≠200.0.",
+   "recommendation": "수치 오차는 작아 실무상 무해하나, 표준 ASME식과의 정합을 원하면 1차 모멘트를 해석적/심프슨 적분하거나, 균일 그리드 가정 시 닫힌형 membrane=(Σσ_i 가중)·… 사용. 최소한 docstring에 '사다리꼴 → 2차 피적분 시 미소 오차' 명시.",
+   "dimension": "수치 후처리 정확성 (graph-skill/postprocess)"
+  },
+  {
+   "severity": "info",
+   "title": "gamut_area_ratio: 단순 삼각형 면적비를 '커버리지/면적비 %'로 표기 — >100% 및 비-중첩 왜곡",
+   "file": "src/graph_skill/postprocess/photometry.py:96-101, src/graph_skill/recipes/ext.py:46-47",
+   "evidence": "gamut_area_ratio=area(measured)/area(ref)로 교집합이 아닌 면적비. DCI-P3/sRGB=135.7%, BT2020/sRGB=189.1% 산출됨. 영역이 다른 곳을 덮어도 면적만 같으면 100%로 보고하고, 넓지만 어긋난 색역이 100% 초과를 보고 → 'coverage'로 오해 가능. recipe 타이틀은 '면적비 X% vs <ref>'로 노출. docstring은 '커버리지 % 근사용, 단순 면적비'라 한계를 솔직히 명시하긴 함.",
+   "recommendation": "진짜 커버리지가 필요하면 측정삼각형∩기준삼각형 면적/기준면적(Sutherland-Hodgman 클리핑)으로 계산. 현 함수 유지 시 라벨을 '상대 면적비(커버리지 아님)'로 명확히 하여 >100% 값의 의미 오해 방지.",
+   "dimension": "수치 후처리 정확성 (graph-skill/postprocess)"
+  }
+ ],
+ "report": "양호하지만 출시 전 정리 권장입니다.\n\n## 1. 전반 건강 상태: **주의 (양호에 가까움)**\n\n결정적 검증층(pytest 381 passed, registry/catalog 119=119)은 통과했고, 카탈로그·결정성·보안·수치 후처리의 핵심은 견고합니다. 다만 NEVER-invent 계약 위반 1건, 셀프컨테인드 게이트 우회 1건이 실증으로 확인되어 출시 전 손봐야 할 수준입니다. critical/high 등급은 0건입니다.\n\n## 2. 즉시 고쳐야 할 것 (confirmed)\n\ncritical/high는 없습니다. 출시 차단성이 가장 높은 medium 3건을 우선 처리 대상으로 제시합니다.\n\n| 심각도 | 문제 | 파일·증거 | 수정안 |\n|---|---|---|---|\n| medium | **셀프컨테인드 게이트 우회**: `image.ref` 외부 URL이 config(JSON) 채널로 들어가 런타임에 `img.src`로 외부 fetch되나, 게이트 정규식이 `src=`/`href=` HTML 속성만 검사해 통과 (PoC 2건 재현) | `src/graph_skill/serialize.py:41-55` (`_EXTERNAL_URL`), `data/engines/review-matrix/engine.js:224`, `flow-core/engine.js:552`, `recipes/matrix_compare.py:80-84` | `lint_self_contained`가 `#graph-config` JSON을 파싱해 `image.ref` 등의 `http(s)://`·`//` 값을 위반 카운트. 또는 빌드 시 `image.mode != 'inline'`이면서 외부 스킴이면 `MissingFieldsError`로 거부, 인라인 `data:` base64만 허용 |\n| medium | **stress-linearization NEVER-invent 위반**: 응력 단위를 게이트 없이 `\"MPa\"`로, x를 `\"mm\"`로 묵묵히 채움 (사용자 ksi/psi 입력이 MPa로 오라벨링) | `recipes/mte.py:75` `s_unit = ...get(\"unit\",\"MPa\")`, `:76` `x_unit` 기본 `\"mm\"`. `structural_requires`(:80-84)는 path 길이만 검사 | `structural_requires`에 `axes.y.unit` 게이트 추가(형제 `_ax_need` 헬퍼 재사용) |\n| medium | **stream-graph 로그축 무시**: `_axis`가 엔진이 안 읽는 `scale:\"log\"` 키 방출 → 사용자 로그축 요청 묵묵히 무시 (과거 SRS 버그 패턴 잔존). OverviewDetail·playback 계열에도 전파 | `recipes/leftovers.py:15` `\"scale\": a.get(\"scale\",\"linear\")` vs `xy-core/engine.js:155` `this.xLog` (`log` 키만 읽음) | `leftovers.py` `_axis`를 `base_xy.py`처럼 `\"log\": a.get(\"scale\",\"linear\")==\"log\"`로 교체 (OverviewDetail `:80`, playback bubble-timeline/animated-trajectory 동일 결함) |\n\n## 3. 정리하면 좋은 것 (medium/low)\n\n- **엔진 버전 미범프 3건**: cad3d-core(0.6.0)·xy-core(1.8.1)·flow-core(0.6.0)가 0.45.0 P2 편집으로 engine.js는 수정됐으나 ENGINE_VERSION 미범프. 신선도 게이트는 갤러리 재생성으로 통과해 '코드 변경 후 버전 미범프'를 구조적으로 못 잡음 → 패치 범프 후 `build_gallery.py` 재생성, 게이트에 코드 mtime vs 버전 비교 보강 검토\n- **문서 규모 수치 드리프트**: \"9 엔진 패밀리\"→실제 8, \"396+ tests\"→381, xy-core \"80+/60여 종\"→73 (README:13/54, CHANGELOG:25, SKILL.md:7) 정정\n- **단위 게이트 누락(경미)**: multitrack-stack(채널 y 단위 빈 문자열), fft-spectrum(진폭 y 단위 빈 문자열) — stress-linearization 수정 시 동일 패턴 점검\n- **테스트 갭**: `experiment.linear_fit`, `photometry.gamut_area_ratio`, `photometry.band_edges` 전용 수치 self-check 추가. node_*.mjs는 review-matrix/gauge-core/flow-core/playback/schedule 계열 미부팅(playwright/pytest로만 커버)\n- **수치 경계 결함**: SRS(Nyquist < fn_lo 시 비단조 그리드 조용히 반환)·half_sine(언더샘플 시 진폭 0 붕괴) 저샘플레이트 경계 가드 추가\n- **표기 오해 소지**: gamut_area_ratio를 '커버리지 %'로 표기(>100%·비중첩 왜곡), stress_linearize bending 사다리꼴 적분 정확도 한계 — 라벨·문서 명확화\n- **자잘한 백로그 드리프트**: PUBLISH-INSIGHTS가 이미 해결된 mesh-result-3d unlit 정점색을 미해결로 표기\n\n## 4. 오탐으로 판명 (1건)\n\n- **goodman-haigh 평균/교번응력 단위 게이트 누락 (NEVER-invent 위반 주장)** → **기각**. validate.py의 NEVER-invent 규칙은 \"곡선 계산에 필요한 물리 파라미터\"를 인벤트 금지하는 것이며, 라벨용 단위 기본값과는 범위가 다름. stress-linearization과 달리 위반으로 보기 어려워 과장된 주장으로 판정.\n\n## 5. 점검 결론\n\n**조건부 출시 가능.** 7개 차원 어디에도 critical/high·데이터 손상·렌더 미커버 타입은 없고, 핵심 수치 후처리(SRS Smallwood, Richardson/GCI, CIE locus, VSWR, marching tetrahedra)는 표준과 비트/수학값 단위로 일치합니다.\n\n권장 다음 액션 (우선순위순):\n1. **출시 전 필수**: medium 3건 수정 — (a) `lint_self_contained` config 채널 확장, (b) `mte.py` 응력 단위 게이트, (c) `leftovers.py` `_axis` 로그축 키 교체(OverviewDetail·playback 포함)\n2. **출시와 병행 가능**: 엔진 버전 3건 범프 + 갤러리 재생성, 문서 규모 수치 4곳 정정\n3. **후속 스프린트**: 신선도 게이트에 코드 mtime↔버전 비교 추가, postprocess self-check 3종 보강, SRS/half_sine 경계 가드\n\n1번을 처리하면 무조건 출시 가능 상태로 판단합니다."
+}

@@ -7,6 +7,7 @@ Engine-family aware: assets live under ``data/engines/<engine>/`` so that future
 
 from __future__ import annotations
 
+import hashlib
 from functools import lru_cache
 from pathlib import Path
 
@@ -66,3 +67,21 @@ def engine_version(engine: str) -> str:
     if not p.is_file():
         return "0.0.0"
     return p.read_text(encoding="utf-8").strip()
+
+
+def engine_code_hash(engine: str) -> str:
+    """sha256 over the engine's own source (engine.js + engine.css + plugins/*.js).
+    Vendored libs are excluded — they're separately sha256-pinned. The freshness gate binds
+    this to ENGINE_VERSION: change code -> hash changes -> the gate fails until you bump the
+    version + regenerate the manifest (structurally catches 'edited engine, forgot to bump')."""
+    d = engine_dir(engine)
+    files = [d / "engine.js", d / "engine.css"]
+    plug = d / "plugins"
+    if plug.is_dir():
+        files += sorted(plug.glob("*.js"))
+    h = hashlib.sha256()
+    for f in sorted((p for p in files if p.is_file()), key=lambda p: p.relative_to(d).as_posix()):
+        h.update(f.relative_to(d).as_posix().encode("utf-8"))
+        h.update(b"\0")
+        h.update(f.read_bytes())
+    return h.hexdigest()

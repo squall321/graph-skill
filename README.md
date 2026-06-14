@@ -10,8 +10,8 @@ LLM의 일은 (a) 데이터 수집 (b) 축·배경값 확인(부족하면 *질�
 
 ## 현재 규모 — v0.45.0
 
-- **119 그래프 타입 / 9 엔진 패밀리 / 19 분류 카테고리**
-- 엔진: `xy-core`(Canvas 2D, 80+ 타입·플러그인 25종) · `field-core` · `polar-core` · `smith-core`
+- **132 그래프 타입 / 8 엔진 패밀리(+linked-view 버스) / 19 분류 카테고리**
+- 엔진: `xy-core`(Canvas 2D, 84 타입·플러그인 25종, grouped/stacked 막대·콤보·T1 정형 판정그림 포함) · `field-core` · `polar-core` · `smith-core`
   · `review-matrix`(DOM 표·셀=값/상태/heat/bar/그래프/이미지) · `flow-core`(순서도·sankey·network
   ·chord·sunburst) · `gauge-core`(게이지·마진·카드) · `cad3d-core`(WebGL, three.js 벤더링)
   · linked-view 플러그인 버스(focus+context·공유 크로스헤어·SPLOM 브러싱)
@@ -44,6 +44,28 @@ tools.types_find("낙하 충격")                     # → srs-spectrum …
 tools.render_payload("gantt-chart", payload, out_path="out.html")
 ```
 
+## 웹 / 원격 MCP 서빙
+
+`graph_skill.server`가 **단일 ASGI 앱**으로 세 표면을 한 배포에 노출한다(코어 `tools.DISPATCH`·
+엔진 자산·결정성·self-contained 게이트는 무수정 재사용). 전송·아티팩트 서빙·보안만 이 레이어에 있다.
+
+```bash
+pip install -e ".[postprocess,cad3d,web]"
+graph-skill-web                       # uvicorn 기동 (GRAPH_HOST/GRAPH_PORT)
+```
+
+| 엔드포인트 | 용도 |
+| --- | --- |
+| `POST /v1/render` | 렌더 → **콘텐츠주소 아티팩트**. `{hash, artifact_url, lint, ...}` 반환(배경값 부족 시 422 `needs_input`) |
+| `GET /artifacts/<sha256>` | self-contained HTML 서빙(immutable 캐시 + CSP). 산출이 바이트결정적이라 hash가 자연 캐시키 |
+| `POST /v1/lint` · `/v1/embed` | 저장된 아티팩트(hash)에 대한 lint / report-write 조각 |
+| `POST /v1/<tool>` | 순수 도구 passthrough(types/find/schema/validate/ingest_csv/ingest_s2p/resample/smooth) |
+| `/mcp` | **원격 MCP**(Streamable HTTP). 로컬 stdio MCP(`graph-skill-mcp`)는 그대로 유지 |
+
+보안(env-gated): `GRAPH_API_KEY`(Bearer/X-API-Key) · `GRAPH_MAX_BODY` · `GRAPH_RATE_RPS` ·
+`GRAPH_ARTIFACT_DIR`(디스크 영속). `needs_input` 게이트는 서버가 절대 우회하지 않는다(NEVER-invent).
+P2(인프라): 오브젝트스토리지/CDN, OAuth, cad3d 워커 격리, report-archive file_id 연동.
+
 ## 개발
 
 ```bash
@@ -51,7 +73,7 @@ pip install -e ".[postprocess,cad3d,test]"
 python -m playwright install chromium
 
 python build_gallery.py     # graph-out/gallery — 엔진 버전 범프 시 필수(신선도 게이트)
-pytest tests/ -q            # 396+ tests (수치 검증·게이트·결정성·실브라우저 시각)
+pytest tests/ -q            # 433+ tests (수치 검증·게이트·결정성·실브라우저 시각·웹/MCP 서빙; optional deps 없으면 일부 skip)
 for f in tests/node_*.mjs; do node "$f"; done
 python tests/playwright_smoke.py   # 119/119 실 Chromium 부팅+무에러 스모크
 ```

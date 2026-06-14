@@ -1,0 +1,798 @@
+{
+ "total": 49,
+ "raw": [
+  {
+   "name": "xbar-r-chart",
+   "korean": "Xbar-R/I-MR 쌍 관리도",
+   "evidence": "NIST/SEMATECH e-Handbook 6.3.2.1 및 AIAG SPC 매뉴얼의 표준 변수형 관리도 — 서브그룹 상수(A2,D3,D4,d2) 기반 관리한계를 가진 Xbar 패널 + R(또는 S/MR) 패널의 2단 정형 레이아웃. 기존 spc-control-chart는 개별값 단일 패널(mean±3σ)이라 서브그룹 통계·쌍 패널 불가. https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc321.htm , https://www.spcforexcel.com/knowledge/variable-control-charts/xbar-r-charts-part-1/",
+   "frequency": "high",
+   "input_shape": "subgroups:[[v1,v2,...],...] + axes.y{label,unit} + chart:\"xbar-r\"|\"xbar-s\"|\"i-mr\"",
+   "engine_fit": "spc-control-chart의 threshold-lines/named-markers 플러그인과 multitrack-stack식 공유 x축 2패널 재사용; stats 모듈에 A2/D3/D4/d2 상수표와 서브그룹 한계 계산만 추가",
+   "effort": "M",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "ewma-chart",
+   "korean": "EWMA 관리도",
+   "evidence": "NIST/SEMATECH e-Handbook 6.3.2.4 EWMA Control Charts — λ 가중 EWMA 통계량과 시변 관리한계 μ±3σ√(λ/(2−λ)·[1−(1−λ)^{2t}])가 정형 포맷(초기 한계가 좁아지다 점근). cusum-chart는 있으나 EWMA는 부재하며 base-xy로는 시변 한계 자동계산 불가. https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm",
+   "frequency": "mid",
+   "input_shape": "values:[...] + lambda(기본 0.2) + axes.y{label,unit} (+target, sigma)",
+   "engine_fit": "base-xy 라인 엔진 + area 밴드 재사용 — 원데이터 마커, EWMA 곡선, 시변 UCL/LCL 밴드와 OOC 마커를 자동 계산; statistical2.py의 cusum 계열에 추가",
+   "effort": "S",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "oc-curve",
+   "korean": "OC 곡선(샘플링검사 운영특성곡선)",
+   "evidence": "ANSI/ASQ Z1.4 및 ISO 2859-1 규격 본문에 각 샘플링 플랜(n,c)별 OC 곡선이 규격 그림으로 수록 — Pa(로트 불량률) 곡선 + AQL@Pa≈95%(생산자위험 α)·LTPD@Pa≈10%(소비자위험 β) 교점 표기가 관행. 이항/포아송 누적확률 자동계산이 필요해 base-xy로 불가. https://webstore.ansi.org/preview-pages/ASQ/preview_ANSI+ASQ+Z1.4-2003+(R2013).pdf , https://www.iso.org/obp/ui/#iso:std:iso:2859:-1:ed-2:v1:en",
+   "frequency": "mid",
+   "input_shape": "plans:[{n,c}] (+aql, ltpd, alpha, beta) — Pa(p) 곡선은 이항분포로 자동 산출",
+   "engine_fit": "base-xy + threshold-lines/named-markers 재사용; stats 모듈에 이항 누적확률만 추가하고 AQL/LTPD 교점·α/β 구간을 자동 마킹",
+   "effort": "S",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "fmea-worksheet",
+   "korean": "FMEA 워크시트(RPN/AP 자동판정)",
+   "evidence": "AIAG-VDA FMEA Handbook(2019)의 표준 양식 — S×O×D로 RPN(구판) 또는 Action Priority H/M/L 결정표 룩업(신판)을 자동 판정하고 개선 전/후를 비교하는 정형 워크시트. 자동차·전자 품질보고의 필수 산출물. 기존 review-matrix는 범용 표라 RPN 계산·AP 룩업·색 배지 규칙이 없음. https://quality-one.com/aiag-vda-fmea/ , https://quasist.com/fmea/action-priority-in-fmea/",
+   "frequency": "high",
+   "input_shape": "rows:[{item,failure_mode,effect,cause,S,O,D, actions?, S2,O2,D2}] + mode:\"rpn\"|\"ap\"",
+   "engine_fit": "테이블 엔진(review-matrix/design-state-compare) 재사용 — RPN=S·O·D 자동계산, AIAG-VDA AP 결정표 내장 룩업, H/M/L 색 배지, 개선 전후 RPN 비교 미니바(pareto 스타일) 결합",
+   "effort": "M",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "bathtub-curve",
+   "korean": "욕조곡선(고장률 3구간)",
+   "evidence": "신뢰성 보고서의 표준 개념도/분석도 — 초기고장(감소)·우발고장(상수)·마모고장(증가) 3구간 hazard rate 곡선에 구간 음영·라벨, burn-in 컷오프 시점 표기가 관행. base-xy로는 3구간 음영·라벨·합성 hazard 자동생성이 안 됨. https://en.wikipedia.org/wiki/Bathtub_curve , https://www.sciencedirect.com/topics/engineering/bathtub-curve",
+   "frequency": "mid",
+   "input_shape": "개념도: regions:{t1,t2,tmax}+레벨 / 데이터: data:[[t,λ(t)]] 또는 Weibull (β,η) 3세트 (+burn_in_time)",
+   "engine_fit": "base-xy + area 음영 3구간 + 영역 라벨·burn-in 수직 컷오프선 재사용; Weibull hazard 합성곡선 생성 유틸만 reliability 모듈에 추가",
+   "effort": "S",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "life-distribution-compare",
+   "korean": "수명분포 적합 비교(확률지 패널)",
+   "evidence": "Minitab Distribution ID Plot이 사실상 업계 표준 — Weibull/lognormal/exponential/normal 4분할 확률지 패널 + Anderson-Darling(adj) 또는 상관계수 적합도 순위표가 신뢰성 성적서의 정형 그림(우측 중도절단 지원). 기존 weibull-prob-paper는 Weibull 단일·절단 미지원. https://support.minitab.com/en-us/minitab/21/help-and-how-to/statistical-modeling/reliability/how-to/distribution-id-plot-right-censoring/interpret-the-results/distribution-id-plot/",
+   "frequency": "mid",
+   "input_shape": "values:[수명...] (+censored:[bool...]) + distributions:[\"weibull\",\"lognormal\",\"normal\",\"exponential\"]",
+   "engine_fit": "weibull-prob-paper의 median-rank/선형화 적합 로직을 분포별 축변환으로 일반화하고 2×2 소패널 레이아웃 + 적합도 미니표 결합; reliability 모듈 확장",
+   "effort": "L",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "crow-amsaa-growth",
+   "korean": "신뢰도 성장 추적도(Crow-AMSAA/Duane)",
+   "evidence": "MIL-HDBK-189C Reliability Growth Management의 표준 그림 — 누적고장수 vs 누적시험시간 log-log 직선 적합으로 β·λ를 MLE 추정, β<1이면 성장 판정, 순간/누적 MTBF 곡선 병기. 자동 MLE·log-log 적합이 필요해 base-xy로 불가. https://www.dote.osd.mil/Portals/97/docs/TEMPGuide/MIL-HDBK-189C.pdf , https://help.reliasoft.com/reference/reliability_growth_and_repairable_system_analysis/rg_rsa/crow-amsaa_nhpp.html",
+   "frequency": "mid",
+   "input_shape": "failure_times:[누적 고장시점...] (+목표 MTBF)",
+   "engine_fit": "base-xy log-log + weibull-prob-paper식 회귀적합 패턴 재사용; β/λ MLE와 순간/누적 MTBF 곡선 산출 함수만 reliability 모듈에 추가",
+   "effort": "M",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "reliability-demo-sprt",
+   "korean": "신뢰성 실증시험 축차판정도(PRST)",
+   "evidence": "MIL-HDBK-781A의 표준 PRST(Probability Ratio Sequential Test) 도표 — 누적시험시간 vs 누적고장수 평면에 α/β/판별비로부터 계산된 accept·continue·reject 경계선과 절단(truncation)선을 긋고 시험 경과를 계단 경로로 중첩. 경계식 자동계산·영역 구분이 필요한 정형 포맷. https://apps.dtic.mil/sti/tr/pdf/ADA330773.pdf , https://accendoreliability.com/reliability-testing-sampling-plans-part-2-prst-and-fixed-length-plans/",
+   "frequency": "low",
+   "input_shape": "alpha, beta, discrimination_ratio(또는 θ0/θ1) + 시험경과 [[누적시간,누적고장]]",
+   "engine_fit": "base-xy + threshold-lines/area로 경계선·영역 음영, ecdf식 step 곡선으로 시험경로; ln(A)/ln(B) 경계식 계산만 추가",
+   "effort": "M",
+   "domain": "quality-reliability"
+  },
+  {
+   "name": "jitter-bathtub",
+   "korean": "지터 배스터브 곡선 (BER vs UI)",
+   "evidence": "고속 직렬(SerDes/PCIe/USB) 컴플라이언스 보고의 표준 그림 — 좌/우 에지 BER 곡선을 로그 BER 축에 그리고 목표 BER(1e-12)에서 eye opening/TJ를 판독. dual-Dirac 외삽이 Fibre Channel 이래 표준 방법론. 출처: https://www.tek.com/en/documents/primer/dual-dirac-scope-histograms-and-bertscan-measurements , https://www.synopsys.com/photonic-solutions/product-applications/other-applications/measurement-total-jitter.html",
+   "frequency": "high",
+   "input_shape": "ui:[UI offset], ber_left:[], ber_right:[] (또는 rj_sigma+dj로 dual-Dirac 자동 생성), target_ber:1e-12",
+   "engine_fit": "base-xy 선 엔진 재사용: y축 log(BER) 역방향 눈금 + target BER 수평선과 곡선 교차점 보간 → eye opening @BER 자동 주석. dual-Dirac 외삽은 erfc 닫힌식이라 순수 계산",
+   "effort": "S",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "eye-mask-compliance",
+   "korean": "아이 마스크 판정도",
+   "evidence": "IEEE 802.3(ah/aq/ba), OIF-CEI, ITU-T G.957 등이 송신기 적합성에 마스크 시험을 의무화 — 중앙 육각형+상/하 레일 폴리곤 오버레이, 마스크 히트 수/비율(예: 1:20,000) 판정과 mask margin %가 정형 포맷. 출처: https://grouper.ieee.org/groups/802/3/ba/public/nov08/anslow_07_1108.pdf , https://www.signalintegrityjournal.com/articles/2259-the-long-and-the-short-of-eye-masks",
+   "frequency": "high",
+   "input_shape": "기존 eye-diagram 입력(signal+sps) + mask:{polygons 또는 preset(802.3/usb/g957)} + hit_ratio 기준",
+   "engine_fit": "기존 eye-diagram 히트 히스토그램 엔진(wave6.py) 그대로 쓰고 폴리곤 오버레이 레이어 + point-in-polygon 히트 카운트 + 마스크 확대(margin %) 계산만 추가",
+   "effort": "M",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "tdr-impedance-profile",
+   "korean": "TDR 임피던스 프로파일",
+   "evidence": "PCB/케이블/커넥터 SI 성적서의 표준 그림 — 거리(또는 ns) 대 Z(Ω) 프로파일에 규격 회랑(예: 85Ω±10%)과 측정 구간(IPC-TM-650 2.5.5.7의 30–70% zone)을 표시하고 일탈을 판정. 출처: https://standards.globalspec.com/std/34703/ipc-tm-650-2-5-5-7 , https://blog.lamsimenterprises.com/2021/05/02/characteristic-impedance-where-si-pi-worlds-collide/",
+   "frequency": "high",
+   "input_shape": "profile:[[distance(또는 ns), Ω]], z0:85, tol_pct:10, zones?:[{x0,x1,label}] (커넥터/비아 등)",
+   "engine_fit": "base-xy + 회랑 밴드(상·하한) 음영 + 일탈 구간 자동 검출 마커 — emi-spectrum의 _limit_at 위반 판정 로직(ecae.py) 재사용",
+   "effort": "S",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "phase-noise",
+   "korean": "위상잡음 플롯 (L(f), dBc/Hz)",
+   "evidence": "발진기/PLL/클럭 성적서의 정형 포맷 — IEEE Std 1139의 L(f)를 로그 오프셋 축(10Hz~100MHz 데케이드)에 그리고, 스퍼는 dBc 단위로 별도 마커, 적분 대역의 RMS 지터(fs)를 자동 산출해 병기. 출처: https://www.skyworksinc.com/-/media/Skyworks/SL/documents/public/application-notes/AN256.pdf , https://www.renesas.com/en/document/apn/839-rms-phase-jitter",
+   "frequency": "high",
+   "input_shape": "offsets:[Hz], lf:[dBc/Hz], spurs?:[[Hz,dBc]], integ?:[f1,f2] (RMS 지터 적분 대역), carrier?:Hz",
+   "engine_fit": "base-xy log-x 재사용 + log-log 구간 보간 적분으로 RMS jitter 자동 계산(제목/배지 표기) + 스퍼 전용 수직 마커 렌더. 데케이드 그리드는 기존 log축 지원으로 충분",
+   "effort": "M",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "loop-gain-margin",
+   "korean": "루프이득 안정도 (위상여유/이득여유 자동 판정)",
+   "evidence": "전원 제어루프 안정도 보고(Bode 100/Venable/오실로스코프 FRA)의 정형 포맷 — 이득 0dB 교차 주파수에서 PM, 위상 교차에서 GM을 자동 산출해 수직선+수치로 주석하고 합격 기준(PM>45°, GM>10dB) 판정. 기존 bode 타입은 곡선만 그리고 교차점/여유 계산이 없음. 출처: https://www.omicron-lab.com/fileadmin/assets/Bode_100/ApplicationNotes/DC_DC_Stability/App_Note_DC_DC_Stability_V3_3.pdf , https://www.tek.com/en/documents/technical-brief/measuring-the-control-loop-response-of-a-power-supply-using-an-oscilloscope",
+   "frequency": "high",
+   "input_shape": "freqs:[Hz], mag:[dB], phase:[deg] (+ criteria?:{pm_min:45, gm_min:10})",
+   "engine_fit": "기존 bode 레시피(bode.py) 확장형: 동일 dual-axis 엔진에 0dB/위상 교차점 선형 보간 계산 + 수직 가이드라인·PM/GM 배지·합부 색상만 추가",
+   "effort": "S",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "conducted-emission",
+   "korean": "전도성 방출 스펙트럼 (QP/AVG 이중 한계)",
+   "evidence": "CISPR 32/EN 55032(및 FCC Part 15B) 전도성 방출 성적서의 정형 포맷 — 150kHz~30MHz에서 QP·AVG 두 검파기 트레이스와 두 한계선(150k~500kHz 로그 경사 포함)을 동시 표시하고 검파기별 마진 판정. 기존 emi-spectrum은 한계선 1조+방사 프리셋만 지원. 출처: https://www.academyofemc.com/emc-standards , https://connectivity-staging.s3.us-east-2.amazonaws.com/s3fs-public/2018-10/AS-NZS%20CISPR32%20-%20BT820.pdf",
+   "frequency": "high",
+   "input_shape": "qp:[[kHz,dBμV]], avg:[[kHz,dBμV]], preset:\"cispr32_b_mains\"|\"cispr32_a_mains\" (또는 limit 2조 커스텀)",
+   "engine_fit": "emi-spectrum 엔진(ecae.py) 거의 그대로 — _limit_step_series를 2조(QP/AVG)로 확장하고 로그-주파수 경사 한계 보간 + 전도 프리셋 상수 추가, 검파기별 worst margin 판정",
+   "effort": "S",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "harmonic-spur-table",
+   "korean": "고조파/스퓨리어스 마커 표 (스펙트럼+표 복합)",
+   "evidence": "송신기 적합성 성적서(FCC Part 15.205/15.209/15.247, ETSI EN 300 328)의 정형 포맷 — 기본파~10차 고조파 스펙트럼에 번호 마커를 찍고 n차/주파수/레벨/한계/마진/판정을 표로 병기. 출처: https://www.ecfr.gov/current/title-47/chapter-I/subchapter-A/part-15/subpart-C , https://www.silabs.com/documents/public/application-notes/AN873.pdf",
+   "frequency": "mid",
+   "input_shape": "spectrum:[[MHz,dBm]], f0:MHz, n_max:10, limit:{dbc:-20 또는 절대 한계 세그먼트}",
+   "engine_fit": "fft-spectrum 선 엔진 + n×f0 근방 피크 자동 검출/마커 번호 + test-report 계열 표 컴포넌트를 아래에 결합한 복합 레이아웃(기존 overview-detail식 2분할 재사용)",
+   "effort": "M",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "immunity-level-profile",
+   "korean": "내성 시험 레벨/판정 프로파일",
+   "evidence": "IEC 61000-4-3/-4-6(및 ISO 11452 계열) 내성 성적서의 정형 포맷 — 주파수 스윕 구간별 인가 레벨(1/3/10/30 V/m 등) 계단선 위에 성능기준(A/B/C) 판정을 점 색상으로 표시하고 요구 레벨선과 비교. 출처: https://www.testups.com/iec-61000-4-3/ , https://www.atecorp.com/compliance-standards/iec/iec-61000-4-3",
+   "frequency": "mid",
+   "input_shape": "points:[[MHz, level, criterion(A|B|C|F)]], required:[{f0,f1,level}] (요구 내성 레벨 구간)",
+   "engine_fit": "base-xy 계단선 + 판정별 색상 마커(A=녹/B=황/C·F=적) + emi-spectrum의 구간 한계선 헬퍼 재사용, 미달/부적합 주파수 자동 요약을 제목에 표기",
+   "effort": "S",
+   "domain": "si-pi-rf"
+  },
+  {
+   "name": "mohr-circle",
+   "korean": "모어 원 (파괴포락선 포함)",
+   "evidence": "ASTM D4767(점착성 흙 CU 삼축압축) 보고 항목에 전응력/유효응력 모어 원 작도가 명시되고, 통상 3개 구속압 시험의 원에 접하는 직선 파괴포락선(c, φ)을 함께 보고하는 것이 관행. 암석은 ASTM D7012. 기계요소 다축응력 평가 보고에도 표준 작도. 출처: https://webstore.ansi.org/standards/astm/astmd476711 , https://mat-cs.com/astm-d4767/",
+   "frequency": "mid",
+   "input_shape": "시편별 응력상태 배열 — (σ1,σ3) 쌍 또는 (σx,σy,τxy) + 단위; 옵션: 포락선 자동접선 or 수동 c/φ",
+   "engine_fit": "xy-core 재사용 — 입력 응력에서 원(중심·반경) 자동 계산해 폴리라인 시리즈로 생성, 등축(aspect=1) 강제, 다중 원 공통접선(파괴포락선) 최소제곱 피팅 + c/φ 주석. 새 엔진 불필요",
+   "effort": "M",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "jr-curve",
+   "korean": "J-R 파괴저항 곡선 (R-curve)",
+   "evidence": "ASTM E1820 파괴인성 시험의 정형 결과 그림: J vs Δa 산점 위에 블런팅 라인 J=2σY·Δa, 0.15/1.5 mm 배제선, 0.2 mm 오프셋 라인, 멱법칙 회귀곡선을 겹쳐 JQ(JIC) 교점을 작도로 결정. ISO 12135도 동일 구성(기울기·배제선 정의만 상이). 출처: https://www.osti.gov/biblio/1484357 , https://go.gale.com/ps/i.do?id=GALE%7CA583251670&sid=googleScholar&v=2.1&it=r&linkaccess=abs&issn=08827958&p=AONE&sw=w",
+   "frequency": "low",
+   "input_shape": "(Δa, J) 데이터점 배열 + 항복·인장강도(σY 산출용) + 옵션 시편 규격(밴드 유효성 한계)",
+   "engine_fit": "xy-core 재사용 — 블런팅/배제/오프셋 라인과 멱법칙 피팅, JQ 교점 마커를 레시피에서 자동 계산해 시리즈+주석으로 주입. 규격 오버레이 자동화가 핵심 가치",
+   "effort": "M",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "hardness-profile",
+   "korean": "경도 프로파일 (CHD/용접부 횡단)",
+   "evidence": "ISO 2639·ISO 18203: 표면으로부터의 깊이 vs 경도 곡선에서 한계경도(통상 550 HV1) 수평선과의 교점으로 CHD/SHD/NHD를 도식적으로 결정 — 열처리 성적서의 필수 그림. 용접부는 ISO 9015-1(WPQR, ISO 15614 연계)의 모재-HAZ-용접금속 횡단 경도 트래버스. 출처: https://www.iso.org/standard/30695.html , https://www.zwickroell.com/industries/metals/metals-standards/case-hardness-depth-chd-iso-2639/ , https://www.emcotest.com/en/the-world-of-hardness-testing/hardness-know-how/applications-tips/curve-measurements/chd-case-hardness-depth/ , https://www.iso.org/standard/32821.html",
+   "frequency": "high",
+   "input_shape": "(깊이 또는 횡단위치, 경도) 배열 + 한계경도값(예: 550 HV1) 또는 존 경계 위치(BM/HAZ/WM) + 옵션 허용 상·하한",
+   "engine_fit": "xy-core 재사용 — 한계경도 수평선과 곡선의 보간 교점(CHD)을 자동 산출·마커 표기, 용접 모드에선 존 음영 밴드 + 최대/최소 경도 주석. derating-curve류 한계선 패턴 확장",
+   "effort": "S",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "rpm-order-map",
+   "korean": "RPM 오더 컬러맵/워터폴 (오더 트래킹)",
+   "evidence": "회전기계 NVH 런업/코스트다운 시험의 표준 산출물: RPM(또는 시간) vs 주파수 컬러맵에 차수(order) 직선들을 오버레이하고 특정 차수의 오더컷 곡선을 추출 — Siemens Simcenter Testlab, B&K 등 업계 표준 워크플로. 기존 spectrogram(시간-주파수)과 campbell-diagram(설계측)으로는 대체 불가. 출처: https://community.sw.siemens.com/s/article/Simcenter-Testlab-Colormap-Displays , https://community.sw.siemens.com/s/article/Interpreting-Colormaps , https://acoustic-research-consulting.co.uk/blog/post/order-tracking-automotive-nvh",
+   "frequency": "high",
+   "input_shape": "rpm[] × freq[] × amp[][] 스펙트럼 행렬 + 표시할 차수 목록(예: 1,2,4차) + 오더컷 추출 차수",
+   "engine_fit": "field-core(스펙트로그램 히트맵) 재사용 + 차수선(f = order×rpm/60) 오버레이 자동 생성; 오더컷은 행렬에서 차수 추적 보간으로 뽑아 xy-core 보조 패널로 렌더",
+   "effort": "M",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "torque-angle-curve",
+   "korean": "토크-각도 체결 곡선",
+   "evidence": "ISO 16047(체결구 토크/체결력 시험)의 정형 그림: 토크(및 체결력) vs 회전각 곡선에서 스너그 포인트, 탄성구간 직선, 항복 체결력/항복 토크를 곡선상에서 결정해 보고. VDI 2230 볼트 설계·검증 및 항복점 체결(torque-angle method) 공정 검증 보고의 표준 포맷. 출처: https://www.iso.org/standard/27788.html , https://cdn.standards.iteh.ai/samples/27788/5e71f493c993448f83452d8feb201dd7/ISO-16047-2005.pdf",
+   "frequency": "mid",
+   "input_shape": "(회전각, 토크) 시계열 [+ 옵션 (회전각, 체결력) 2축] + 스너그 기준 토크/검출 파라미터",
+   "engine_fit": "xy-core(dual-axis 패턴) 재사용 — 탄성구간 기울기 회귀, 기울기 저하(gradient) 기반 항복점 자동 검출·마커, 스너그 포인트와 체결창(window) 밴드 주석을 레시피에서 계산",
+   "effort": "M",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "creep-curve",
+   "korean": "크리프/응력이완 곡선",
+   "evidence": "ASTM E139(크리프·크리프파단·응력파단): 변형률-시간 곡선에 최소 기울기 접선을 그어 최소 크리프 속도, 2차 크리프 구간 시점·종점, 절편을 작도로 결정하는 정형 그림(1·2·3차 단계 구분, 파단점 표기). 응력이완은 ASTM E328의 응력-시간 곡선. 출처: https://labsinus.com/astm-e139/ , https://thermalprocessing.com/the-mechanism-of-creep-and-its-stages/ , https://www.subodhlabs.net/mechanical-testing/creep-rupture-stress-rupture-test-astm-e139-astm-e292",
+   "frequency": "mid",
+   "input_shape": "(시간, 변형률) 시계열(복수 응력/온도 조건 시리즈) + 옵션 파단시간; relaxation 모드는 (시간, 응력)",
+   "engine_fit": "xy-core 재사용 — 최소 크리프 속도 자동 피팅(접선+값 주석), 1/2/3차 단계 경계 음영, 파단 마커, 로그 시간축 옵션. dma-curve/transient-time-history 패턴 확장",
+   "effort": "M",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "friction-wear-curve",
+   "korean": "마찰계수-미끄럼거리 곡선",
+   "evidence": "ASTM G99(핀온디스크)·G133의 표준 보고 그림: COF vs 미끄럼거리(또는 사이클) 곡선 — 런인(break-in) 구간과 정상상태 구간을 구분하고 정상상태 평균 COF±산포를 보고(예: steel-steel 0.60±0.11), 마모량(부피손실)은 부속 막대로 병기. 출처: https://store.astm.org/g0099-23.html , https://rtec-instruments.com/tribometer/tribometer-applications/astm-g99-17-wear-testing-with-pin-on-disk/ , https://www.qualtechproductsindustry.com/astm-g99/",
+   "frequency": "mid",
+   "input_shape": "(미끄럼거리 또는 사이클, COF) 시계열(복수 시편) + 정상상태 구간(또는 자동 검출) + 옵션 마모 부피손실",
+   "engine_fit": "xy-core 재사용 — 정상상태 윈도 자동 검출 후 평균선+±σ 밴드 주석, 런인 구간 음영; 마모량 비교는 기존 bar-plot 병행으로 충분",
+   "effort": "S",
+   "domain": "mech-materials"
+  },
+  {
+   "name": "fan-pump-operating-point",
+   "korean": "팬/펌프 성능곡선-시스템곡선 운전점 선도",
+   "evidence": "ANSI/HI 14.3 및 HI Data Tool의 'Pump System Operating Point'(https://datatool.pumps.org/pump-fundamentals/combined), AMCA Publication 201-23 Fans and Systems(https://www.amca.org/publish/publications-and-standards/amca-publications/publication-201-02-(r2011)-fans-and-systems.html). 팬/펌프 선정·검증 보고서의 핵심 정형 그림: P-Q(또는 H-Q) 곡선 + 시스템 저항곡선 ΔP=kQ^n + 교점(운전점) + BEP/POR(70~120% BEP) 표기. ISO 9906/HI 14.6 수락시험에서는 보증점 허용공차 십자 표기까지 관행.",
+   "frequency": "high",
+   "input_shape": "curves:[{name, data:[[Q,ΔP or H],…]}](팬/펌프, 복수 RPM 가능) + system:{k,n} 또는 측정점 [[Q,ΔP]](자동 멱법칙 적합) + efficiency:[[Q,η]]?(우축) + guarantee_point?{Q,H,tol_grade}",
+   "engine_fit": "xy-core 재사용. Python recipe에서 곡선-곡선 교점(선형보간 근 찾기)·BEP 자동계산 후 named-markers 플러그인으로 운전점/BEP 마킹, region-shading으로 POR 음영, regression-fit 로직 재사용해 시스템곡선 적합, dual-axis 패턴으로 효율 우축",
+   "effort": "M",
+   "domain": "thermal-fluid"
+  },
+  {
+   "name": "psychrometric-chart",
+   "korean": "습공기선도 (ASHRAE Psychrometric Chart)",
+   "evidence": "ASHRAE Psychrometric Chart No.1(해면기압 기준, https://www.scribd.com/document/350087387/Psychrometric-Chart), Honeywell Engineering Manual 'Psychrometric Chart Fundamentals'(https://hvacrassets.net/handouts/HWPsych37-52.pdf). HVAC/제습/결로 검토 보고서에서 상태점과 냉각·가열·제습 프로세스 라인을 이 정형 좌표(건구온도 x축, 절대습도 y축 우측) 위에 표기하는 것이 업계 표준 관행.",
+   "frequency": "high",
+   "input_shape": "states:[{label, Tdb_C, RH_pct 또는 w_gkg 또는 Twb_C}] + processes:[[from,to],…]? + params:{pressure_kPa 또는 altitude_m}",
+   "engine_fit": "xy-core 위에 배경 곡선군(포화선, RH 10~90% 등습도선, 습구온도선, 엔탈피선, 비체적선)을 Python recipe에서 습공기 물성식(ASHRAE 식)으로 사전계산해 시리즈로 주입. 상태점은 named-markers, 프로세스 라인은 일반 시리즈. cie-chromaticity(내장 배경 궤적) 패턴과 동일 구조",
+   "effort": "L",
+   "domain": "thermal-fluid"
+  },
+  {
+   "name": "boiling-curve",
+   "korean": "비등곡선 (Nukiyama 곡선)",
+   "evidence": "Nukiyama(1934) 이래 열전달 문헌의 표준 그림: log-log 열유속 q\" vs 벽면과열도 ΔTsat, 자연대류/핵비등/천이/막비등 4영역 구분과 CHF 점 표기 — JSME TED 'Some Remarks on the Nukiyama Curve'(https://www.jsme.or.jp/ted/NewsLetter42/Auracher.pdf), ScienceDirect 'Pool Boiling Curve'(https://www.sciencedirect.com/topics/engineering/pool-boiling-curve). 이멀전/이상유동 냉각 시험·논문에서 반복 등장.",
+   "frequency": "mid",
+   "input_shape": "series:[{name, data:[[ΔTsat_K, q_Wcm2],…]}] + regimes?:[{name, from_dT, to_dT}](미지정 시 CHF=최대 q\" 자동탐지) + markers?:{ONB, CHF}",
+   "engine_fit": "xy-core 재사용(log-log 토글 기존 보유). region-shading 플러그인으로 비등영역 음영, named-markers로 CHF/ONB 자동 마킹(recipe에서 max q\" 탐지), s-n-fatigue-curve와 동일한 log-log 구성 패턴",
+   "effort": "S",
+   "domain": "thermal-fluid"
+  },
+  {
+   "name": "thermal-resistance-stack",
+   "korean": "열저항 분해 스택 차트 (접합-외기 온도 사다리)",
+   "evidence": "전자냉각 보고서의 표준 관행 θja = θjc + θcs + θsa 직렬 분해 — Electronics Cooling 'JEDEC Thermal Standards'(https://www.electronics-cooling.com/2019/11/jedec-thermal-standards-developing-a-common-understanding/), 'Use of junction-to-board thermal resistance in predictive engineering'(https://www.electronics-cooling.com/1999/01/use-of-junction-to-board-thermal-resistance-in-predictive-engineering/). JESD51-12가 열데이터 보고 양식을 규정. 칩~TIM~히트싱크~외기 기여도 스택바와 P·Tamb 기반 노드 온도 표기가 정형 포맷.",
+   "frequency": "high",
+   "input_shape": "layers:[{name, R_KperW},…](접합→외기 순) + params:{P_W, T_amb_C, Tj_max_C?} + cases?:[{name, layers}](설계안 비교)",
+   "engine_fit": "xy-core의 waterfall 플러그인 재사용(누적 구조 동일). recipe에서 ΔT_i=P·R_i 와 각 계면 온도를 자동계산해 막대 주석으로 표기, threshold-lines 플러그인으로 Tj_max 한계선, 다중 케이스는 그룹 막대",
+   "effort": "S",
+   "domain": "thermal-fluid"
+  },
+  {
+   "name": "compressor-map",
+   "korean": "압축기 성능 맵 (서지선·속도선·효율 섬)",
+   "evidence": "SAE J1723 보정조건 기반 압축기 맵 표기(압력비 vs 보정질량유량, 속도선, 서지선, 초크선, 효율 섬) — Garrett Turbo Tech 103 Compressor Mapping(https://www.garrettmotion.com/wp-content/uploads/2019/10/GAM_Turbo-Tech-103_Expert-1.pdf), MathWorks Compressor Map(https://www.mathworks.com/help/hydro/ug/Compressor-Map.html). 터보기계·냉동 압축기 성능 보고의 정형 레이아웃.",
+   "frequency": "mid",
+   "input_shape": "speed_lines:[{rpm, data:[[mdot_corr, PR],…]}] + surge:[[mdot,PR],…] + efficiency?:{points:[[mdot,PR,η],…]} + operating_points?:[{label, mdot, PR}]",
+   "engine_fit": "xy-core 재사용: 속도선/서지선은 일반 시리즈, 효율 섬은 recipe에서 산점 η 를 그리드 보간 후 등고선 폴리라인으로 사전계산해 시리즈 주입(field-core 혼용 불필요), 운전점은 named-markers, 서지 좌측은 region-shading",
+   "effort": "M",
+   "domain": "thermal-fluid"
+  },
+  {
+   "name": "tq-pinch-diagram",
+   "korean": "T-Q 선도 / 핀치 합성곡선",
+   "evidence": "열교환기 설계·열회수(핀치 해석) 보고서의 표준 그림: 온도 vs 열량(duty) 축에 핫/콜드 (합성)곡선과 ΔTmin 핀치점 표기 — TLK Energy Pinch Analysis(https://tlk-energy.de/blog-en/pinch-analysis), LBL Pinch Heat Integration Tool User Guide(https://industrialapplications.lbl.gov/sites/default/files/2025-03/User%20Guide%20for%20Pinch%20Heat%20Integration%20Tool%20(1).pdf), NPTEL Pinch Point Technology(https://archive.nptel.ac.in/content/storage2/courses/112103016/module1/lec11/3.html).",
+   "frequency": "mid",
+   "input_shape": "streams:[{name, side:'hot'|'cold', T_in, T_out, mCp_WK 또는 duty_kW}] + params:{dTmin?}(합성곡선·핀치점 자동계산)",
+   "engine_fit": "xy-core 재사용. recipe에서 스트림 구간별 누적 엔탈피로 합성곡선 폴리라인 계산, 콜드곡선 수평 이동으로 ΔTmin 충족 배치, 핀치점은 named-markers + 수직 가이드(threshold-lines), 단일 열교환기 T-Q(대향류/병류)도 동일 타입으로 처리",
+   "effort": "M",
+   "domain": "thermal-fluid"
+  },
+  {
+   "name": "soa-chart",
+   "korean": "안전동작영역(SOA) 차트",
+   "evidence": "전력반도체 데이터시트/평가보고서의 표준 그림. log-log V-I 평면에 RDS(on)·전류·전력·열불안정·항복전압 5개 한계선 + 펄스폭별(10us/100us/1ms/10ms/DC) 곡선 패밀리가 정형 — TI SLUAAO2 'Using MOSFET Safe Operating Area Curves in Your Design' (https://www.ti.com/lit/pdf/sluaao2), Infineon KBA 'How to read the SOA curve' (https://community.infineon.com/t5/Knowledge-Base-Articles/How-to-read-the-SOA-curve-in-the-datasheet/ta-p/407140), https://en.wikipedia.org/wiki/Safe_operating_area",
+   "frequency": "high",
+   "input_shape": "limits:[{pulse:'DC'|'1ms'|…, data:[[Vds,Id],…]}] 또는 device params(rds_on,id_max,pd_max,vds_max)로 한계선 자동 생성 + points/trajectory:[[V,I]] 동작점·부하궤적",
+   "engine_fit": "xy-core extends base-xy — log-log 강제 + 다중 한계선(threshold-lines 확장) + derating-curve의 동작점 합부 판정 로직 재사용; 정전력 대각선·한계선 자동 생성만 신규",
+   "effort": "M",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "dqdv-curve",
+   "korean": "dQ/dV 미분용량 곡선(증분용량 분석)",
+   "evidence": "배터리 열화 진단(ICA)의 표준 그림 — 사이클별 dQ/dV vs V 곡선의 피크 이동/감소로 LLI·LAM 열화모드 판별. 원시 V-Q 데이터의 수치미분+스무딩이 필수라 base-xy로 불가 — MDPI 리뷰 'A Review of Methods of Generating Incremental Capacity–Differential Voltage Curves' (https://www.mdpi.com/1996-1073/17/17/4309), https://www.sciencedirect.com/science/article/pii/S1572665723004873",
+   "frequency": "mid",
+   "input_shape": "cycles:[{name:'cycle 100', data:[[V_V, Q_Ah],…]}, …] + params.smooth_window(스무딩 폭) → dQ/dV 자동 계산·피크 마커",
+   "engine_fit": "xy-core 렌더 재사용 + postprocess.smoothing(기존 savgol 모듈) 활용; 수치미분·피크 검출 postprocess 함수만 신규",
+   "effort": "M",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "battery-cycle-fade",
+   "korean": "배터리 사이클 수명 열화 곡선",
+   "evidence": "IEC 61960 사이클 수명 시험 보고서의 결론 그림 — 사이클 수 vs 용량유지율(%) + EOL 80% 기준선 + (우축) 쿨롱효율이 정형. EOL 교차 사이클 자동 산출/외삽이 전용 가치 — IEC 61960:2011 (https://cdn.standards.iteh.ai/samples/17110/042e5f51d479473b919e9021d7a62b6c/IEC-61960-2011.pdf), https://infinitalab.com/blog/battery-charge-discharge-testing-advantages/",
+   "frequency": "high",
+   "input_shape": "series:[{name:'cell-1', data:[[cycle, capacity_% 또는 Ah]]}] + params.eol_pct(기본 80) + ce:[[cycle, %]](우축 쿨롱효율, 선택)",
+   "engine_fit": "xy-core extends base-xy + threshold-lines plugin + dual-axis 우축 로직 재사용; EOL 교차 보간·예측 사이클 표기만 소량 신규",
+   "effort": "S",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "cc-cv-charge-profile",
+   "korean": "CC-CV 충전 프로파일",
+   "evidence": "리튬이온 충전특성 평가의 표준 그림 — 시간축에 전류(좌)·전압(우) 동시 표시 + CC/CV 구간 음영 + 컷오프 전류 마커 + 구간별 충전시간/용량 표기가 정형(IEC 61960 표준 충전법 기반) — https://www.batterydesign.net/constant-current-constant-voltage-charging/, Keysight 'Constant Voltage and Current in Li-Ion Cell and Battery Test' (https://www.keysight.com/blogs/en/tech/bench/2024/04/23/constant-voltage-and-current-in-li-ion-cell-and-battery-test)",
+   "frequency": "high",
+   "input_shape": "data:{t:[s], i:[A], v:[V]} + params{v_set, i_cutoff} → CC→CV 전환점 자동 검출·구간 음영·충전시간/용량 자동 표기",
+   "engine_fit": "xy-core dual-axis 좌/우축 로직 재사용 + 구간 음영(region) plugin; 전환점 검출(V가 v_set 도달/전류 taper 시작)만 소량 신규",
+   "effort": "S",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "efficiency-map",
+   "korean": "효율 맵(토크-속도 2D 등효율 컨투어)",
+   "evidence": "모터/인버터 평가의 표준 그림 — 속도-토크 평면 등효율 컨투어 + 최대토크 외곽선(envelope) 클리핑 + 동작점 오버레이가 정형. 기존 contour-plot은 곡선/점 오버레이 불가 — MDPI 'Losses in Efficiency Maps of Electric Vehicles: An Overview' (https://www.mdpi.com/1996-1073/14/22/7805), HBM white paper 'Efficiency and Loss Mapping of AC Motors' (https://www.hbm.com/en/6207/white-paper-efficiency-and-loss-mapping-of-ac-motors/)",
+   "frequency": "high",
+   "input_shape": "field:{x:[rpm], y:[Nm], z:[[효율%]]} + envelope:[[rpm, Nm]](최대토크 외곽선) + points:[{rpm, torque, label}](동작점/주행사이클 점)",
+   "engine_fit": "field-core(contour-plot) 래스터·등치선·probe 재사용; envelope 곡선·동작점 오버레이 레이어와 envelope 밖 마스킹만 엔진에 추가",
+   "effort": "M",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "load-transient-response",
+   "korean": "부하 과도응답 판정 차트",
+   "evidence": "DC-DC/PMIC 평가보고서의 표준 그림 — 부하전류 스텝(하단) + 출력전압 편차(상단) 2패널, 공차밴드(±x% of Vnom) + 언더슈트/오버슈트/회복시간 자동 측정·합부가 정형 — Richtek AN038 'DC/DC Converter Testing with Fast Load Transient' (https://www.richtek.com/m/~/media/AN%20PDF/AN038_EN.pdf), Kikusui white paper (https://www.allaboutcircuits.com/industry-white-papers/dc-dc-converter-transient-response-testing-with-kikusui-plz-and-pxz-series-a-background-walkthrough/)",
+   "frequency": "high",
+   "input_shape": "channels:{i_load:[[t_s, A],…], v_out:[[t_s, V],…]} + params{v_nom, tol_pct} → 밴드·언더/오버슈트·회복시간 자동 측정 + PASS/FAIL",
+   "engine_fit": "xy-core multitrack-stack 2패널 + threshold-lines 밴드 재사용; 과도 메트릭 자동 측정(피크 편차·밴드 재진입 시간) postprocess 신규",
+   "effort": "M",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "gate-charge-curve",
+   "korean": "게이트 차지(Qg) 곡선",
+   "evidence": "전력 MOSFET 평가/데이터시트의 표준 그림(JEDEC JESD24-2 시험법) — Vgs vs Qg 곡선에서 Miller plateau(dVgs/dQ 최소) 자동 검출, Qgs/Qgd/Qg 구간 수직 마커 + plateau 전압 표기가 정형 — Tektronix 'MOSFET Gate Charge Measurement…JESD24-2' (https://www.tek.com/en/documents/application-note/measuring-mosfet-gate-charge-4200a-scs-parameter-analyzer), Vishay AN608A (https://www.vishay.com/docs/73217/an608a.pdf)",
+   "frequency": "mid",
+   "input_shape": "data:[[Qg_nC, Vgs_V],…] (+선택 vds:[[Qg_nC, Vds_V]] 우축) → JESD24-2 방식 plateau·Qgs/Qgd/Qg 자동 분할 마커",
+   "engine_fit": "xy-core extends base-xy + named-markers plugin 재사용; plateau 검출(기울기 최소 구간)과 구간 차지 산출만 소량 postprocess 신규",
+   "effort": "S",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "mott-schottky-cv",
+   "korean": "C-V / Mott-Schottky 플롯(1/C²-V)",
+   "evidence": "반도체 소자·전기화학 계면 특성평가의 표준 그림 — C-V 곡선과 1/C² vs V 패널을 병렬 배치, 선형구간 적합으로 도핑농도(기울기)·플랫밴드/빌트인 전위(x절편)를 자동 추출하는 정형 분석 — https://en.wikipedia.org/wiki/Mott%E2%80%93Schottky_plot, https://en.wikipedia.org/wiki/Mott%E2%80%93Schottky_equation",
+   "frequency": "mid",
+   "input_shape": "data:[[V_V, C_F],…] + params{area_cm2, eps_r, freq_Hz}(requires — 도핑농도 환산용) → 1/C² 패널 + 선형적합·N_D·V_fb 표기",
+   "engine_fit": "xy-core 2패널 구성 + calibration-curve의 선형적합(기울기/절편/R²) 로직 재사용; 1/C² 변환·물성 환산식만 신규(requires로 배경값 질문)",
+   "effort": "M",
+   "domain": "power-battery-semi"
+  },
+  {
+   "name": "uncertainty-budget-chart",
+   "korean": "GUM 측정 불확도 버짓 차트",
+   "evidence": "JCGM 100:2008 (GUM) §8 의 불확도 버짓 표(성분별 표준불확도 u_i, 감도계수 c_i, 분산기여)와 EA-4/02 보정성적서 작성예가 정형. 분산기여 %를 막대/파이로 그리는 그래픽 버짓은 GUM Workbench 등 메트롤로지 도구의 업계 관행. 기존 catalog에 tornado-chart/pareto/spec-margin-chart는 있으나 (c_i·u_i)²/u_c² 분산기여·RSS 합성·확장불확도 U=k·u_c 자동계산 전용은 없음. https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf , https://www.kral-usa.com/fileadmin/data/files/services/European_Accreditation_EA-4-02.pdf",
+   "frequency": "high",
+   "input_shape": "components:[{name,u_i,c_i(감도),dist?,dof?}], measurand{label,unit}, coverage k(또는 신뢰수준)",
+   "engine_fit": "xy-core bar-plot 상속 + 신규 uncertainty-budget plugin: 성분별 분산기여%=(c_i·u_i)²/Σ 자동, threshold-lines로 합성/확장불확도 오버레이. post: stats.uncertainty_budget(RSS 합성·Welch-Satterthwaite 유효자유도·k·U).",
+   "effort": "M",
+   "domain": "metrology-stats"
+  },
+  {
+   "name": "bland-altman-plot",
+   "korean": "블랜드-알트만(일치도) 플롯",
+   "evidence": "두 측정법 차이(y2-y1)를 평균((y1+y2)/2) 대비 산점, 편의(bias)선과 일치한계 LoA=평균차±1.96SD 수평선을 그리는 방법비교 표준. CLSI EP09(EP09c) 측정절차 비교 가이드라인 및 MedCalc/Analyse-it 등이 동일 포맷 채택. 기존 correlation-scatter는 x-y 동치선 포맷이라 차이-평균 좌표·LoA 자동계산을 못함(RESULT-VIZ-STANDARD에도 corr-bland-altman 미구현 표기). https://en.wikipedia.org/wiki/Bland%E2%80%93Altman_plot , https://www.medcalc.org/en/manual/bland-altman-plot.php",
+   "frequency": "high",
+   "input_shape": "pairs:[[method1,method2],...] (또는 series 2개), axes 단위, 옵션 reference(절대법 기준)",
+   "engine_fit": "xy-core scatter(base-xy) + bland-altman plugin: 차이-평균 좌표변환 post에서 수행, bias·SD·±1.96SD LoA를 threshold-lines/error-band로, 비례편의 회귀는 기존 regression-fit 재사용. post: stats.bland_altman(LoA의 CI 포함).",
+   "effort": "M",
+   "domain": "metrology-stats"
+  },
+  {
+   "name": "equivalence-tost-plot",
+   "korean": "등가성(TOST) 신뢰구간 플롯",
+   "evidence": "TOST(Two One-Sided Tests) 등가성 검정의 표준 도시: 점추정+90/95% 신뢰구간 막대를 등가한계(±Δ, 수직 점선) 대비 배치하는 forest형 레이아웃. R TOSTER 패키지 기본 플롯·Lakens 등가성검정 가이드가 동일 관행. 기존 catalog에 error-bar는 있으나 등가한계 오버레이·CI-한계 중첩 판정(PASS/FAIL) 정형 레이아웃 없음. https://aaroncaldwell.us/TOSTERpkg/articles/IntroTOSTt.html , https://lakens.github.io/statistical_inferences/09-equivalencetest.html",
+   "frequency": "mid",
+   "input_shape": "estimates:[{name,point,ci_low,ci_high}], bounds{lower,upper}(등가한계 ±Δ), unit",
+   "engine_fit": "xy-core 수평 error-bar/forest 레이아웃(base-xy) + equivalence plugin: 등가한계 2개 수직 ref-line(threshold-lines), CI-한계 비중첩 판정 색상. 다중 CI(90/95%) 중첩 막대는 error-bars plugin 확장.",
+   "effort": "S",
+   "domain": "metrology-stats"
+  },
+  {
+   "name": "roc-pr-curve",
+   "korean": "ROC / 정밀도-재현율(PR) 곡선",
+   "evidence": "이진 분류기 성능 표준 도시: ROC는 TPR vs FPR(+대각 기준선·AUC), PR은 precision vs recall(+양성비율 baseline). 진단/머신러닝/불량검출 성적서 정형(Google ML, scikit-learn 관행). 기존 catalog에 confusion-matrix는 있으나 임계값 스윕·AUC 사다리꼴적분·Youden 최적점 자동계산 전용 곡선 타입 없음(RESULT-VIZ-STANDARD에 roc-pr-curve 신규 미구현 표기). https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc , https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification/",
+   "frequency": "mid",
+   "input_shape": "y_true:[...], y_score:[...] (또는 미리계산 [[fpr,tpr],...]), 모드 roc|pr",
+   "engine_fit": "xy-core base-xy 곡선 + roc-pr plugin: 대각 기준선/baseline·AUC HUD·최적임계 마커. post: stats.roc_pr(임계 스윕으로 TPR/FPR/precision/recall·AUC 사다리꼴·Youden J).",
+   "effort": "M",
+   "domain": "metrology-stats"
+  },
+  {
+   "name": "distribution-fit-compare",
+   "korean": "분포적합 비교(AD/KS 굿니스오브핏)",
+   "evidence": "여러 후보 분포(정규/Weibull/로그정규/지수 등)를 동일 데이터에 적합해 확률지(probability paper)에 겹치고 Anderson-Darling/Kolmogorov-Smirnov 통계로 순위화하는 신뢰성 표준(Minitab Distribution ID Plot, NIST Dataplot goodness-of-fit). 기존 weibull-prob-paper·qq-plot·ecdf-plot은 단일분포라 다분포 동시적합·AD/KS 랭킹·분포별 확률축 변환을 못함. https://www.itl.nist.gov/div898/software/dataplot/refman1/auxillar/goodfit.htm , https://web.cortland.edu/matresearch/AndrsDarlSTART.pdf",
+   "frequency": "mid",
+   "input_shape": "values:[...], candidates:[normal|weibull|lognormal|exponential|...], 옵션 censoring",
+   "engine_fit": "xy-core 확률지(weibull-prob-paper 형제, prob-axis plugin 분포별 변환) 다패널 또는 ECDF 위 적합 CDF 오버레이 + dist-fit-compare plugin(AD/KS 랭킹 표). post: stats.fit_distributions(MLE 적합·AD/KS 통계·p값 정렬).",
+   "effort": "L",
+   "domain": "metrology-stats"
+  },
+  {
+   "name": "tolerance-stackup-chart",
+   "korean": "공차 스택업(Worst-Case/RSS) 차트",
+   "evidence": "조립체 치수체인의 공차 누적을 성분별 기여 막대 + 합성결과(Worst-Case Σ|tol| vs RSS √Σtol²)를 규격한계 대비 비교하는 GD&T 표준 분석. 업계 도구(Sigma Exacta, Enventive 등) 공통 포맷. 기존 tornado-chart/waterfall-chart는 응답 민감도·기여분해라 공차체인의 WC/RSS 동시합성·spec 한계 오버레이를 못함. https://en.wikipedia.org/wiki/Tolerance_analysis , https://enventive.com/tolerance-analysis-resources/worst-case-rss-and-monte-carlo-simulation-calculations-for-tolerance-analysis/",
+   "frequency": "mid",
+   "input_shape": "links:[{name,nominal,tol_plus,tol_minus,sense:+1/-1}], spec{min?,max?}, 옵션 method(wc|rss|mc)",
+   "engine_fit": "xy-core 가로 기여막대(uncertainty-budget plugin과 contribution-bar 공유) + stackup plugin: WC/RSS 합성구간·spec 한계 threshold-lines·기여%. post: stats.tolerance_stackup(Σ|tol|·√Σtol²·기여분산%·옵션 MC 히스토그램).",
+   "effort": "M",
+   "domain": "metrology-stats"
+  },
+  {
+   "name": "evm-s-curve",
+   "korean": "EVM 성과 S-커브 (PV/EV/AC)",
+   "evidence": "ANSI/EIA-748 EVMS 및 PMBOK 비용/일정 통제의 표준 월간 보고 그림. PV/EV/AC 누적 곡선 + BAC 수평선 + 데이터 기준일(data date) 수직선 + SV/CV/SPI/CPI/EAC/VAC 자동 산출이 정형 포맷. 출처: https://www.pmi.org/learning/library/earned-value-management-systems-analysis-8026 , https://rolandwanner.com/eia-748-and-the-32-evms-criteria/ , https://industrialaudit.com/earned-value-management-evm-s-curve/",
+   "frequency": "high",
+   "input_shape": "dates[] + 누적 pv[]/ev[]/ac[] (+ bac, data_date, 통화단위)",
+   "engine_fit": "xy-core 재사용: area-fill(누적 곡선) + threshold-lines(BAC 수평선) + named-markers(data date·EAC 예측점) + region-shading(SV/CV 편차 음영). 레시피에서 SPI/CPI/EAC/ETC/VAC 자동 계산해 주석 패널로 표기. base-xy로는 파생지표 자동계산·기준선 오버레이가 불가하므로 전용 타입 가치 있음.",
+   "effort": "M",
+   "domain": "pm-exec"
+  },
+  {
+   "name": "risk-matrix",
+   "korean": "리스크 매트릭스 (5x5 확률-영향)",
+   "evidence": "ISO 31000:2018 리스크 평가와 MIL-STD-882E 위험성 평가 매트릭스, PMBOK P-I 매트릭스의 표준 그림. 고정 구역색(녹/황/적색 zone) 격자 위에 리스크 항목을 셀 좌표(확률×영향)에 배치하고 완화 전→후 이동 화살표를 표기하는 정형 레이아웃. 기존 heatmap-grid는 값→색 연속 매핑이고, work-plan의 리스크 셀은 점수 리스트일 뿐 좌표 배치형 매트릭스가 아님. 출처: https://mindsetcyber.com.au/iso-31000-risk-matrix/ , https://www.scribd.com/document/411530453/Mil-Std-882-Modified-Hazard-Risk-Matrix , https://persuasiveinsight.com/insights/a-comprehensive-guide-the-5x5-risk-management-template",
+   "frequency": "high",
+   "input_shape": "risks:[{id, name, probability:1~5, impact:1~5, residual?:{p,i}}] (+ 매트릭스 크기 5x5/4x4, zone 기준)",
+   "engine_fit": "xy-core 재사용: 고정 zone 색은 region-shading 변형(셀 단위 배경), 리스크 항목은 named-markers(셀 내 지터 배치 + ID 라벨), 완화 전후는 화살표 주석. 정수 격자 축 + 셀 점수(P×I) 자동 계산을 레시피에서 처리.",
+   "effort": "M",
+   "domain": "pm-exec"
+  },
+  {
+   "name": "milestone-trend",
+   "korean": "마일스톤 트렌드 차트 (MTA)",
+   "evidence": "독일 DIN 69901 계열 프로젝트 통제의 표준 기법(Meilensteintrendanalyse). 가로축=보고 시점, 세로축=마일스톤 예상 완료일인 삼각형 좌표계에 마일스톤별 예측 곡선을 그리고, 대각선(보고일=완료일)에 도달하면 완료로 읽는 특수 좌표 차트. SAP/MS Project 표준 리포트로 탑재되며 PMI-SP 시험 범위에도 포함. 기존 milestone-timeline은 단순 이벤트 타임라인으로 전혀 다름. 출처: https://de.wikipedia.org/wiki/Meilensteintrendanalyse , https://www.theprojectgroup.com/en/project-management-tools/milestone-trend-analysis-ms-project , https://trustedinstitute.com/concept/pmi-sp/progress-measurement-reporting/milestone-trend-analysis/",
+   "frequency": "mid",
+   "input_shape": "report_dates[] + milestones:[{name, forecasts:[보고시점별 예상완료일]}] (+ project_start/end)",
+   "engine_fit": "xy-core 재사용: 양축 모두 날짜 스케일(schedule.py의 _day/_date_ticks 유틸 재사용), 대각선 완료선 + 상삼각 마스킹은 region-shading 변형, 마일스톤별 폴리라인 + 도달점 named-markers. 상승=지연/하강=단축 판독 보조 주석을 레시피에서 자동 부여.",
+   "effort": "M",
+   "domain": "pm-exec"
+  },
+  {
+   "name": "burndown-burnup",
+   "korean": "번다운/번업 차트",
+   "evidence": "Scrum/애자일 스프린트 보고의 사실상 표준 그림(Scrum Alliance 용어집 등재, Jira/Azure DevOps 기본 리포트). 총 스코프와 스프린트 기간에서 이상선(ideal line)을 자동 산출하고, 실제 잔여 작업 스텝선 + (번업의 경우) 스코프 변경 계단선 + 완료 예측 외삽선을 겹치는 정형 포맷. base-xy로는 이상선/예측선 자동 계산과 스코프 변경 주석이 안 됨. 출처: https://www.atlassian.com/agile/tutorials/burndown-charts , https://www.scrumalliance.org/glossary/burndown-chart , https://bigpicture.one/blog/sprint-burndown-chart-101/",
+   "frequency": "high",
+   "input_shape": "sprint:{start,end} + total_scope(스토리포인트/시간) + remaining:[{date,value}] (+ scope_changes[], mode:down|up)",
+   "engine_fit": "xy-core 재사용: 이상선은 레시피에서 (total_scope→0) 직선 자동 생성, 실제선은 step 스타일, 스코프선은 threshold-lines/step, 예측 외삽은 regression-fit 플러그인 재사용. 날짜축은 schedule.py 유틸 공유.",
+   "effort": "S",
+   "domain": "pm-exec"
+  },
+  {
+   "name": "raci-matrix",
+   "korean": "RACI 책임할당 매트릭스",
+   "evidence": "PMBOK 자원관리계획의 공식 도구인 책임할당매트릭스(RAM)의 권장 포맷. 작업(행)×역할(열) 격자에 R/A/C/I 범주 코드를 고정 색으로 표기하며, '작업당 A는 정확히 1명' 같은 검증 규칙과 역할별 부하 집계가 관행. PMI 지부 공식 가이드 문서 존재. 기존 review-matrix는 상태비교용 리치셀 표라 범주 코드 색상 규약·검증 규칙이 없음. 출처: https://www.4pmti.com/learn/responsibility-assignment-matrix-ram-raci-pmp/ , https://pmicie.org/files/22/PM-Toolkit/85/racirweb31.pdf , https://instituteprojectmanagement.com/blog/what-is-the-responsibility-assignment-matrix/",
+   "frequency": "mid",
+   "input_shape": "tasks[] + roles[] + assignments:[{task, role, code:R|A|C|I}]",
+   "engine_fit": "review-matrix 엔진 재사용: states=역할 열, items=작업 행, 셀은 R/A/C/I 고정색 배지 렌더. structural_requires에서 'A 정확히 1명/작업' 검증, 레시피에서 역할별 R/A 부하 카운트 행 자동 추가. 신규 엔진 불필요.",
+   "effort": "S",
+   "domain": "pm-exec"
+  },
+  {
+   "name": "resource-histogram",
+   "korean": "자원 히스토그램 (용량선·초과배정)",
+   "evidence": "PMBOK 자원평준화(resource leveling)의 표준 그림이자 MS Project 'Resource Graph' 기본 뷰. 기간별 자원 투입량 누적 막대 위에 가용 용량(capacity) 수평/계단선을 겹치고, 용량 초과분을 적색으로 분리 표시하는 정형 포맷. bar-plot+dual-axis 조합으로는 초과분 자동 분할 색칠과 용량선 계단 처리가 안 됨. 출처: https://www.projectmanager.com/blog/what-is-a-resource-histogram , https://www.mastt.com/blogs/resource-histogram , https://leadershipchamps.wordpress.com/2008/05/22/resource-leveling/",
+   "frequency": "mid",
+   "input_shape": "periods[] + resources:[{name, hours:[기간별 투입]}] + capacity(상수 또는 기간별 배열)",
+   "engine_fit": "xy-core 재사용: 누적 막대 렌더 + threshold-lines(용량선, 계단형 지원) 조합. 레시피에서 용량 초과 세그먼트를 별도 적색 시리즈로 자동 분할, 초과율 주석 부여.",
+   "effort": "S",
+   "domain": "pm-exec"
+  }
+ ],
+ "tiers": {
+  "t1": [
+   {
+    "name": "loop-gain-margin",
+    "korean": "루프이득 안정도 (PM/GM 자동 판정)",
+    "why": "빈도 high, effort S. 기존 bode는 곡선만 그리고 0dB/위상 교차·여유 계산이 없어 전용 가치 명확 — 전원/제어 안정도 보고의 필수 합부 그림.",
+    "plan": "bode.py 레시피 확장: 동일 dual-axis 엔진에 교차점 선형보간 + 수직 가이드 + PM/GM 배지·합부 색상만 추가.",
+    "evidence": "Bode 100/Tektronix FRA 정형 포맷(PM>45°, GM>10dB 판정)"
+   },
+   {
+    "name": "conducted-emission",
+    "korean": "전도성 방출 스펙트럼 (QP/AVG 이중 한계)",
+    "why": "빈도 high, effort S. 기존 emi-spectrum은 한계선 1조+방사 프리셋만 지원 — QP/AVG 2검파기·로그경사 한계는 전도 성적서 필수.",
+    "plan": "ecae.py의 _limit_step_series를 2조(QP/AVG)로 확장 + 로그-주파수 경사 보간 + CISPR 32 전도 프리셋 상수, 검파기별 worst margin 판정.",
+    "evidence": "CISPR 32/EN 55032, FCC Part 15B 성적서 정형"
+   },
+   {
+    "name": "tdr-impedance-profile",
+    "korean": "TDR 임피던스 프로파일",
+    "why": "빈도 high, effort S. PCB/케이블 SI 성적서 표준 그림 — 규격 회랑(85Ω±10%)·측정 zone·일탈 자동 판정은 base-xy 조합 불가.",
+    "plan": "base-xy + 회랑 밴드 음영 + ecae.py _limit_at 위반 판정 로직 재사용, zone 라벨은 region-shading 플러그인.",
+    "evidence": "IPC-TM-650 2.5.5.7 (30–70% zone 측정 관행)"
+   },
+   {
+    "name": "jitter-bathtub",
+    "korean": "지터 배스터브 곡선 (BER vs UI)",
+    "why": "빈도 high, effort S. SerDes/PCIe/USB 컴플라이언스 보고 표준 — log BER 역눈금 + target BER 교차 eye opening 자동 판독 + dual-Dirac 외삽(erfc 닫힌식)이 순수 레시피 계산.",
+    "plan": "base-xy 선 엔진 + y축 log(BER) 역방향 눈금 + threshold-lines 교차 보간 → eye opening @1e-12 자동 주석.",
+    "evidence": "Tektronix dual-Dirac 방법론, Fibre Channel 이래 표준"
+   },
+   {
+    "name": "battery-cycle-fade",
+    "korean": "배터리 사이클 수명 열화 곡선",
+    "why": "빈도 high, effort S. MX 배터리 보고 핵심 — EOL 80% 교차 사이클 자동 산출/외삽이 전용 가치(기존 battery-discharge는 방전곡선만).",
+    "plan": "base-xy + threshold-lines(EOL선) + dual-axis 우축(쿨롱효율) 재사용, EOL 교차 보간·예측만 소량 신규.",
+    "evidence": "IEC 61960 사이클 수명 시험 결론 그림"
+   },
+   {
+    "name": "cc-cv-charge-profile",
+    "korean": "CC-CV 충전 프로파일",
+    "why": "빈도 high, effort S. 리튬이온 충전특성 평가 표준 그림 — CC/CV 전환점 검출·구간 음영·구간별 충전시간/용량 자동 표기가 전용 가치.",
+    "plan": "dual-axis(전류 좌/전압 우) + region-shading 구간 음영 재사용, 전환점 검출(v_set 도달/taper 시작)만 레시피 신규.",
+    "evidence": "IEC 61960 표준 충전법, Keysight/batterydesign.net 관행"
+   },
+   {
+    "name": "thermal-resistance-stack",
+    "korean": "열저항 분해 스택 차트 (접합-외기 온도 사다리)",
+    "why": "빈도 high, effort S. 전자냉각 보고 표준 θja=θjc+θcs+θsa 분해 — ΔT_i=P·R_i 자동 계산·계면 온도·Tj_max 마진이 waterfall-chart 수동 입력으로는 불가한 전용 가치.",
+    "plan": "기존 waterfall 플러그인 + threshold-lines(Tj_max) 재사용, 레시피에서 ΔT/노드온도 자동계산 주석만 추가.",
+    "evidence": "JESD51-12 열데이터 보고 양식, Electronics Cooling 관행"
+   },
+   {
+    "name": "hardness-profile",
+    "korean": "경도 프로파일 (CHD/용접부 횡단)",
+    "why": "빈도 high, effort S. 열처리 성적서 필수 그림 — 한계경도(550 HV1) 교점으로 CHD 도식 결정 + 용접 BM/HAZ/WM 존 음영.",
+    "plan": "base-xy + threshold-lines 수평 한계선과 곡선의 보간 교점 자동 마커(named-markers), 존 음영은 region-shading 재사용.",
+    "evidence": "ISO 2639/18203(CHD), ISO 9015-1(용접 트래버스)"
+   },
+   {
+    "name": "xbar-r-chart",
+    "korean": "Xbar-R/I-MR 쌍 관리도",
+    "why": "빈도 high, effort M. 변수형 관리도의 사실상 표준 — 기존 spc-control-chart는 개별값 단일 패널(mean±3σ)이라 서브그룹 상수(A2,D3,D4) 기반 2단 쌍 패널 대체 불가.",
+    "plan": "spc-control-chart의 threshold-lines/named-markers + multitrack-stack식 공유 x축 2패널 재사용, stats 모듈에 A2/D3/D4/d2 상수표·서브그룹 한계 계산만 추가.",
+    "evidence": "NIST/SEMATECH 6.3.2.1, AIAG SPC 매뉴얼"
+   },
+   {
+    "name": "fmea-worksheet",
+    "korean": "FMEA 워크시트 (RPN/AP 자동판정)",
+    "why": "빈도 high, effort M. 자동차·전자 품질보고 필수 산출물 — RPN 자동계산·AIAG-VDA AP 결정표 룩업·개선 전후 비교는 기존 review-matrix(범용 표)에 없음.",
+    "plan": "review-matrix 엔진 재사용: RPN=S·O·D 계산 + AP 결정표 내장 룩업 + H/M/L 색 배지, 전후 RPN 비교 미니바 결합.",
+    "evidence": "AIAG-VDA FMEA Handbook(2019) 표준 양식"
+   },
+   {
+    "name": "bland-altman-plot",
+    "korean": "블랜드-알트만 (일치도) 플롯",
+    "why": "빈도 high, effort S~M. RESULT-VIZ-STANDARD §3.1에 corr-bland-altman으로 이미 canonical 등재된 미구현 갭 — 측정-시뮬 상관(MX CAE 핵심 업무) 방법비교 표준이며 correlation-scatter(x-y 동치선)로 대체 불가.",
+    "plan": "base-xy scatter + 차이-평균 좌표변환 post(stats.bland_altman) + threshold-lines로 bias·±1.96SD LoA, 비례편의는 기존 regression-fit 플러그인 재사용.",
+    "evidence": "CLSI EP09, docs/RESULT-VIZ-STANDARD.md §3.1 corr-bland-altman 등재"
+   }
+  ],
+  "t2": [
+   {
+    "name": "eye-mask-compliance",
+    "korean": "아이 마스크 판정도",
+    "why": "빈도 high·가치 명확하나 T1 정원 초과로 차기 1순위. field-core 기반 eye-diagram에 폴리곤 오버레이/히트 카운트 엔진 레이어 작업 포함(effort M).",
+    "plan": "기존 eye-diagram(wave6.py) 히트 히스토그램 위에 마스크 폴리곤 레이어 + point-in-polygon 히트 카운트 + margin % 계산 추가."
+   },
+   {
+    "name": "phase-noise",
+    "korean": "위상잡음 플롯 (L(f), dBc/Hz)",
+    "why": "빈도 high이나 RMS 지터 적분·스퍼 마커 등 postprocess 신규량이 있어(effort M) 차기로. 클럭/발진기 성적서 정형.",
+    "plan": "base-xy log-x + log-log 구간 보간 적분(RMS jitter 배지) + 스퍼 수직 마커 렌더 추가."
+   },
+   {
+    "name": "soa-chart",
+    "korean": "안전동작영역(SOA) 차트",
+    "why": "빈도 high이나 정전력 대각선·펄스폭별 한계선 패밀리 자동 생성이 신규(effort M). 전력반도체 평가 정형.",
+    "plan": "base-xy log-log 강제 + threshold-lines 확장 다중 한계선 + derating-curve의 동작점 합부 판정 로직 재사용."
+   },
+   {
+    "name": "load-transient-response",
+    "korean": "부하 과도응답 판정 차트",
+    "why": "빈도 high이나 과도 메트릭(언더/오버슈트·회복시간) 자동 측정 postprocess가 신규(effort M). transient-time-history+multitrack 조합으로는 합부 자동화 불가.",
+    "plan": "multitrack-stack 2패널 + threshold-lines 공차밴드 재사용, 피크 편차·밴드 재진입 시간 측정 post 신규."
+   },
+   {
+    "name": "efficiency-map",
+    "korean": "효율 맵 (토크-속도 등효율 컨투어)",
+    "why": "빈도 high이나 field-core에 곡선(envelope)/점 오버레이·마스킹 레이어 추가라는 엔진 작업 필요(effort M~L). rpm-order-map과 동일 레이어를 공유하므로 묶어 차기 진행.",
+    "plan": "field-core(contour-plot) 래스터·등치선·probe 재사용 + envelope 곡선/동작점 오버레이 레이어와 영역 마스킹을 엔진에 1회 추가."
+   },
+   {
+    "name": "rpm-order-map",
+    "korean": "RPM 오더 컬러맵 (오더 트래킹)",
+    "why": "빈도 high이나 field-core 오버레이 레이어(efficiency-map과 공유) 선행 필요(effort M). NVH 런업/코스트다운 표준 산출물로 spectrogram·campbell로 대체 불가.",
+    "plan": "field-core 히트맵 재사용 + 차수선(f=order×rpm/60) 오버레이 자동 생성, 오더컷은 보간 추출해 xy-core 보조 패널."
+   },
+   {
+    "name": "fan-pump-operating-point",
+    "korean": "팬/펌프 성능-시스템곡선 운전점 선도",
+    "why": "빈도 high이나 MX 스마트폰 보고 적합성이 상대적으로 낮아 차기. 곡선-곡선 교점·BEP/POR·보증점 공차 자동화가 전용 가치(effort M).",
+    "plan": "base-xy + named-markers(운전점/BEP) + region-shading(POR) + regression-fit 멱법칙 적합 + dual-axis 효율 우축 재사용."
+   },
+   {
+    "name": "uncertainty-budget-chart",
+    "korean": "GUM 측정 불확도 버짓 차트",
+    "why": "빈도 high(교정/측정 성적서)이나 RSS 합성·Welch-Satterthwaite·k·U 등 stats 모듈 신규량으로 차기(effort M). tolerance-stackup과 contribution-bar 플러그인 공유 설계 권장.",
+    "plan": "bar-plot 상속 + 분산기여% 자동계산 + threshold-lines로 합성/확장불확도 오버레이, post: stats.uncertainty_budget."
+   },
+   {
+    "name": "evm-s-curve",
+    "korean": "EVM 성과 S-커브 (PV/EV/AC)",
+    "why": "빈도 high(PM 월간보고)이나 엔지니어링 그림 대비 우선순위 낮춤. SPI/CPI/EAC 파생지표 자동계산이 전용 가치(effort M).",
+    "plan": "base-xy + area-fill + threshold-lines(BAC) + named-markers(data date/EAC) 재사용, 레시피에서 EVM 지표 자동 산출."
+   },
+   {
+    "name": "risk-matrix",
+    "korean": "리스크 매트릭스 (5x5 확률-영향)",
+    "why": "빈도 high(PM/안전보고)이나 엔지니어링 그림 대비 차기. 고정 zone 색·셀 좌표 배치·완화 전후 화살표는 heatmap-grid로 대체 불가(effort M).",
+    "plan": "xy-core 정수 격자 + 셀 단위 region-shading 변형 + named-markers 지터 배치 + 화살표 주석, P×I 점수 레시피 계산."
+   },
+   {
+    "name": "burndown-burnup",
+    "korean": "번다운/번업 차트",
+    "why": "빈도 high·effort S이나 이상선/예측선이 단순 직선·외삽이라 전용 가치가 T1 항목들보다 얇음 — 기존 step+threshold-lines로 80% 근사 가능해 차기.",
+    "plan": "base-xy step + threshold-lines + regression-fit 외삽 재사용, 이상선 자동 생성과 날짜축은 schedule.py 유틸 공유."
+   },
+   {
+    "name": "psychrometric-chart",
+    "korean": "습공기선도 (ASHRAE)",
+    "why": "빈도 high이나 배경 곡선군(포화선·RH·습구·엔탈피선) 물성식 사전계산이 대형 작업(effort L) — 규칙상 T2.",
+    "plan": "cie-chromaticity(내장 배경 궤적) 패턴 동일 구조 — ASHRAE 습공기 물성식으로 배경 시리즈 사전계산 주입, 상태점은 named-markers."
+   },
+   {
+    "name": "ewma-chart",
+    "korean": "EWMA 관리도",
+    "why": "빈도 mid, effort S. 시변 관리한계 자동계산은 base-xy 불가 — cusum-chart(wave4.py CusumRecipe)의 자연스러운 형제 타입.",
+    "plan": "base-xy 라인 + area 밴드(시변 UCL/LCL) + OOC 마커, cusum 계열 레시피에 λ 가중 계산 추가."
+   },
+   {
+    "name": "oc-curve",
+    "korean": "OC 곡선 (샘플링검사)",
+    "why": "빈도 mid, effort S. 이항 누적확률 자동계산·AQL/LTPD 교점 마킹이 전용 가치 — ANSI/ASQ Z1.4 규격 그림.",
+    "plan": "base-xy + threshold-lines/named-markers 재사용, stats에 이항 누적확률·α/β 교점 마킹만 추가."
+   },
+   {
+    "name": "distribution-fit-compare",
+    "korean": "분포적합 비교 (다분포 확률지 + AD/KS 랭킹) — life-distribution-compare 병합",
+    "why": "빈도 mid, effort L. 후보 2건(quality/metrology) 동일 개념(Minitab Distribution ID Plot) 병합 — 다분포 MLE 적합·중도절단·AD/KS 랭킹·분포별 확률축 변환은 weibull-prob-paper/qq-plot 단일분포로 불가.",
+    "plan": "weibull-prob-paper의 median-rank/선형화 적합을 분포별 축변환(prob-axis plugin)으로 일반화 + 2×2 소패널 + 적합도 미니표, post: stats.fit_distributions(censoring 포함)."
+   },
+   {
+    "name": "crow-amsaa-growth",
+    "korean": "신뢰도 성장 추적도 (Crow-AMSAA/Duane)",
+    "why": "빈도 mid, effort M. log-log MLE 적합·순간/누적 MTBF 곡선 자동 산출이 전용 가치 — MIL-HDBK-189C 표준 그림.",
+    "plan": "base-xy log-log + weibull-prob-paper식 회귀적합 패턴 재사용, β/λ MLE 함수만 reliability 모듈에 추가."
+   },
+   {
+    "name": "dqdv-curve",
+    "korean": "dQ/dV 미분용량 곡선 (ICA)",
+    "why": "빈도 mid, effort M. RESULT-VIZ-STANDARD 레지스트리에 bat-dqdv로 등재된 미구현 갭 — 수치미분+스무딩 필수라 base-xy 불가, MX 배터리 열화진단 핵심.",
+    "plan": "xy-core 렌더 + 기존 postprocess smoothing.savgol 활용, 수치미분·피크 검출 post만 신규."
+   },
+   {
+    "name": "gate-charge-curve",
+    "korean": "게이트 차지(Qg) 곡선",
+    "why": "빈도 mid, effort S. Miller plateau 자동 검출·Qgs/Qgd 구간 분할이 전용 가치 — JESD24-2 정형.",
+    "plan": "base-xy + named-markers 재사용, plateau(기울기 최소 구간) 검출·구간 차지 산출 post만 소량 신규."
+   },
+   {
+    "name": "immunity-level-profile",
+    "korean": "내성 시험 레벨/판정 프로파일",
+    "why": "빈도 mid, effort S. IEC 61000-4-3/-6 성적서 정형 — 판정별 색상(A/B/C/F)·요구레벨 비교·부적합 자동 요약.",
+    "plan": "base-xy 계단선 + 판정 색상 마커 + ecae.py 구간 한계선 헬퍼 재사용."
+   },
+   {
+    "name": "harmonic-spur-table",
+    "korean": "고조파/스퓨리어스 마커 표 (스펙트럼+표 복합)",
+    "why": "빈도 mid, effort M. n×f0 피크 자동 검출·마진 표 생성은 기존 조합(overview-detail)으로 불가한 자동화 가치 — FCC/ETSI 송신기 성적서 정형.",
+    "plan": "fft-spectrum 선 엔진 + 피크 자동 검출/번호 마커 + test-report 표 컴포넌트를 overview-detail식 2분할로 결합."
+   },
+   {
+    "name": "mohr-circle",
+    "korean": "모어 원 (파괴포락선)",
+    "why": "빈도 mid, effort M. RESULT-VIZ-STANDARD 비평#4로 등재된 미구현 갭 — 원 자동 생성·등축 강제·공통접선(c,φ) 피팅이 전용 가치(ASTM D4767).",
+    "plan": "xy-core 재사용: 응력→원(중심·반경) 폴리라인 자동 생성 + aspect=1 강제 + 최소제곱 공통접선·c/φ 주석, 새 엔진 불필요."
+   },
+   {
+    "name": "torque-angle-curve",
+    "korean": "토크-각도 체결 곡선",
+    "why": "빈도 mid, effort M. 스너그/항복점 자동 검출·체결창 밴드가 전용 가치(ISO 16047, VDI 2230) — 스마트폰 체결부 검증에도 유효.",
+    "plan": "xy-core dual-axis 패턴 + 탄성구간 회귀·기울기 저하 기반 항복점 검출·named-markers 주석을 레시피에서 계산."
+   },
+   {
+    "name": "creep-curve",
+    "korean": "크리프/응력이완 곡선",
+    "why": "빈도 mid, effort M. 최소 크리프 속도 접선 피팅·1/2/3차 단계 음영이 전용 가치(ASTM E139/E328) — 솔더 크리프 등 MCAE 연계.",
+    "plan": "xy-core 재사용(dma-curve/transient-time-history 패턴) + 최소 기울기 자동 피팅 접선 + region-shading 단계 경계 + 로그 시간축."
+   },
+   {
+    "name": "tq-pinch-diagram",
+    "korean": "T-Q 선도 / 핀치 합성곡선",
+    "why": "빈도 mid, effort M. 스트림→합성곡선 누적 엔탈피 계산·ΔTmin 배치·핀치점 자동화가 전용 가치 — 열교환/열회수 보고 표준.",
+    "plan": "xy-core 재사용: 레시피에서 합성곡선 폴리라인 계산 + 콜드곡선 수평이동 + named-markers/threshold-lines 핀치점 표기."
+   },
+   {
+    "name": "roc-pr-curve",
+    "korean": "ROC / PR 곡선",
+    "why": "빈도 mid, effort M. RESULT-VIZ-STANDARD에 신규 미구현으로 등재 — 임계 스윕·AUC 적분·Youden 최적점 자동계산이 전용 가치(confusion-matrix는 기구현).",
+    "plan": "base-xy 곡선 + 대각 기준선/baseline·AUC HUD·최적임계 마커 플러그인, post: stats.roc_pr."
+   },
+   {
+    "name": "tolerance-stackup-chart",
+    "korean": "공차 스택업 (WC/RSS) 차트",
+    "why": "빈도 mid, effort M. WC/RSS 동시합성·spec 한계 대비 기여 막대는 tornado/waterfall로 불가 — uncertainty-budget과 contribution-bar 플러그인 공유로 비용 절감.",
+    "plan": "가로 기여막대(uncertainty-budget과 플러그인 공유) + threshold-lines spec 한계, post: stats.tolerance_stackup(Σ|tol|·√Σtol²·MC 옵션)."
+   }
+  ],
+  "t3": [
+   {
+    "name": "reliability-demo-sprt",
+    "korean": "신뢰성 실증시험 축차판정도 (PRST)",
+    "why": "빈도 low(MIL-HDBK-781A 군수 중심) — 보류. 필요 시 base-xy + threshold-lines/area 경계선 + ecdf식 step 경로 조합으로 1회성 대응 가능."
+   },
+   {
+    "name": "jr-curve",
+    "korean": "J-R 파괴저항 곡선",
+    "why": "빈도 low(ASTM E1820 파괴인성 전문시험) — 보류. 블런팅/배제선·멱법칙 피팅은 base-xy + regression-fit + named-markers 수동 조합으로 임시 대응."
+   },
+   {
+    "name": "bathtub-curve",
+    "korean": "욕조곡선 (고장률 3구간)",
+    "why": "기존 타입 조합으로 충분 — base-xy + region-shading(3구간 음영) + threshold-lines(burn-in 컷오프)로 개념도/데이터 모두 표현 가능. Weibull 합성 hazard만 유틸 수준이라 전용 타입 가치 얇음."
+   },
+   {
+    "name": "boiling-curve",
+    "korean": "비등곡선 (Nukiyama)",
+    "why": "기존 조합으로 충분 — s-n-fatigue-curve와 동일한 base-xy log-log + region-shading + named-markers(CHF=최대 q\" 탐지) 구성. 전용 타입 신설 가치 낮음."
+   },
+   {
+    "name": "friction-wear-curve",
+    "korean": "마찰계수-미끄럼거리 곡선",
+    "why": "기존 조합으로 근사 충분(base-xy + region 음영 + 평균선 주석) — 정상상태 자동검출만이 델타이고 트라이볼로지 보고 빈도가 좁아 보류."
+   },
+   {
+    "name": "equivalence-tost-plot",
+    "korean": "등가성(TOST) 신뢰구간 플롯",
+    "why": "기존 조합으로 충분 — error-bar(error-bars 플러그인) 수평 forest + threshold-lines 등가한계 2선으로 표현 가능, 델타는 합부 색상뿐."
+   },
+   {
+    "name": "mott-schottky-cv",
+    "korean": "C-V / Mott-Schottky 플롯",
+    "why": "빈도 mid이나 적용 도메인 협소(소자물성/전기화학 계면) — calibration-curve 선형적합 + multitrack 2패널 조합으로 근사 가능해 보류."
+   },
+   {
+    "name": "compressor-map",
+    "korean": "압축기 성능 맵",
+    "why": "도메인 협소(터보기계 — MX 보고서 부적합)·등효율 섬 그리드 보간 사전계산 비용 — 속도선/서지선만이면 base-xy + named-markers 조합으로 충분해 보류."
+   },
+   {
+    "name": "milestone-trend",
+    "korean": "마일스톤 트렌드 차트 (MTA)",
+    "why": "수요 협소(DIN 계열 관행 중심) 대비 날짜-날짜 이중 축 특수 좌표계 비용 — 보류. 채택 시 schedule.py 날짜축 유틸 재사용."
+   },
+   {
+    "name": "resource-histogram",
+    "korean": "자원 히스토그램 (용량선·초과배정)",
+    "why": "선결 과제 존재 — 카탈로그에 범용 stacked-bar 타입이 없어 그것을 먼저 추가하면 stacked-bar + threshold-lines(계단 용량선) 조합으로 충분. 전용 타입은 그 후 재평가."
+   },
+   {
+    "name": "raci-matrix",
+    "korean": "RACI 책임할당 매트릭스",
+    "why": "기존 review-matrix/decision-matrix 셀 상태 배지로 현재도 표현 가능 — 델타는 'A 정확히 1명' 검증과 부하 집계 행뿐이라 전용 타입 가치 얇음. 보류."
+   }
+  ],
+  "dropped": [
+   {
+    "name": "life-distribution-compare",
+    "reason": "후보 간 중복 — metrology-stats의 distribution-fit-compare와 동일 개념(Minitab Distribution ID Plot: 다분포 확률지 패널 + AD/KS 적합도 랭킹 + 중도절단). T2의 distribution-fit-compare로 병합(중도절단 지원 요구사항을 흡수). 기존 119종과의 직접 중복 후보는 전수 대조 결과 없음 — spc-control-chart/emi-spectrum/bode/eye-diagram/cusum-chart/battery-discharge/correlation-scatter/confusion-matrix/heatmap-grid 인접 후보들은 모두 기존 타입이 못 하는 자동계산·판정·레이아웃을 추가하는 확장으로 확인."
+   }
+  ],
+  "summary": "49건 후보를 D:\\graph-skill\\src\\graph_skill\\data\\catalog\\types.json의 실제 구현 119타입과 전수 대조하고 엔진 적합성 주장을 코드(ecae.py의 _limit_at/_limit_step_series, wave4.py CusumRecipe, postprocess/smoothing.savgol, waterfall/threshold-lines/named-markers/region-shading/regression-fit 플러그인)로 검증했다. 결과: 기존 119종과 직접 겹치는 후보는 0건, 후보 간 중복 1건(life-distribution-compare ≡ distribution-fit-compare)을 병합해 48건을 분류. T1 11건(상한 8+3): effort S의 high-빈도 확장형 8건(loop-gain-margin, conducted-emission, tdr-impedance-profile, jitter-bathtub, battery-cycle-fade, cc-cv-charge-profile, thermal-resistance-stack, hardness-profile — 대부분 기존 레시피/플러그인에 보간·판정 로직만 추가) + 가치가 가장 명확한 M 3건(xbar-r-chart, fmea-worksheet, bland-altman-plot — 후자는 RESULT-VIZ-STANDARD §3.1에 corr-bland-altman으로 이미 canonical 등재된 공인 갭). T2 26건: high-빈도지만 T1 정원 초과/엔진 레이어 작업 수반(eye-mask-compliance, phase-noise, soa-chart, load-transient-response, efficiency-map·rpm-order-map은 field-core 오버레이 레이어 1회 작업 공유, uncertainty-budget·tolerance-stackup은 contribution-bar 플러그인 공유) + mid-빈도 가치형(ewma, oc-curve, dqdv[레지스트리 등재 갭], mohr-circle[비평#4 등재 갭], roc-pr-curve[등재 갭] 등) + effort L 2건(psychrometric-chart, distribution-fit-compare). T3 11건: 빈도 low 2건(reliability-demo-sprt, jr-curve)과 기존 플러그인 조합으로 충분하거나 도메인 협소한 9건(bathtub-curve, boiling-curve, equivalence-tost, raci-matrix 등 — resource-histogram은 범용 stacked-bar 타입 선행 필요). 선정 시 MX(스마트폰 CAE/측정) 도메인 적합성을 high-빈도 동률 시 타이브레이커로 적용해 SI/EMC 4건·배터리 2건·열 1건·품질 2건·재료 1건·상관통계 1건으로 T1을 구성했다."
+ }
+}
