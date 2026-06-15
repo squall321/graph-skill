@@ -1,0 +1,88 @@
+{
+  "title": "NPI 프로젝트 RACI",
+  "tasks": [
+    "요구분석",
+    "설계",
+    "구현",
+    "검증",
+    "양산이관"
+  ],
+  "roles": [
+    "PM",
+    "개발",
+    "QA",
+    "생산"
+  ],
+  "assignments": [
+    {
+      "task": "요구분석",
+      "role": "PM",
+      "code": "A"
+    },
+    {
+      "task": "요구분석",
+      "role": "개발",
+      "code": "C"
+    },
+    {
+      "task": "요구분석",
+      "role": "QA",
+      "code": "I"
+    },
+    {
+      "task": "설계",
+      "role": "개발",
+      "code": "A"
+    },
+    {
+      "task": "설계",
+      "role": "PM",
+      "code": "C"
+    },
+    {
+      "task": "설계",
+      "role": "QA",
+      "code": "C"
+    },
+    {
+      "task": "구현",
+      "role": "개발",
+      "code": "A"
+    },
+    {
+      "task": "구현",
+      "role": "QA",
+      "code": "I"
+    },
+    {
+      "task": "검증",
+      "role": "QA",
+      "code": "A"
+    },
+    {
+      "task": "검증",
+      "role": "개발",
+      "code": "R"
+    },
+    {
+      "task": "검증",
+      "role": "PM",
+      "code": "I"
+    },
+    {
+      "task": "양산이관",
+      "role": "생산",
+      "code": "A"
+    },
+    {
+      "task": "양산이관",
+      "role": "PM",
+      "code": "C"
+    },
+    {
+      "task": "양산이관",
+      "role": "개발",
+      "code": "C"
+    }
+  ]
+}

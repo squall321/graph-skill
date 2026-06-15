@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.49.0 (2026-06-15) — T2 표준 보고 그래프 배치 A (11종)
+- **T2 정형 그래프 11종 신설** — 전부 기존 엔진/플러그인 재사용(엔진 신규작업 0):
+  `ewma-chart`(시변 한계) · `oc-curve`(이항 Pa·AQL/LTPD) · `roc-pr-curve`(AUC·Youden) ·
+  `bathtub-curve`(Weibull hazard 3구간) · `crow-amsaa-growth`(β MLE·MTBF log-log) ·
+  `mohr-circle`(응력원·등축) · `boiling-curve`(CHF 자동) · `gate-charge-curve`(Miller plateau) ·
+  `immunity-level-profile`(IEC 판정 색마커) · `resource-histogram`(누적막대·용량 초과) ·
+  `raci-matrix`(R/A/C/I, A 1명 검증).
+- `postprocess/domain_t2.py` 신설(EWMA·이항 OC·ROC/PR AUC·Weibull hazard·Crow-AMSAA MLE·
+  Mohr 원·CHF·정상상태·Miller plateau) — 전부 self-check.
+- 규모: **132 → 143 타입**. 검증: pytest 442 · node 21 · Chromium 143/143 클린.
+- 잔여: T2 배치 B(~15종, 일부 field-core/plugin 작업) · T3(~11종) · 웹 인프라.
+
 ## 0.48.0 (2026-06-14) — T1 표준 보고 그래프 10종 (P2 완결)
 - **T1 정형 그래프 10종 신설** — 전부 기존 엔진/플러그인 재사용(threshold-lines·region-shading·
   named-markers·waterfall), 판정(교차 보간·마진·룩업)이 붙는 정형 그림:

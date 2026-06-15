@@ -96,6 +96,19 @@ from .t1 import (
     ThermalStackRecipe,
     XbarRChartRecipe,
 )
+from .t2 import (
+    BathtubCurveRecipe,
+    BoilingCurveRecipe,
+    CrowAMSAARecipe,
+    EWMAChartRecipe,
+    GateChargeRecipe,
+    ImmunityProfileRecipe,
+    MohrCircleRecipe,
+    OCCurveRecipe,
+    RACIMatrixRecipe,
+    ResourceHistogramRecipe,
+    ROCPRCurveRecipe,
+)
 from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
@@ -240,6 +253,17 @@ REGISTRY: dict[str, Recipe] = {
     "hardness-profile": HardnessProfileRecipe(),
     "xbar-r-chart": XbarRChartRecipe(),
     "fmea-worksheet": FMEAWorksheetRecipe(),
+    "ewma-chart": EWMAChartRecipe(),
+    "oc-curve": OCCurveRecipe(),
+    "roc-pr-curve": ROCPRCurveRecipe(),
+    "bathtub-curve": BathtubCurveRecipe(),
+    "crow-amsaa-growth": CrowAMSAARecipe(),
+    "mohr-circle": MohrCircleRecipe(),
+    "boiling-curve": BoilingCurveRecipe(),
+    "gate-charge-curve": GateChargeRecipe(),
+    "immunity-level-profile": ImmunityProfileRecipe(),
+    "resource-histogram": ResourceHistogramRecipe(),
+    "raci-matrix": RACIMatrixRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

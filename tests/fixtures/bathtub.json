@@ -1,0 +1,20 @@
+{
+  "title": "부품 욕조곡선",
+  "tmax": 150,
+  "burn_in_time": 20,
+  "t_unit": "kh",
+  "phases": [
+    {
+      "beta": 0.5,
+      "eta": 50
+    },
+    {
+      "beta": 1.0,
+      "eta": 400
+    },
+    {
+      "beta": 3.0,
+      "eta": 120
+    }
+  ]
+}

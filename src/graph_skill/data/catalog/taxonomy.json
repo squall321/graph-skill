@@ -293,6 +293,83 @@
       "use_when": "FMEA 워크시트(RPN/AIAG-VDA AP 자동판정)",
       "keywords": ["FMEA", "RPN", "action priority", "고장모드", "위험", "S O D", "AIAG", "워크시트"]
     },
+    "ewma-chart": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "values + lambda + axes.y",
+      "use_when": "EWMA 관리도(작은 시프트 민감, 시변 한계)",
+      "keywords": ["ewma", "관리도", "exponential weighted", "지수가중", "공정", "control chart", "시프트"]
+    },
+    "oc-curve": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "n + c (+aql, ltpd)",
+      "use_when": "샘플링검사 운영특성곡선(AQL/LTPD)",
+      "keywords": ["oc curve", "운영특성", "샘플링검사", "AQL", "LTPD", "합격품질", "acceptance", "Z1.4"]
+    },
+    "roc-pr-curve": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "y_true + y_score (or points) + mode",
+      "use_when": "분류기 ROC/PR + AUC·최적임계",
+      "keywords": ["roc", "pr curve", "auc", "분류", "민감도", "특이도", "precision", "recall", "classifier"]
+    },
+    "bathtub-curve": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "phases[{beta,eta}] or data[t,λ]",
+      "use_when": "욕조곡선(고장률 3구간, 번인)",
+      "keywords": ["bathtub", "욕조곡선", "고장률", "hazard", "번인", "burn-in", "신뢰성", "마모고장"]
+    },
+    "crow-amsaa-growth": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "failure_times (+target_mtbf)",
+      "use_when": "신뢰도 성장(Crow-AMSAA/Duane, β MLE)",
+      "keywords": ["crow", "amsaa", "duane", "신뢰도 성장", "reliability growth", "MTBF", "NHPP", "MIL-HDBK-189"]
+    },
+    "mohr-circle": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "states[{s1,s3} or {sx,sy,txy}] + unit",
+      "use_when": "모어 원(응력상태, 파괴포락선)",
+      "keywords": ["mohr", "모어", "응력원", "전단", "수직응력", "파괴포락선", "stress circle", "principal stress"]
+    },
+    "boiling-curve": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "series[{data:[dT,q]}] + regimes",
+      "use_when": "비등곡선(Nukiyama, CHF 자동)",
+      "keywords": ["boiling", "비등곡선", "nukiyama", "CHF", "열유속", "핵비등", "과열도", "heat flux"]
+    },
+    "gate-charge-curve": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "data[[Qg,Vgs]]",
+      "use_when": "게이트 차지(Miller plateau, Qgs/Qgd)",
+      "keywords": ["gate charge", "게이트 차지", "qg", "miller", "plateau", "mosfet", "qgs", "qgd", "JESD24"]
+    },
+    "immunity-level-profile": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "points[[MHz,level,A|B|C|F]] + required",
+      "use_when": "내성 시험 레벨/판정(IEC 61000-4)",
+      "keywords": ["immunity", "내성", "EMC", "방사내성", "IEC 61000", "판정", "criterion", "level"]
+    },
+    "resource-histogram": {
+      "category": "planning",
+      "dims": "2D",
+      "data": "periods + resources[{hours}] + capacity",
+      "use_when": "자원 히스토그램(용량선·초과배정)",
+      "keywords": ["resource", "자원", "히스토그램", "용량", "초과배정", "공수", "capacity", "histogram", "loading"]
+    },
+    "raci-matrix": {
+      "category": "planning",
+      "dims": "table",
+      "data": "tasks + roles + assignments",
+      "use_when": "RACI 책임할당(A 1명 검증)",
+      "keywords": ["raci", "책임할당", "역할", "responsibility", "accountable", "assignment", "PMBOK"]
+    },
     "error-bar": {
       "category": "comparison",
       "dims": "2D",
