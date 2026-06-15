@@ -1,0 +1,38 @@
+{
+  "title": "프로젝트 리스크 매트릭스",
+  "risks": [
+    {
+      "id": "R1 공급지연",
+      "probability": 4,
+      "impact": 5,
+      "residual": {
+        "p": 2,
+        "i": 4
+      }
+    },
+    {
+      "id": "R2 수율",
+      "probability": 3,
+      "impact": 4,
+      "residual": {
+        "p": 2,
+        "i": 3
+      }
+    },
+    {
+      "id": "R3 인증",
+      "probability": 2,
+      "impact": 5
+    },
+    {
+      "id": "R4 비용",
+      "probability": 3,
+      "impact": 2
+    },
+    {
+      "id": "R5 인력",
+      "probability": 2,
+      "impact": 2
+    }
+  ]
+}

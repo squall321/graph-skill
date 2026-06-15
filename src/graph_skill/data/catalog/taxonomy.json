@@ -440,6 +440,69 @@
       "use_when": "등가성(TOST, CI⊂등가한계 판정)",
       "keywords": ["equivalence", "등가성", "tost", "신뢰구간", "등가한계", "CI", "bioequivalence", "forest"]
     },
+    "risk-matrix": {
+      "category": "planning",
+      "dims": "2D",
+      "data": "risks[{probability,impact,residual}]",
+      "use_when": "리스크 매트릭스(5×5 확률-영향, 완화 전후)",
+      "keywords": ["risk matrix", "리스크", "위험", "확률", "영향", "probability", "impact", "5x5", "완화"]
+    },
+    "friction-wear-curve": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "series[{data:[dist,COF]}]",
+      "use_when": "마찰계수-거리(정상상태·런인, 트라이볼로지)",
+      "keywords": ["friction", "wear", "마찰", "마모", "COF", "트라이볼로지", "정상상태", "런인", "tribology"]
+    },
+    "fan-pump-operating-point": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "curves + system",
+      "use_when": "팬/펌프 성능-시스템 운전점(교점)",
+      "keywords": ["fan", "pump", "팬", "펌프", "운전점", "operating point", "성능곡선", "시스템곡선", "BEP", "유량"]
+    },
+    "tq-pinch-diagram": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "streams[{side,T,mcp}] + dtmin",
+      "use_when": "T-Q 핀치 합성곡선(열회수/열교환)",
+      "keywords": ["pinch", "핀치", "합성곡선", "composite", "T-Q", "열회수", "열교환", "ΔTmin", "엔탈피"]
+    },
+    "jr-curve": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "data[[da,J]] + sigma_y",
+      "use_when": "J-R 파괴저항(블런팅·멱법칙, ASTM E1820)",
+      "keywords": ["jr curve", "J-R", "파괴저항", "균열", "블런팅", "fracture", "toughness", "ASTM E1820", "J-적분"]
+    },
+    "load-transient-response": {
+      "category": "control-dynamics",
+      "dims": "2D",
+      "data": "channels{i_load,v_out} + params",
+      "use_when": "부하 과도응답(오버슈트·회복시간 합부)",
+      "keywords": ["load transient", "과도응답", "부하", "오버슈트", "회복시간", "전압", "DC-DC", "transient", "regulation"]
+    },
+    "mott-schottky-cv": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "data[[V,C]] + params{area,eps_r}",
+      "use_when": "C-V/Mott-Schottky(도핑농도·V_fb)",
+      "keywords": ["mott schottky", "mott-schottky", "C-V", "도핑", "플랫밴드", "doping", "Nd", "Vfb", "1/C²", "소자물성"]
+    },
+    "compressor-map": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "speed_lines + surge + operating",
+      "use_when": "압축기 성능 맵(속도선·서지선·운전점)",
+      "keywords": ["compressor map", "압축기", "성능맵", "서지", "속도선", "surge", "압력비", "turbomachine", "PR"]
+    },
+    "harmonic-spur-table": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "spectrum + f0 + n_max",
+      "use_when": "고조파/스퓨리어스 마커(n×f0 자동검출)",
+      "keywords": ["harmonic", "spur", "고조파", "스퓨리어스", "spurious", "n×f0", "dBc", "송신기", "FCC", "ETSI"]
+    },
     "error-bar": {
       "category": "comparison",
       "dims": "2D",

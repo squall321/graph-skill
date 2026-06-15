@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.51.0 (2026-06-15) — T2 표준 보고 그래프 배치 C (9종)
+- **T2 정형 그래프 9종 신설** — 전부 기존 엔진/플러그인 재사용(엔진 신규작업 0):
+  `risk-matrix`(P·I zone·완화 전후) · `friction-wear-curve`(정상상태·런인) ·
+  `fan-pump-operating-point`(성능×시스템 곡선 교점) · `tq-pinch-diagram`(복합곡선·ΔTmin) ·
+  `jr-curve`(블런팅·멱법칙, ASTM E1820) · `load-transient-response`(2패널·오버슈트/회복) ·
+  `mott-schottky-cv`(1/C² 선형적합·N_D·V_fb) · `compressor-map`(속도선·서지·운전점) ·
+  `harmonic-spur-table`(n×f0 피크 자동검출·dBc).
+- `postprocess/domain_t4.py` 신설(곡선교점·J-R 멱법칙·과도 메트릭·Mott-Schottky·고조파 피크·
+  복합곡선) — 전부 self-check.
+- 규모: **153 → 162 타입**. 검증: pytest 458 · node 21 · Chromium 162/162 클린.
+- 잔여: 엔진작업 5종(eye-mask·efficiency-map·rpm-order·psychrometric·distribution-fit) ·
+  milestone-trend(날짜축)·reliability-demo-sprt · 웹 인프라.
+
 ## 0.50.0 (2026-06-15) — T2 표준 보고 그래프 배치 B (10종)
 - **T2 정형 그래프 10종 신설** — 전부 기존 엔진/플러그인 재사용(엔진 신규작업 0):
   `phase-noise`(L(f)·RMS 지터 적분) · `soa-chart`(안전동작영역 log-log·동작점 합부) ·

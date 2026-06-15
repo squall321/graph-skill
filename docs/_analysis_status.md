@@ -11,4 +11,6 @@
 | `_improvement_roadmap_raw.json` | v0.46.0 | **P0 전체 + P1-A/B/C 완료.** 잔여: P2(미구현 T1 그래프 타입, 웹 인프라). |
 | `_gap_analysis_raw.json` | v0.45.0 | **T1+T2 순수레시피 완료(0.48~0.50, 31종).** T1 11 + T2-A 11 + T2-B 10. **잔여 ~17종**: (a) 엔진작업 필요 5종 — eye-mask-compliance(폴리곤+point-in-polygon), efficiency-map·rpm-order-map(field-core 등치선 오버레이), psychrometric-chart(배경 곡선군 大), distribution-fit-compare(다분포 확률지 패널); (b) 순수레시피 잔여 ~12종 — risk-matrix·milestone-trend·harmonic-spur-table·mott-schottky·compressor-map·load-transient-response·jr-curve·reliability-demo-sprt·tq-pinch-diagram·fan-pump-operating-point·friction-wear-curve·mohr는완료. |
 
-**다음 작업 후보(잔여)**: 순수레시피 배치 C(~12종) → 엔진작업 5종 → 웹 인프라(S3/CDN·OAuth·cad3d 워커격리) · report-archive file_id 풀 연동(현재 local_path 브릿지까지).
+**진행(0.48~0.51)**: 순수레시피 정형 그래프 **40종 완료** (T1 11 + T2-A 11 + T2-B 10 + T2-C 9). **잔여 ~7종**: 엔진작업 5종(eye-mask-compliance·efficiency-map·rpm-order-map·psychrometric-chart·distribution-fit-compare) + 순수레시피 2종(milestone-trend 날짜축·reliability-demo-sprt PRST).
+
+**다음 작업 후보**: 엔진작업 5종(폴리곤/field-core 오버레이/배경곡선군) → milestone-trend·reliability-demo-sprt → 웹 인프라(S3/CDN·OAuth·cad3d 워커격리) · report-archive file_id 풀 연동.

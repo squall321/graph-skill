@@ -1,0 +1,35 @@
+{
+  "title": "열교환 네트워크 T-Q",
+  "dtmin": 10,
+  "axes": {
+    "x": {
+      "unit": "kW"
+    }
+  },
+  "streams": [
+    {
+      "side": "hot",
+      "T_in": 180,
+      "T_out": 40,
+      "mcp": 2.0
+    },
+    {
+      "side": "hot",
+      "T_in": 150,
+      "T_out": 60,
+      "mcp": 4.0
+    },
+    {
+      "side": "cold",
+      "T_in": 30,
+      "T_out": 160,
+      "mcp": 3.0
+    },
+    {
+      "side": "cold",
+      "T_in": 50,
+      "T_out": 140,
+      "mcp": 2.5
+    }
+  ]
+}

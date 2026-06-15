@@ -121,6 +121,17 @@ from .t3 import (
     TorqueAngleRecipe,
     UncertaintyBudgetRecipe,
 )
+from .t4 import (
+    CompressorMapRecipe,
+    FanPumpRecipe,
+    FrictionWearRecipe,
+    HarmonicSpurRecipe,
+    JRCurveRecipe,
+    LoadTransientRecipe,
+    MottSchottkyRecipe,
+    RiskMatrixRecipe,
+    TQPinchRecipe,
+)
 from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
@@ -286,6 +297,15 @@ REGISTRY: dict[str, Recipe] = {
     "torque-angle-curve": TorqueAngleRecipe(),
     "creep-curve": CreepCurveRecipe(),
     "equivalence-tost-plot": EquivalenceTOSTRecipe(),
+    "risk-matrix": RiskMatrixRecipe(),
+    "friction-wear-curve": FrictionWearRecipe(),
+    "fan-pump-operating-point": FanPumpRecipe(),
+    "tq-pinch-diagram": TQPinchRecipe(),
+    "jr-curve": JRCurveRecipe(),
+    "load-transient-response": LoadTransientRecipe(),
+    "mott-schottky-cv": MottSchottkyRecipe(),
+    "compressor-map": CompressorMapRecipe(),
+    "harmonic-spur-table": HarmonicSpurRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),
