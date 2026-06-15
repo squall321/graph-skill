@@ -1,0 +1,28 @@
+{
+  "title": "측정시스템 방법 등가성",
+  "unit": "%",
+  "bounds": {
+    "lower": -2.0,
+    "upper": 2.0
+  },
+  "estimates": [
+    {
+      "name": "장비 A",
+      "point": 0.4,
+      "ci_low": -0.9,
+      "ci_high": 1.7
+    },
+    {
+      "name": "장비 B",
+      "point": 1.6,
+      "ci_low": 0.5,
+      "ci_high": 2.7
+    },
+    {
+      "name": "장비 C",
+      "point": -0.3,
+      "ci_low": -1.5,
+      "ci_high": 0.9
+    }
+  ]
+}

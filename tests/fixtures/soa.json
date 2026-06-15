@@ -1,0 +1,26 @@
+{
+  "title": "파워 MOSFET DC-SOA",
+  "device": {
+    "rds_on": 0.04,
+    "id_max": 60,
+    "pd_max": 250,
+    "vds_max": 100
+  },
+  "points": [
+    {
+      "vds": 15,
+      "id": 20,
+      "label": "정상"
+    },
+    {
+      "vds": 70,
+      "id": 12,
+      "label": "과도"
+    },
+    {
+      "vds": 90,
+      "id": 40,
+      "label": "고장"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "title": "조립 갭 공차 스택업",
+  "axes": {
+    "y": {
+      "unit": "mm"
+    }
+  },
+  "spec": {
+    "min": -0.15,
+    "max": 0.15
+  },
+  "links": [
+    {
+      "name": "하우징",
+      "nominal": 25.0,
+      "tol_plus": 0.05,
+      "tol_minus": -0.05
+    },
+    {
+      "name": "브래킷",
+      "nominal": 12.0,
+      "tol_plus": 0.04,
+      "tol_minus": -0.04
+    },
+    {
+      "name": "스페이서",
+      "nominal": -8.0,
+      "tol_plus": 0.03,
+      "tol_minus": -0.03,
+      "sense": -1
+    },
+    {
+      "name": "PCB",
+      "nominal": -28.5,
+      "tol_plus": 0.06,
+      "tol_minus": -0.06,
+      "sense": -1
+    }
+  ]
+}

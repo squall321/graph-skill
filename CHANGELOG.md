@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.50.0 (2026-06-15) — T2 표준 보고 그래프 배치 B (10종)
+- **T2 정형 그래프 10종 신설** — 전부 기존 엔진/플러그인 재사용(엔진 신규작업 0):
+  `phase-noise`(L(f)·RMS 지터 적분) · `soa-chart`(안전동작영역 log-log·동작점 합부) ·
+  `uncertainty-budget-chart`(GUM 기여율·확장불확도) · `tolerance-stackup-chart`(WC/RSS) ·
+  `evm-s-curve`(PV/EV/AC·SPI/CPI/EAC) · `burndown-burnup`(이상선·범위변경) ·
+  `dqdv-curve`(미분용량 ICA·스무딩) · `torque-angle-curve`(항복점 자동검출) ·
+  `creep-curve`(최소 크리프율·단계 음영) · `equivalence-tost-plot`(CI⊂등가한계 판정).
+- `postprocess/domain_t3.py` 신설(위상지터 적분·SOA 경계/포함·GUM 버짓·공차 WC/RSS·EVM·
+  리스크 zone·dQ/dV·토크 항복·최소 크리프율) — 전부 self-check.
+- 규모: **143 → 153 타입**. 검증: pytest 451 · node 21 · Chromium 153/153 클린.
+- 잔여: T2 엔진작업 ~5종(eye-mask·efficiency-map·rpm-order·psychrometric·distribution-fit) ·
+  T3 일부(~7종) · 웹 인프라.
+
 ## 0.49.0 (2026-06-15) — T2 표준 보고 그래프 배치 A (11종)
 - **T2 정형 그래프 11종 신설** — 전부 기존 엔진/플러그인 재사용(엔진 신규작업 0):
   `ewma-chart`(시변 한계) · `oc-curve`(이항 Pa·AQL/LTPD) · `roc-pr-curve`(AUC·Youden) ·

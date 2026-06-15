@@ -109,6 +109,18 @@ from .t2 import (
     ResourceHistogramRecipe,
     ROCPRCurveRecipe,
 )
+from .t3 import (
+    BurndownRecipe,
+    CreepCurveRecipe,
+    DQDVRecipe,
+    EquivalenceTOSTRecipe,
+    EVMSCurveRecipe,
+    PhaseNoiseRecipe,
+    SOAChartRecipe,
+    ToleranceStackupRecipe,
+    TorqueAngleRecipe,
+    UncertaintyBudgetRecipe,
+)
 from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
@@ -264,6 +276,16 @@ REGISTRY: dict[str, Recipe] = {
     "immunity-level-profile": ImmunityProfileRecipe(),
     "resource-histogram": ResourceHistogramRecipe(),
     "raci-matrix": RACIMatrixRecipe(),
+    "phase-noise": PhaseNoiseRecipe(),
+    "soa-chart": SOAChartRecipe(),
+    "uncertainty-budget-chart": UncertaintyBudgetRecipe(),
+    "tolerance-stackup-chart": ToleranceStackupRecipe(),
+    "evm-s-curve": EVMSCurveRecipe(),
+    "burndown-burnup": BurndownRecipe(),
+    "dqdv-curve": DQDVRecipe(),
+    "torque-angle-curve": TorqueAngleRecipe(),
+    "creep-curve": CreepCurveRecipe(),
+    "equivalence-tost-plot": EquivalenceTOSTRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

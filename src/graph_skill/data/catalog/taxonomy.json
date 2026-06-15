@@ -370,6 +370,76 @@
       "use_when": "RACI 책임할당(A 1명 검증)",
       "keywords": ["raci", "책임할당", "역할", "responsibility", "accountable", "assignment", "PMBOK"]
     },
+    "phase-noise": {
+      "category": "signal-frequency",
+      "dims": "2D",
+      "data": "offsets + lf (+spurs, integ, carrier)",
+      "use_when": "위상잡음 L(f) + RMS 지터(발진기/PLL)",
+      "keywords": ["phase noise", "위상잡음", "L(f)", "지터", "jitter", "발진기", "PLL", "dBc", "spur"]
+    },
+    "soa-chart": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "device params or limit curves + points",
+      "use_when": "안전동작영역(SOA, 전력반도체 합부)",
+      "keywords": ["soa", "안전동작영역", "safe operating area", "전력반도체", "mosfet", "igbt", "derating", "한계"]
+    },
+    "uncertainty-budget-chart": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "components[{u,c}] + measurand + k",
+      "use_when": "GUM 측정 불확도 버짓(기여율·확장불확도)",
+      "keywords": ["uncertainty", "불확도", "GUM", "버짓", "budget", "교정", "확장불확도", "calibration"]
+    },
+    "tolerance-stackup-chart": {
+      "category": "process-quality",
+      "dims": "2D",
+      "data": "links[{nominal,tol}] + spec",
+      "use_when": "공차 스택업(WC/RSS, spec 대비)",
+      "keywords": ["tolerance", "공차", "스택업", "stackup", "WC", "RSS", "치수", "조립"]
+    },
+    "evm-s-curve": {
+      "category": "planning",
+      "dims": "2D",
+      "data": "dates + pv/ev/ac + bac",
+      "use_when": "EVM 성과 S-커브(SPI/CPI/EAC)",
+      "keywords": ["evm", "earned value", "성과", "S-curve", "PV", "EV", "AC", "SPI", "CPI", "EAC", "관리"]
+    },
+    "burndown-burnup": {
+      "category": "planning",
+      "dims": "2D",
+      "data": "periods + total_scope + actual",
+      "use_when": "번다운/번업(이상선 대비 잔여)",
+      "keywords": ["burndown", "burnup", "번다운", "번업", "스프린트", "잔여", "이상선", "애자일", "sprint"]
+    },
+    "dqdv-curve": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "cycles[{data:[V,Q]}]",
+      "use_when": "dQ/dV 미분용량(ICA, 배터리 열화진단)",
+      "keywords": ["dqdv", "미분용량", "ICA", "incremental capacity", "배터리", "열화", "전압", "피크"]
+    },
+    "torque-angle-curve": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "data[[angle,torque]] + snug",
+      "use_when": "토크-각도 체결(항복점·스너그)",
+      "keywords": ["torque angle", "토크각도", "체결", "항복", "스너그", "fastening", "VDI 2230", "볼트"]
+    },
+    "creep-curve": {
+      "category": "mechanics",
+      "dims": "2D",
+      "data": "series[{data:[t,strain]}]",
+      "use_when": "크리프/응력이완(최소 크리프율·단계)",
+      "keywords": ["creep", "크리프", "응력이완", "변형률", "최소 크리프율", "ASTM E139", "솔더", "1차 2차 3차"]
+    },
+    "equivalence-tost-plot": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "estimates[{point,ci}] + bounds",
+      "use_when": "등가성(TOST, CI⊂등가한계 판정)",
+      "keywords": ["equivalence", "등가성", "tost", "신뢰구간", "등가한계", "CI", "bioequivalence", "forest"]
+    },
     "error-bar": {
       "category": "comparison",
       "dims": "2D",
