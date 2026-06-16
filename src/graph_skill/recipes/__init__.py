@@ -132,6 +132,13 @@ from .t4 import (
     RiskMatrixRecipe,
     TQPinchRecipe,
 )
+from .t5 import (
+    DistributionFitRecipe,
+    EfficiencyMapRecipe,
+    EyeMaskComplianceRecipe,
+    PsychrometricRecipe,
+    RPMOrderMapRecipe,
+)
 from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
@@ -306,6 +313,11 @@ REGISTRY: dict[str, Recipe] = {
     "mott-schottky-cv": MottSchottkyRecipe(),
     "compressor-map": CompressorMapRecipe(),
     "harmonic-spur-table": HarmonicSpurRecipe(),
+    "eye-mask-compliance": EyeMaskComplianceRecipe(),
+    "efficiency-map": EfficiencyMapRecipe(),
+    "rpm-order-map": RPMOrderMapRecipe(),
+    "psychrometric-chart": PsychrometricRecipe(),
+    "distribution-fit-compare": DistributionFitRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

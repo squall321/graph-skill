@@ -10,8 +10,8 @@ LLM의 일은 (a) 데이터 수집 (b) 축·배경값 확인(부족하면 *질�
 
 ## 현재 규모 — v0.45.0
 
-- **162 그래프 타입 / 8 엔진 패밀리(+linked-view 버스) / 19 분류 카테고리**
-- 엔진: `xy-core`(Canvas 2D, 112 타입·플러그인 25종, grouped/stacked 막대·콤보·T1/T2 정형 판정그림 포함) · `field-core` · `polar-core` · `smith-core`
+- **167 그래프 타입 / 8 엔진 패밀리(+linked-view 버스) / 19 분류 카테고리**
+- 엔진: `xy-core`(Canvas 2D, 113 타입·플러그인 25종, grouped/stacked 막대·콤보·T1/T2 정형 판정그림 포함) · `field-core`(컨투어/히트맵 + 오버레이 레이어: 효율맵·오더맵·아이마스크) · `polar-core` · `smith-core`
   · `review-matrix`(DOM 표·셀=값/상태/heat/bar/그래프/이미지) · `flow-core`(순서도·sankey·network
   ·chord·sunburst) · `gauge-core`(게이지·마진·카드) · `cad3d-core`(WebGL, three.js 벤더링)
   · linked-view 플러그인 버스(focus+context·공유 크로스헤어·SPLOM 브러싱)
@@ -73,7 +73,7 @@ pip install -e ".[postprocess,cad3d,test]"
 python -m playwright install chromium
 
 python build_gallery.py     # graph-out/gallery — 엔진 버전 범프 시 필수(신선도 게이트)
-pytest tests/ -q            # 458+ tests (수치 검증·게이트·결정성·실브라우저 시각·웹/MCP 서빙; optional deps 없으면 일부 skip)
+pytest tests/ -q            # 465+ tests (수치 검증·게이트·결정성·실브라우저 시각·웹/MCP 서빙; optional deps 없으면 일부 skip)
 for f in tests/node_*.mjs; do node "$f"; done
 python tests/playwright_smoke.py   # 119/119 실 Chromium 부팅+무에러 스모크
 ```

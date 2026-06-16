@@ -105,6 +105,7 @@
     var f = (a && a.field) || {};
     this.x = f.x || []; this.y = f.y || []; this.z = f.z || [];
     this.vectors = f.vectors || null;                  // optional {x,y,u,v} for quiver overlay
+    this.overlays = f.overlays || null;                // optional {curves,markers,polygons} in data coords
     this.nx = this.x.length; this.ny = this.y.length;
     this._computeZ();
     this.full = { x: [this.x[0], this.x[this.nx - 1]], y: [this.y[0], this.y[this.ny - 1]] };
@@ -194,6 +195,7 @@
     }
     if (this.opts.contours) this._drawContours(ctx, sx, sy, tok);
     if (this.vectors) this._drawArrows(ctx, sx, sy, tok);
+    if (this.overlays) this._drawOverlays(ctx, sx, sy, tok);
     this._drawCrosshair(ctx, plot, tok);
     ctx.restore();
 
@@ -202,6 +204,40 @@
     if (this.opts.title) { ctx.fillStyle = tok.fg; ctx.font = "700 13px Segoe UI, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(this.opts.title, (plot.left + plot.right) / 2, 4); }
     ctx.restore();
     this._updateHUD();
+  };
+
+  // Generic overlay layer (data coords): polygons (eye masks), curves (envelope/order lines),
+  // markers (operating points). Drawn over the raster/contours, clipped to the plot.
+  FieldCore.prototype._drawOverlays = function (ctx, sx, sy, tok) {
+    var ov = this.overlays, i, k, pts;
+    var polys = ov.polygons || [];
+    for (i = 0; i < polys.length; i++) {
+      pts = polys[i].points || [];
+      if (pts.length < 2) continue;
+      ctx.beginPath(); ctx.moveTo(sx.to(pts[0][0]), sy.to(pts[0][1]));
+      for (k = 1; k < pts.length; k++) ctx.lineTo(sx.to(pts[k][0]), sy.to(pts[k][1]));
+      ctx.closePath();
+      if (polys[i].fill) { ctx.globalAlpha = 0.22; ctx.fillStyle = polys[i].fill; ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.strokeStyle = polys[i].color || tok.fg; ctx.lineWidth = 1.6;
+      ctx.setLineDash(polys[i].dash || []); ctx.stroke(); ctx.setLineDash([]);
+    }
+    var curves = ov.curves || [];
+    for (i = 0; i < curves.length; i++) {
+      pts = curves[i].points || [];
+      if (pts.length < 2) continue;
+      ctx.beginPath(); ctx.moveTo(sx.to(pts[0][0]), sy.to(pts[0][1]));
+      for (k = 1; k < pts.length; k++) ctx.lineTo(sx.to(pts[k][0]), sy.to(pts[k][1]));
+      ctx.strokeStyle = curves[i].color || tok.fg; ctx.lineWidth = curves[i].width || 2;
+      ctx.setLineDash(curves[i].dash || []); ctx.stroke(); ctx.setLineDash([]);
+    }
+    var mks = ov.markers || [];
+    ctx.font = "600 11px Segoe UI, system-ui, sans-serif"; ctx.textBaseline = "bottom"; ctx.textAlign = "left";
+    for (i = 0; i < mks.length; i++) {
+      var px = sx.to(mks[i].x), py = sy.to(mks[i].y);
+      ctx.fillStyle = mks[i].color || tok.fg;
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, 2 * Math.PI); ctx.fill();
+      if (mks[i].label) { ctx.fillStyle = tok.fg; ctx.fillText(mks[i].label, px + 7, py - 4); }
+    }
   };
 
   FieldCore.prototype._drawArrows = function (ctx, sx, sy, tok) {

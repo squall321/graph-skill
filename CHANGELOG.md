@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.52.0 (2026-06-15) — 엔진 오버레이 정형 그래프 5종 (gap 완결)
+- **field-core 범용 오버레이 레이어** 신설 — `overlays:{curves, markers, polygons}`(데이터좌표)를
+  히트맵/컨투어 위에 렌더(`_drawOverlays`). field-core 0.5.1.
+- **신규 타입 5종**:
+  `eye-mask-compliance`(마스크 폴리곤 + point-in-polygon 히트카운트·합부) ·
+  `efficiency-map`(등효율 컨투어 + 외곽선·동작점 오버레이) ·
+  `rpm-order-map`(스펙트로그램 + 오더선 f=order×rpm/60 오버레이) ·
+  `psychrometric-chart`(ASHRAE 포화선·RH선·상태점, 순수 레시피) ·
+  `distribution-fit-compare`(분포별 확률지 + 선형적합 R² 랭킹, 4패널).
+- `postprocess/domain_t5.py`(point-in-polygon·아이마스크 히트·습공기·inverse-normal·확률지
+  선형화) — 전부 self-check.
+- 규모: **162 → 167 타입**. 검증: pytest 465 · node 21 · Chromium 167/167 클린.
+- **갭 분석 미구현 그래프 타입 사실상 완결** — 잔여: milestone-trend(날짜축)·reliability-demo-sprt,
+  그리고 웹 인프라(S3/CDN·OAuth·cad3d 워커격리).
+
 ## 0.51.0 (2026-06-15) — T2 표준 보고 그래프 배치 C (9종)
 - **T2 정형 그래프 9종 신설** — 전부 기존 엔진/플러그인 재사용(엔진 신규작업 0):
   `risk-matrix`(P·I zone·완화 전후) · `friction-wear-curve`(정상상태·런인) ·

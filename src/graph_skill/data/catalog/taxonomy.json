@@ -503,6 +503,41 @@
       "use_when": "고조파/스퓨리어스 마커(n×f0 자동검출)",
       "keywords": ["harmonic", "spur", "고조파", "스퓨리어스", "spurious", "n×f0", "dBc", "송신기", "FCC", "ETSI"]
     },
+    "eye-mask-compliance": {
+      "category": "signal-frequency",
+      "dims": "2D+z",
+      "data": "signal + params.sps + mask",
+      "use_when": "아이 마스크 판정(폴리곤 히트카운트)",
+      "keywords": ["eye mask", "아이마스크", "마스크", "컴플라이언스", "SerDes", "히트", "compliance", "polygon"]
+    },
+    "efficiency-map": {
+      "category": "field-2d",
+      "dims": "2D+z",
+      "data": "field{rpm,Nm,eff} + envelope + points",
+      "use_when": "효율 맵(등효율 컨투어+외곽선·동작점)",
+      "keywords": ["efficiency map", "효율맵", "등효율", "토크속도", "모터", "envelope", "동작점", "contour"]
+    },
+    "rpm-order-map": {
+      "category": "field-2d",
+      "dims": "2D+z",
+      "data": "field{rpm,Hz,amp} + orders",
+      "use_when": "RPM 오더 컬러맵(오더선 오버레이)",
+      "keywords": ["rpm order", "오더맵", "오더트래킹", "order tracking", "NVH", "런업", "스펙트로그램", "차수"]
+    },
+    "psychrometric-chart": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "points[{tdb,rh|w}] + pressure",
+      "use_when": "습공기선도(포화선·RH·상태점, ASHRAE)",
+      "keywords": ["psychrometric", "습공기선도", "ASHRAE", "절대습도", "상대습도", "건구온도", "HVAC", "공조"]
+    },
+    "distribution-fit-compare": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "values + distributions",
+      "use_when": "수명분포 적합 비교(확률지+R² 랭킹)",
+      "keywords": ["distribution fit", "분포적합", "확률지", "Weibull", "lognormal", "신뢰성", "probability plot", "AD"]
+    },
     "error-bar": {
       "category": "comparison",
       "dims": "2D",

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graph-skill"
-version = "0.51.0"
+version = "0.52.0"
 description = "Generate self-contained interactive HTML graph/visualization artifacts (engine-family based) driven by an LLM skill."
 requires-python = ">=3.11"
 dependencies = [
