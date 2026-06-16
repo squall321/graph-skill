@@ -538,6 +538,20 @@
       "use_when": "수명분포 적합 비교(확률지+R² 랭킹)",
       "keywords": ["distribution fit", "분포적합", "확률지", "Weibull", "lognormal", "신뢰성", "probability plot", "AD"]
     },
+    "milestone-trend": {
+      "category": "planning",
+      "dims": "2D",
+      "data": "report_dates + milestones[{forecasts}]",
+      "use_when": "마일스톤 트렌드(MTA, 보고시점별 예상완료 추이)",
+      "keywords": ["milestone trend", "MTA", "마일스톤", "트렌드", "일정", "예상완료", "지연", "DIN", "관리"]
+    },
+    "reliability-demo-sprt": {
+      "category": "reliability",
+      "dims": "2D",
+      "data": "alpha/beta + theta0/theta1 + trajectory",
+      "use_when": "신뢰성 실증 축차판정(PRST, MIL-HDBK-781)",
+      "keywords": ["sprt", "prst", "축차판정", "실증시험", "MTBF", "신뢰성", "reliability demo", "sequential", "MIL-HDBK-781"]
+    },
     "error-bar": {
       "category": "comparison",
       "dims": "2D",

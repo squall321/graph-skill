@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.53.0 (2026-06-16) — 정형 그래프 마무리 2종 (gap 분석 전량 완료)
+- **마지막 정형 그래프 2종** — 둘 다 xy-core 재사용:
+  `milestone-trend`(MTA — 보고시점별 예상완료일 추이, 완료선 y=x·달성 마커) ·
+  `reliability-demo-sprt`(PRST — accept/continue/reject 경계 + 시험경로, MIL-HDBK-781).
+- `postprocess/domain_t6.py`(Wald SPRT 경계·판정) — self-check.
+- 규모: **167 → 169 타입**. 검증: pytest 470 · node 21 · Chromium 169/169 클린.
+- **갭 분석 미구현 그래프 타입 48종 전량 완료** (T1 11 + T2 26 + T3 11). 잔여는 웹 인프라뿐
+  (S3/CDN·OAuth·cad3d 워커격리 · report-archive file_id 풀 연동).
+
 ## 0.52.0 (2026-06-15) — 엔진 오버레이 정형 그래프 5종 (gap 완결)
 - **field-core 범용 오버레이 레이어** 신설 — `overlays:{curves, markers, polygons}`(데이터좌표)를
   히트맵/컨투어 위에 렌더(`_drawOverlays`). field-core 0.5.1.

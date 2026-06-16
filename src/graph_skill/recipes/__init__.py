@@ -139,6 +139,7 @@ from .t5 import (
     PsychrometricRecipe,
     RPMOrderMapRecipe,
 )
+from .t6 import MilestoneTrendRecipe, ReliabilityDemoSPRTRecipe
 from .testreport import TestReportRecipe
 from .wave1 import PdfKdeRecipe, RidgelineRecipe, ScatterMatrixRecipe, SpectrogramRecipe
 from .wave2 import AreaPlotRecipe, StackedAreaRecipe, ViolinRecipe, WaterfallRecipe
@@ -318,6 +319,8 @@ REGISTRY: dict[str, Recipe] = {
     "rpm-order-map": RPMOrderMapRecipe(),
     "psychrometric-chart": PsychrometricRecipe(),
     "distribution-fit-compare": DistributionFitRecipe(),
+    "milestone-trend": MilestoneTrendRecipe(),
+    "reliability-demo-sprt": ReliabilityDemoSPRTRecipe(),
     "contour-plot": _field,
     "vector-quiver-2d": VectorQuiverRecipe(),
     "rainflow-cycle-histogram": RainflowRecipe(),

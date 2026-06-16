@@ -71,6 +71,8 @@ MAP = [
     ("rpm-order-map", "rpmorder", "엔진오버레이 ★신규", "RPM 오더 맵 — 오더선 오버레이"),
     ("psychrometric-chart", "psychro", "엔진오버레이 ★신규", "습공기선도 — 포화선·RH·상태점(ASHRAE)"),
     ("distribution-fit-compare", "distfit", "엔진오버레이 ★신규", "분포적합 비교 — 확률지·R² 랭킹"),
+    ("milestone-trend", "milestonetrend", "정형 마무리 ★신규", "마일스톤 트렌드(MTA) — 예상완료 추이·완료선"),
+    ("reliability-demo-sprt", "sprt", "정형 마무리 ★신규", "PRST 축차판정 — accept/continue/reject 경계"),
     ("histogram", "hist", "통계 분포", "분포 히스토그램 (√n 빈, 밀도 옵션)"),
     ("bar-plot", "bar", "통계 분포", "범주별 막대"),
     ("grouped-bar", "grouped_bar", "통계 분포", "범주별 다계열 막대 + 막대/선 콤보(우측축)"),

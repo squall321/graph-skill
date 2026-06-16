@@ -682,6 +682,32 @@
       "height_px": 720,
       "hint": "분포적합 비교. values:[…] + distributions:['weibull','lognormal','normal','exponential']. 분포별 확률지+선형적합 R² 랭킹·최적 표기."
     },
+    "milestone-trend": {
+      "title": "Milestone trend (MTA)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": ["named-markers"],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "마일스톤 트렌드(MTA). report_dates:[ISO] + milestones:[{name, forecasts:[보고시점별 예상완료 ISO]}]. 평탄=일정유지·상승=지연, 완료선 y=x."
+    },
+    "reliability-demo-sprt": {
+      "title": "Reliability demo (PRST)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "신뢰성 실증 축차판정(PRST). alpha+beta + theta0/theta1(또는 discrimination_ratio) + trajectory:[[누적시간,누적고장]]. accept/continue/reject 경계 자동."
+    },
     "dual-axis": {
       "title": "Dual-axis plot",
       "engine": "xy-core",
