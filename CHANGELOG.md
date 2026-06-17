@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.53.1 (2026-06-18) — 하우스키핑
+- `__version__` editable 설치 메타데이터 갱신 — 런타임이 0.53.x를 정상 표기(이전 0.10.0 stale).
+- CI: GitHub Actions Node20-런타임 deprecation forward-compat(`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`) + node LTS 22.
+- 전 엔진/플러그인/shell JS 구문검사 테스트(`node --check`) 추가 — DOM 엔진(review-matrix/flow/gauge/
+  playback/schedule)의 구문 회귀를 node 단에서 포착(실 Chromium 스모크는 런타임 검증 유지).
+
 ## 0.53.0 (2026-06-16) — 정형 그래프 마무리 2종 (gap 분석 전량 완료)
 - **마지막 정형 그래프 2종** — 둘 다 xy-core 재사용:
   `milestone-trend`(MTA — 보고시점별 예상완료일 추이, 완료선 y=x·달성 마커) ·
