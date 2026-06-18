@@ -7,7 +7,10 @@
                          ingest_csv/ingest_s2p/resample/smooth)
   GET  /artifacts/<hash> serve the self-contained HTML (immutable cache + CSP)
   GET  /healthz          liveness
+  GET  /metrics          Prometheus metrics (render counts/errors, inflight, store size)
   /mcp                   remote MCP over Streamable HTTP (reuses mcp_server._build_server)
+
+Heavy renders (cad3d/numpy) are bounded by a concurrency semaphore (GRAPH_MAX_CONCURRENT_RENDERS).
 
 The render core, engine assets, determinism and self-contained gate are reused unchanged;
 only transport, artifact serving and env-gated security live here.
@@ -15,16 +18,18 @@ only transport, artifact serving and env-gated security live here.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import os
 
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 from starlette.routing import Mount, Route
 
 from .. import catalog, mcp_server, tools
 from . import service
+from .metrics import Metrics
 from .security import SecurityMiddleware
 from .store import ArtifactStore
 
@@ -50,11 +55,21 @@ async def _json_body(request) -> dict:
 
 def build_app(store: ArtifactStore | None = None, *, mount_mcp: bool = True) -> Starlette:
     store = store or ArtifactStore(disk_dir=os.environ.get("GRAPH_ARTIFACT_DIR") or None)
+    metrics = Metrics()
+    # Bound concurrent heavy renders (cad3d/numpy) so a burst can't exhaust the threadpool/memory.
+    max_render = max(1, int(os.environ.get("GRAPH_MAX_CONCURRENT_RENDERS", str(max(2, (os.cpu_count() or 4))))))
+    render_sem = asyncio.Semaphore(max_render)
+    inflight = [0]
 
     async def health(request):
         return JSONResponse({"status": "ok", "service": "graph-skill",
                              "types": len(catalog.known_types()),
                              "tools": sorted(tools.DISPATCH)})
+
+    async def metrics_ep(request):
+        metrics.gauge("graphskill_store_items", len(store))
+        metrics.gauge("graphskill_render_max_concurrency", max_render)
+        return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
     async def passthrough(request):
         name = request.path_params["tool"]
@@ -74,13 +89,26 @@ def build_app(store: ArtifactStore | None = None, *, mount_mcp: bool = True) -> 
         if not gt:
             return JSONResponse({"error": "missing graph_type"}, status_code=400)
         base = str(request.base_url).rstrip("/")
-        try:  # builder.render is sync + CPU-heavy (cad3d/numpy) — never run it on the event loop
-            res = await run_in_threadpool(service.render_to_store, gt, tools._payload(args), store,
-                                          embed_mode=args.get("embed_mode", "standalone"), base_url=base)
-        except KeyError as e:
-            return JSONResponse({"error": "unknown_graph_type", "message": str(e)}, status_code=404)
-        except RuntimeError as e:  # self-contained gate (e.g. external image.ref)
-            return JSONResponse({"error": "self_contained_gate", "message": str(e)}, status_code=422)
+        metrics.inc("graphskill_render_requests_total")
+        async with render_sem:                        # bound concurrent heavy renders
+            inflight[0] += 1
+            metrics.gauge("graphskill_render_inflight", inflight[0])
+            try:  # builder.render is sync + CPU-heavy (cad3d/numpy) — never run it on the event loop
+                res = await run_in_threadpool(service.render_to_store, gt, tools._payload(args), store,
+                                              embed_mode=args.get("embed_mode", "standalone"), base_url=base)
+            except KeyError as e:
+                metrics.inc("graphskill_render_errors_total")
+                return JSONResponse({"error": "unknown_graph_type", "message": str(e)}, status_code=404)
+            except RuntimeError as e:  # self-contained gate (e.g. external image.ref)
+                metrics.inc("graphskill_render_errors_total")
+                return JSONResponse({"error": "self_contained_gate", "message": str(e)}, status_code=422)
+            finally:
+                inflight[0] -= 1
+                metrics.gauge("graphskill_render_inflight", inflight[0])
+        if res.get("status") == "needs_input":
+            metrics.inc("graphskill_needs_input_total")
+        else:
+            metrics.inc("graphskill_renders_total")
         return JSONResponse(res, status_code=422 if res.get("status") == "needs_input" else 200)
 
     async def lint(request):
@@ -107,7 +135,9 @@ def build_app(store: ArtifactStore | None = None, *, mount_mcp: bool = True) -> 
     async def artifact(request):
         data = store.get(request.path_params["h"])
         if data is None:
+            metrics.inc("graphskill_artifacts_miss_total")
             return JSONResponse({"error": "not found"}, status_code=404)
+        metrics.inc("graphskill_artifacts_served_total")
         return Response(data, media_type="text/html; charset=utf-8", headers={
             "Cache-Control": "public, max-age=31536000, immutable",
             "Content-Security-Policy": _CSP,
@@ -116,6 +146,7 @@ def build_app(store: ArtifactStore | None = None, *, mount_mcp: bool = True) -> 
 
     routes = [
         Route("/healthz", health, methods=["GET"]),
+        Route("/metrics", metrics_ep, methods=["GET"]),
         Route("/v1/render", render, methods=["POST"]),
         Route("/v1/lint", lint, methods=["POST"]),
         Route("/v1/embed", embed, methods=["POST"]),
@@ -143,6 +174,7 @@ def build_app(store: ArtifactStore | None = None, *, mount_mcp: bool = True) -> 
     app = Starlette(routes=routes, lifespan=lifespan)
     app.add_middleware(SecurityMiddleware)
     app.state.store = store
+    app.state.metrics = metrics
     return app
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.54.0 (2026-06-18) — 웹 서버 프로덕션 경화 (P2 코드 측면)
+- 무거운 렌더(cad3d/numpy) **동시성 상한** — `GRAPH_MAX_CONCURRENT_RENDERS` 세마포어로 버스트 시
+  스레드풀/메모리 고갈 방지(백프레셔). 기본 = CPU 코어 수.
+- **관측성** — `GET /metrics`(Prometheus 텍스트): render 요청/완료/에러·needs_input·아티팩트
+  served/miss·render inflight·store 항목수. `server/metrics.py`(무의존 카운터/게이지).
+- 가드 테스트: 동시 3요청에 render inflight ≤ cap(1) 검증, `/metrics` 노출 검증.
+- 잔여(실 외부 서비스 필요): S3/CDN 아티팩트 백엔드 · OAuth · report-archive file_id 풀 연동.
+
 ## 0.53.2 (2026-06-18) — 회색지대/품질 마감
 - `goodman-haigh` 응력 단위 게이트 추가 — `stress-linearization`과 정책 통일(MPa 묵묵히 채우지 않고
   단위를 질문; Su/Se가 ksi인데 MPa로 오라벨링하는 confidently-wrong 차단).

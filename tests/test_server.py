@@ -236,3 +236,44 @@ def test_body_limit_streaming_chunked(monkeypatch):
             return r.status_code
 
     assert asyncio.run(body()) == 413          # streaming guard catches CL-less overflow
+
+
+@web
+def test_metrics_endpoint():
+    c = TestClient(build_app(store=ArtifactStore(), mount_mcp=False))
+    c.post("/v1/render", json=XY)
+    m = c.get("/metrics")
+    assert m.status_code == 200
+    assert "graphskill_renders_total" in m.text and "graphskill_store_items" in m.text
+
+
+@web
+def test_render_concurrency_cap(monkeypatch):
+    import asyncio
+    import threading
+    import time
+
+    from graph_skill.server import service as svc
+    monkeypatch.setenv("GRAPH_MAX_CONCURRENT_RENDERS", "1")
+    peak, cur, lock = [0], [0], threading.Lock()
+
+    def slow(*a, **k):
+        with lock:
+            cur[0] += 1
+            peak[0] = max(peak[0], cur[0])
+        time.sleep(0.25)
+        with lock:
+            cur[0] -= 1
+        return {"status": "ok", "hash": "0" * 64, "artifact_url": "u", "lint": {"ok": True}, "bytes": 1}
+
+    monkeypatch.setattr(svc, "render_to_store", slow)
+    app = build_app(mount_mcp=False)                  # semaphore reads env at build -> cap 1
+
+    async def body():
+        tr = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=tr, base_url="http://t") as c:
+            await asyncio.gather(*[c.post("/v1/render", json={"graph_type": "base-xy", "series": []})
+                                   for _ in range(3)])
+
+    asyncio.run(body())
+    assert peak[0] == 1                              # 3 concurrent requests, never >1 render at once
