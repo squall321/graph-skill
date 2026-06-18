@@ -129,10 +129,16 @@ class GoodmanRecipe(Recipe):
         return {"engine": resolved.engine, "assets": {"series": series}, "options": opts}
 
     def structural_requires(self, payload):
+        miss = []
         if not (payload.get("Su") and payload.get("Se")):
-            return [{"field": "Su/Se", "why": "Goodman 선에 극한강도 Su·피로한도 Se 필요",
-                     "ask": "Su(극한강도)와 Se(피로한도)를 주세요 (MPa). points:[{mean,alt}] 동작점도 함께."}]
-        return []
+            miss.append({"field": "Su/Se", "why": "Goodman 선에 극한강도 Su·피로한도 Se 필요",
+                         "ask": "Su(극한강도)와 Se(피로한도)를 주세요. points:[{mean,alt}] 동작점도 함께."})
+        # NEVER-invent: 응력 단위를 묵묵히 'MPa'로 채우지 않는다 (Su/Se가 ksi인데 MPa로 오라벨링 차단,
+        # stress-linearization 게이트와 동일 정책)
+        if "unit" not in (payload.get("axes") or {}):
+            miss.append({"field": "axes.unit", "why": "응력 단위 미상 (MPa? ksi?)",
+                         "ask": "응력 단위를 axes.unit 으로 주세요 (예: 'MPa'). Su/Se·동작점과 같은 단위계여야 합니다."})
+        return miss
 
 
 class PsdWelchRecipe(Recipe):

@@ -292,8 +292,12 @@ class ThermalStackRecipe(Recipe):
                          "y": {"label": "온도", "unit": "°C"}},
                 "title": f"{payload.get('title') or '열저항 분해 스택'} — {title_tail}",
                 "pluginConfig": pcfg}
+        cx, cy = list(dx), list(dy)
+        if tj is not None:                          # Tj_max 한계선이 데이터 밖이어도 자동스케일에 포함
+            cx.append(0)
+            cy.append(float(tj))
         return {"engine": resolved.engine,
-                "assets": {"series": [{"name": "_wf", "x": dx, "y": dy, "style": "none"}]},
+                "assets": {"series": [{"name": "_wf", "x": cx, "y": cy, "style": "none"}]},
                 "options": opts}
 
     def structural_requires(self, payload):

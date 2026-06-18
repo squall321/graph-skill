@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.53.2 (2026-06-18) — 회색지대/품질 마감
+- `goodman-haigh` 응력 단위 게이트 추가 — `stress-linearization`과 정책 통일(MPa 묵묵히 채우지 않고
+  단위를 질문; Su/Se가 ksi인데 MPa로 오라벨링하는 confidently-wrong 차단).
+- threshold/한계선 **자동스케일 포함** — `thermal-resistance-stack`의 Tj_max선·`evm-s-curve`의 BAC/EAC가
+  데이터 범위 밖이어도 보이도록 캐리어 포인트로 y-range 확장(엔진 무변경). Tj 마진·EAC가 화면에 표시됨.
+
 ## 0.53.1 (2026-06-18) — 하우스키핑
 - `__version__` editable 설치 메타데이터 갱신 — 런타임이 0.53.x를 정상 표기(이전 0.10.0 stale).
 - CI: GitHub Actions Node20-런타임 deprecation forward-compat(`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`) + node LTS 22.

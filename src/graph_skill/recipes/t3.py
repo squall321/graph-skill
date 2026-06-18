@@ -159,6 +159,7 @@ class EVMSCurveRecipe(Recipe):
                   {"name": "AC (실제원가)", "x": x, "y": ac, "color": "#f59e0b"}]
         pcfg = {"threshold-lines": {"lines": [{"axis": "y", "value": bac, "label": f"BAC {bac:g}", "color": "#16a34a"}]},
                 "named-markers": {"markers": [{"x": x[i], "y": m["eac"], "label": f"EAC {_fmt(m['eac'])}", "color": "#dc2626"}]}}
+        series.append({"name": "_lim", "x": [x[i], x[i]], "y": [bac, m["eac"]], "style": "none"})  # BAC/EAC 자동스케일 포함
         unit = str((payload.get("axes") or {}).get("unit", ""))
         opts = {"axes": {"x": {"label": "기간", "unit": "", "categories": dates},
                          "y": {"label": "누적 가치", "unit": unit}},
