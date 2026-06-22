@@ -153,6 +153,13 @@ from .wave7 import (
     DecisionMatrixRecipe,
     KpiScorecardRecipe,
 )
+from .t1bus import (
+    CandlestickRecipe,
+    DivergingLikertRecipe,
+    DumbbellRecipe,
+    FunnelRecipe,
+    SlopegraphRecipe,
+)
 
 _matrix = MatrixRecipe()
 _field = FieldRecipe()
@@ -168,6 +175,11 @@ REGISTRY: dict[str, Recipe] = {
     "stacked-bar": StackedBarRecipe(),
     "box-plot": BoxPlotRecipe(),
     "error-bar": ErrorBarRecipe(),
+    "candlestick-ohlc": CandlestickRecipe(),
+    "slopegraph": SlopegraphRecipe(),
+    "dumbbell-plot": DumbbellRecipe(),
+    "diverging-likert-bar": DivergingLikertRecipe(),
+    "funnel-conversion-chart": FunnelRecipe(),
     "pareto": ParetoRecipe(),
     "qq-plot": QQRecipe(),
     "ecdf-plot": ECDFRecipe(),

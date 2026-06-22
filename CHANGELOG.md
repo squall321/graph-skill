@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.55.0 (2026-06-22) — T1 비즈니스/리포트 장르 그래프 5종 (169→174)
+- gap 분석 T1(최고가치) 5종 추가 — 라이브러리의 최대 공백이던 **비즈니스·재무·설문 리포트 장르**:
+  - `candlestick-ohlc` — 기간별 OHLC 캔들(상승=속빈/하락=채움, 윅=고저). 금융 시계열·min/max 엔벨로프.
+  - `slopegraph` — 두 시점/범주 평행축 연결선 + 끝점 라벨(순위 역전, Tufte).
+  - `dumbbell-plot` — 범주별 두 값(전/후·A/B·기준/목표) 점-연결선, 격차 강조.
+  - `diverging-likert-bar` — 순서형 설문 발산 누적막대(중립 기준 좌우, Robbins-Heiberger).
+  - `funnel-conversion-chart` — 단계별 전환/이탈 퍼널(중앙 정렬·테이퍼 + 전환%).
+- 신규 xy-core 플러그인 5종(`ohlc`/`slopegraph`/`dumbbell`/`diverging`/`funnel`) — slopegraph는 엔진
+  가시 시리즈 + 끝점 라벨, 나머지는 glyph 플러그인 + `hideAxes` 마진 라벨(tornado 패턴).
+- **xy-core 1.8.4 → 1.8.5** — `_hasAnyData()`에 신규 플러그인 컨테이너(ohlc/dumbbell/diverging/funnel)
+  등록(none-캐리어 타입의 "데이터 없음" 워터마크 방지). plugins/*.js가 code_hash에 포함되어 버전 범프.
+- 검증: pytest 전체 그린 · node 신택스 5종 · Chromium 부팅(5종 _hasAnyData=true, 무에러) · 갤러리
+  174종 재빌드(0 실패) · engine_manifest 재생성 · 5종 스크린샷 시각 확인(관례 정합).
+
 ## 0.54.0 (2026-06-18) — 웹 서버 프로덕션 경화 (P2 코드 측면)
 - 무거운 렌더(cad3d/numpy) **동시성 상한** — `GRAPH_MAX_CONCURRENT_RENDERS` 세마포어로 버스트 시
   스레드풀/메모리 고갈 방지(백프레셔). 기본 = CPU 코어 수.

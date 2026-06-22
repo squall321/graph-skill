@@ -1,0 +1,12 @@
+{
+  "graph_type": "funnel-conversion-chart",
+  "title": "가입 전환 퍼널",
+  "axes": {"x": {"label": "사용자 수", "unit": ""}},
+  "stages": [
+    {"label": "방문", "value": 12000},
+    {"label": "회원가입", "value": 5200},
+    {"label": "이메일 인증", "value": 3900},
+    {"label": "첫 결제", "value": 1450},
+    {"label": "재구매", "value": 620}
+  ]
+}

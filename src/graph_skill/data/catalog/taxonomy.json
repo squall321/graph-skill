@@ -564,6 +564,74 @@
         "uncertainty"
       ]
     },
+    "candlestick-ohlc": {
+      "category": "trend",
+      "dims": "2D",
+      "data": "periods + ohlc=[[o,h,l,c]] + axes.y",
+      "use_when": "기간별 OHLC 캔들(금융 시계열·범위 엔벨로프)",
+      "keywords": [
+        "candlestick",
+        "ohlc",
+        "캔들",
+        "금융",
+        "주가",
+        "finance"
+      ]
+    },
+    "slopegraph": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "positions[2] + items=[{name,left,right}] + axes.y",
+      "use_when": "두 시점/범주 간 다항목 변화·순위 역전",
+      "keywords": [
+        "slopegraph",
+        "before after",
+        "전후",
+        "변화",
+        "tufte"
+      ]
+    },
+    "dumbbell-plot": {
+      "category": "comparison",
+      "dims": "2D",
+      "data": "categories + series[2] + axes.x",
+      "use_when": "범주별 두 값 격차(전/후·A/B·기준/목표)",
+      "keywords": [
+        "dumbbell",
+        "connected dot",
+        "격차",
+        "gap",
+        "benchmark"
+      ]
+    },
+    "diverging-likert-bar": {
+      "category": "distribution",
+      "dims": "2D",
+      "data": "questions + responses + data[[counts]] + basis",
+      "use_when": "순서형 설문(Likert) 중립 기준 발산 막대",
+      "keywords": [
+        "likert",
+        "diverging",
+        "설문",
+        "survey",
+        "sentiment",
+        "발산"
+      ]
+    },
+    "funnel-conversion-chart": {
+      "category": "ranking",
+      "dims": "2D",
+      "data": "stages=[{label,value}] + axes.x",
+      "use_when": "단계별 전환/이탈(세일즈·리크루팅·CONSORT)",
+      "keywords": [
+        "funnel",
+        "conversion",
+        "깔때기",
+        "전환",
+        "attrition",
+        "consort"
+      ]
+    },
     "cfd-line-extract-compare": {
       "category": "comparison",
       "dims": "2D",

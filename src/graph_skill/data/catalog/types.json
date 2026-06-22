@@ -881,6 +881,81 @@
       "height_px": 480,
       "hint": "측정 불확도/반복편차. 각 시리즈 data=[[x, y, err], ...] (또는 data=[[x,y]] + series.err=[...]) + axes.x/y{label,unit}. 점+상하 오차 막대."
     },
+    "candlestick-ohlc": {
+      "title": "Candlestick / OHLC chart",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "ohlc"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "기간별 시·고·저·종 캔들. periods:[라벨...] + ohlc:[[open,high,low,close], ...] (정렬 일치) + axes.y{label,unit}(가격/값). 상승=속빈/하락=채움. 금융 시계열 또는 min/max 엔벨로프."
+    },
+    "slopegraph": {
+      "title": "Slopegraph (before/after)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "slopegraph"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "다항목 1지표를 두 시점/범주 평행축 연결선. positions:['전','후'] + items:[{name, left, right}, ...] + axes.y{label,unit}. 순위 역전·변화율 비교(Tufte)."
+    },
+    "dumbbell-plot": {
+      "title": "Dumbbell (connected dot) plot",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "dumbbell"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "범주별 두 값(전/후·A/B·기준/목표)을 점-연결선으로, 격차 강조. categories:[...] + series:[{name,values},{name,values}](정확히 2) + axes.x{label,unit}(값). 가로 정렬."
+    },
+    "diverging-likert-bar": {
+      "title": "Diverging stacked bar (Likert)",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "diverging"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 480,
+      "hint": "순서형 설문을 중립 기준 좌우 발산 누적막대(우호 우측/비우호 좌측). questions:[...] + responses:[낮음→높음] + data:[[문항별 응답 카운트/비율]] + basis:'percent'|'count'. Robbins-Heiberger 규약."
+    },
+    "funnel-conversion-chart": {
+      "title": "Conversion / attrition funnel",
+      "engine": "xy-core",
+      "extends": "base-xy",
+      "backend": "canvas",
+      "plugins": [
+        "funnel"
+      ],
+      "require_axes": false,
+      "require_series": false,
+      "requires": [],
+      "options_defaults": {},
+      "height_px": 460,
+      "hint": "단계별 좁아지는 중앙 막대 + 전환/이탈%. stages:[{label, value}, ...](순서=위→아래) + axes.x{label,unit}(건수면 unit:''). 세일즈/리크루팅/임상 CONSORT 등록 이탈."
+    },
     "pareto": {
       "title": "Pareto chart (vital few)",
       "engine": "xy-core",

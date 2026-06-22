@@ -1,0 +1,13 @@
+{
+  "graph_type": "slopegraph",
+  "title": "라인별 수율 변화 (개선 전후)",
+  "axes": {"y": {"label": "Yield", "unit": "%"}},
+  "positions": ["개선 전", "개선 후"],
+  "items": [
+    {"name": "Line A", "left": 78.2, "right": 91.5},
+    {"name": "Line B", "left": 85.0, "right": 88.1},
+    {"name": "Line C", "left": 69.4, "right": 84.7},
+    {"name": "Line D", "left": 90.3, "right": 86.2},
+    {"name": "Line E", "left": 74.8, "right": 82.0}
+  ]
+}

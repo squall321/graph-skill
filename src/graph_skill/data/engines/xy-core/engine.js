@@ -481,7 +481,11 @@
     if ((pc.waterfall && (pc.waterfall.bars || []).length) ||
         (pc.streamgraph && (pc.streamgraph.bands || []).length) ||
         (pc["box-plot"] && (pc["box-plot"].groups || []).length) ||
-        (pc.violin && (pc.violin.groups || []).length)) return true;
+        (pc.violin && (pc.violin.groups || []).length) ||
+        (pc.ohlc && (pc.ohlc.bars || []).length) ||
+        (pc.dumbbell && (pc.dumbbell.rows || []).length) ||
+        (pc.diverging && (pc.diverging.cats || []).length) ||
+        (pc.funnel && (pc.funnel.stages || []).length)) return true;
     return false;
   };
   XYCore.prototype._viewObject = function (plot, sx, sy, tok) {

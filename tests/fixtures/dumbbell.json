@@ -1,0 +1,10 @@
+{
+  "graph_type": "dumbbell-plot",
+  "title": "부품별 응답시간 (현행 vs 목표)",
+  "axes": {"x": {"label": "Response time", "unit": "ms"}},
+  "categories": ["로그인", "검색", "결제", "업로드", "리포트", "알림"],
+  "series": [
+    {"name": "현행", "values": [420, 310, 880, 1240, 760, 190]},
+    {"name": "목표", "values": [250, 220, 500, 700, 480, 120]}
+  ]
+}
